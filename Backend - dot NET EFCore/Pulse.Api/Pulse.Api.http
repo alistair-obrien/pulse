@@ -1,0 +1,17 @@
+@Pulse.Api_HostAddress = https://localhost:7295
+
+###
+GET {{Pulse.Api_HostAddress}}/api/dailylogs
+Accept: application/json
+
+###
+POST {{Pulse.Api_HostAddress}}/api/dailylogs
+Content-Type: application/json
+
+{
+  "date": "2026-07-22",
+  "sleepHours": 7.5,
+  "calories": 2800,
+  "protein": 180,
+  "notes": "Bench felt amazing"
+}

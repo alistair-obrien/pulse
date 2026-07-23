@@ -1,0 +1,23 @@
+{
+  "name": "pulse-web-ts",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "android": "npm run build && npx cap sync android && npx cap run android",
+    "android-live": "concurrently \"npm run dev -- --host\" \"npx cap run android -l --host 192.168.0.173 --port 5173\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.4",
+    "typescript": "~6.0.2",
+    "vite": "^8.1.1"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.4.2",
+    "@capacitor/cli": "^8.4.2",
+    "@capacitor/core": "^8.4.2"
+  }
+}
