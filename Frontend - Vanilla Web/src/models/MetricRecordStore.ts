@@ -30,7 +30,7 @@ export class MetricRecordStore {
 
         for (const d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
             const key = ToDateKey(d);
-            this.LoadDate(key);
+            this.EnsureLoaded(key);
         }
     }
 
@@ -51,6 +51,8 @@ export class MetricRecordStore {
 
     Set(dateKey: DateKey, metricTypeId: MetricTypeId, data: any) {
 
+        console.log(`${this.storagePrefix} - Set`, dateKey, metricTypeId, data);
+        
         const record = new MetricRecord(metricTypeId, data);
 
         this.EnsureLoaded(dateKey);
@@ -86,5 +88,15 @@ export class MetricRecordStore {
             this.storagePrefix + date,
             JSON.stringify(metrics)
         );
+    }
+
+    Clear(dateKey:DateKey) {
+
+        console.log("CLEAR ", dateKey);
+
+        this.loadedDates.delete(dateKey);
+        delete this.metricRecordsByDate[dateKey];
+
+        this.SaveDate(dateKey);
     }
 }

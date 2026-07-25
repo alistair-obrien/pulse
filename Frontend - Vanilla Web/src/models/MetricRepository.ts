@@ -1,5 +1,4 @@
 import { MetricRecordStore } from "./MetricRecordStore";
-import { MetricRecord } from "./MetricRecord";
 import type { DateKey } from "./DateKey";
 import type { MetricTypeId } from "./MetricTypeIds";
 
