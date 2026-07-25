@@ -1,9 +1,9 @@
 import "./style.css";
-
+import "remixicon/fonts/remixicon.css";
 
 import * as Error from "./screens/Error"
 let cachedErrorScreen:HTMLElement|null = null;
-function errorScreen(error: string):HTMLElement { return cachedErrorScreen ??= Error.render(error) } 
+function errorScreen():HTMLElement { return cachedErrorScreen ??= Error.render() } 
 
 import * as Splash from "./screens/Splash"
 let cachedSplashScreen:HTMLElement|null = null;
@@ -25,6 +25,9 @@ import * as Settings from "./screens/Settings";
 let cachedSettingsScreen:HTMLElement|null = null;
 function settingsScreen():HTMLElement { return cachedSettingsScreen ??= Settings.render() } 
 
+const topButtons = document.createElement("div");
+document.body.append(topButtons);
+
 // Tabs for changing screen
 const tabsContainer = document.createElement("div");
 document.body.append(tabsContainer);
@@ -32,7 +35,40 @@ document.body.append(tabsContainer);
 // Screen Container for screen contents
 const screenContainer = document.createElement("div")
 screenContainer.id = "Screen"
+screenContainer.className = "screen";
 document.body.append(screenContainer);
+
+let healthConnectAvailable = false;
+
+// TEST
+
+import { HealthConnect } from "./platform/health-connect";
+
+await Error.mount(screenContainer);
+changeScreen(errorScreen());
+
+const available = await HealthConnect.isAvailable();
+console.log(JSON.stringify(available));
+
+if (available.available) {
+    const hasPerms = await HealthConnect.hasHealthConnectPermissions();
+    console.log(JSON.stringify(hasPerms));
+
+    if (!hasPerms.has_permissions) {
+        console.log("Requesting permissions...");
+
+        const result = await HealthConnect.requestHealthConnectPermissions();
+
+        console.log(JSON.stringify(result));
+
+        const after = await HealthConnect.hasHealthConnectPermissions();
+
+        console.log(JSON.stringify(after));
+    }
+
+    healthConnectAvailable = true;
+}
+
 
 changeScreen(splashScreen())
 
@@ -40,7 +76,8 @@ try {
     // Need to mount and load. No lazy load for now
     await Report.mount(screenContainer);
 } catch (error) {
-    changeScreen(errorScreen(String(error)))
+    Error.set_error("Failed to mount Report")
+    changeScreen(errorScreen())
 }
 
 renderApp()
@@ -48,7 +85,7 @@ renderApp()
 function renderApp() {
     // Start on Feed Screen
     // Later we can add a splash screen or something
-    renderTabs()
+    // renderTabs() // No functionality yet
     // changeScreen(feedScreen())
 
     // Just for quick hot reload

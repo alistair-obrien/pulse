@@ -115,8 +115,8 @@ namespace Pulse.Api.Controllers
         public async Task<IActionResult> Import(int id)
         {
             var log = await _db.DailyLogs
-                .Include(d => d.Sleeps)
-                .Include(d => d.Nutrition)
+                //.Include(d => d.Sleeps)
+                //.Include(d => d.Nutrition)
                 .Include(d => d.Workouts)
                 .AsSplitQuery()
                 .FirstOrDefaultAsync(d => d.Id == id);

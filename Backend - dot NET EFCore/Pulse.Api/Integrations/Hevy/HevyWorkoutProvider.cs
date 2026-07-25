@@ -21,7 +21,7 @@ public class HevyWorkoutProvider : IWorkoutProvider
         return workouts
             .Events
             .Select(e => e.Workout)
-            //.Where(w => DateOnly.FromDateTime(w.StartTime) == date)
+            .Where(w => DateOnly.FromDateTime(w.StartTime) == date)
             .Select(Convert)
             .ToList();
     }

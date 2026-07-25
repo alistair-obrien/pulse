@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build",
+    "build-prod": "tsc && vite build",
     "preview": "vite preview",
     "android": "npm run build && npx cap sync android && npx cap run android",
     "android-live": "concurrently \"npm run dev -- --host\" \"npx cap run android -l --host 192.168.0.173 --port 5173\""
@@ -18,6 +19,7 @@
   "dependencies": {
     "@capacitor/android": "^8.4.2",
     "@capacitor/cli": "^8.4.2",
-    "@capacitor/core": "^8.4.2"
+    "@capacitor/core": "^8.4.2",
+    "remixicon": "^4.9.1"
   }
 }

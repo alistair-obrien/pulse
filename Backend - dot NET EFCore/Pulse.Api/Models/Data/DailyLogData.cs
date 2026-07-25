@@ -67,7 +67,6 @@ public class DailyLogData
             entity.Sleeps.Add(sleep.ToEntity());
         }
 
-        Console.WriteLine(entity.Nutrition == null);
         Nutrition.ApplyTo(entity.Nutrition);
 
         entity.Workouts.Clear();

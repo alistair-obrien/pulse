@@ -27,13 +27,12 @@ namespace Pulse.Api.Services
             DailyLogData data = new(log);
 
             var workouts = await _workouts.GetWorkoutsAsync(log.Date);
-            if (workouts.Any())
-            {
-                data.Workouts = workouts.ToList();
-            }
+            data.Workouts.Clear();
 
-            //log.Nutrition = await _nutrition.GetNutritionAsync(log.Date);
-            //log.Sleeps = (await _sleep.GetSleepAsync(log.Date)).ToList();
+            foreach (var workout in workouts)
+            {
+                data.Workouts.Add(workout);
+            }
 
             return data;
         }
