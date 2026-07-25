@@ -35,7 +35,7 @@ const HEADER_FADE_THRESHOLD = 50;
 const HEADER_FADE_DIST = 10;
 
 // At what scroll distance the date should start fading out
-const DATE_FADE_THRESHOLD = 160;
+const DATE_FADE_THRESHOLD = 180;
 // How much distance the fade takes to finish
 const DATE_FADE_DIST = 20;
 
@@ -51,31 +51,32 @@ function getImageUrl():string {
 const Icons = {
     ListItem: "solid-circle",
 
-    Import: "ri-download-2-fill",
-    Share: "ri-share-fill",
-    Save: "ri-save-fill",
-    Publish: "ri-send-plane-fill",
-    Sync: "ri-refresh-fill",
+    // Action Buttons
+    CloudSync: "ri-cloud-fill",
+    DeviceSync: "ri-smartphone-fill",
+    PublishToServer: "ri-send-plane-fill",
+    CopyText: "ri-file-copy-2-fill",
+    
+    // Cards
     Reflection: "ri-feather-fill",
     Recovery: "ri-seedling-fill",
     Nutrition: "ri-restaurant-fill",
     Activity: "ri-heart-pulse-fill",
 
+    // Recovery
     Sleep: "ri-moon-clear-fill",
     RestingHeartRate: "ri-hearts-fill",
     Steps: "ri-footprint-fill",
 
     EditTextField: "ri-edit-2-fill",
 
-    Social: "ri-user-community-fill",
-    Profile: "ri-user-3-line",
+    ChooseImage: "ri-image-circle-ai-fill",
 
-    Image: "ri-image-circle-ai-fill",
+    // Footer
+    Friends: "ri-tree-fill",
+    MyDay: "ri-sun-foggy-fill",
+    Me: "ri-seedling-fill",
 
-    // Calories: "ri-fire-fill",
-    // Protein: "ri-hearts-fill",
-    // Carbs: "ri-footprint-fill",
-    // Fat: "ri-footprint-fill"
 } as const;
 
 import "../style.css"
@@ -396,24 +397,14 @@ async function createOnServer() {
     currentLog = created;
 }
 
-async function onImportClicked() {
+async function onDeviceSyncClicked() {
 
     if (currentId == null) {
         await createOnServer();
     }
 
-    currentLog = await dailyLogs.importLog(currentId!);
-    rerender();
-}
-
-async function onSaveClicked() {
-    if (currentId == null) {
-        await createOnServer();
-    }
-    else {
-        currentLog = await dailyLogs.update(currentId!, currentLog);
-    }
-
+    currentLog = await dailyLogs.update(currentId!, currentLog); // Uploads ourself
+    currentLog = await dailyLogs.importLog(currentId!); // Server processes cloud services
     rerender();
 }
 
@@ -426,6 +417,10 @@ async function onPublishClicked() {
     currentLog = await dailyLogs.update(currentId!, currentLog);
     currentLog = await dailyLogs.publish(currentId!);
     rerender();
+}
+
+async function onCopyTextClicked() {
+
 }
 
 // =====================================================
@@ -444,24 +439,25 @@ export function render(): HTMLElement {
 
     const heroArea = createHeroArea(content);
     
-    const spacer = document.createElement("div");
-    spacer.className = "hero-spacer";
+    const heroSpacer = document.createElement("div");
+    heroSpacer.className = "hero-spacer";
     
-
     content.append(
-        spacer,
+        heroSpacer,
         createReflectionCard(),
         createRecoveryCard(),
         createNutritionCard(),
         createWorkoutCard(),
-        createFooterActionButtons(),
+        createReportActionButtons(),
     );
+
+    const footer = createFooter();
 
     screenContainer.append(
         header,
         heroArea,
         content,
-        // createFooter(),
+        footer,
     );
 
     return screenContainer;
@@ -503,7 +499,8 @@ function createDateRow(): HTMLElement {
     dateRow.className = "date-row"
     dateRow.id = "date-row";
 
-    const date = document.createElement("h3");
+    const dateContainer = document.createElement("div");
+    dateContainer.className = "date-row-container";
 
     const weekdayFormatted = new Intl.DateTimeFormat("en-GB", {
         weekday: "long"
@@ -515,13 +512,13 @@ function createDateRow(): HTMLElement {
         year: "numeric"
     }).format(selectedDate);
 
-    const dateText = document.createElement("span");
-    dateText.textContent = dateFormatted;
-
-    const weekday = document.createElement("span");
+    const weekday = document.createElement("h1");
     weekday.textContent = weekdayFormatted;
 
-    date.append(weekday, dateText);
+    const dateText = document.createElement("h2");
+    dateText.textContent = dateFormatted;
+
+    dateContainer.append(weekday, dateText);
 
     const prevButton = document.createElement("button");
     prevButton.className = "icon-button";
@@ -579,7 +576,7 @@ function createDateRow(): HTMLElement {
     //     changeDate(date);
     // };
 
-    dateRow.append(prevButton, date, nextButton);
+    dateRow.append(prevButton, dateContainer, nextButton);
 
     return dateRow;
 }
@@ -604,39 +601,20 @@ function createHeader(contentRoot:HTMLElement): HTMLElement {
     const header = document.createElement("div");
     header.className = "header";
 
-    const headerInner = document.createElement("div");
-    headerInner.className = "header-inner";
-
-    const settingsButton = document.createElement("i");
-    settingsButton.className = Icons.Social;
-
-    const title = document.createElement("h1");
-    title.textContent = "PULSE";
-
-    const profileButton = document.createElement("i");
-    profileButton.className = Icons.Profile;
-
-    headerInner.append(
-        settingsButton,
-        title,
-        profileButton,
-    );
-
-    header.append(headerInner);
-
     const dateRow = createDateRow();
     header.append(dateRow);
 
 
-    contentRoot.addEventListener("scroll", () => {
-        const y = contentRoot.scrollTop;
+    // If we need a top header again we can use this to smooth fade it out when scrolling
+    // contentRoot.addEventListener("scroll", () => {
+    //     const y = contentRoot.scrollTop;
 
-        const start = HEADER_FADE_THRESHOLD;
-        const end = HEADER_FADE_THRESHOLD + HEADER_FADE_DIST;
+    //     const start = HEADER_FADE_THRESHOLD;
+    //     const end = HEADER_FADE_THRESHOLD + HEADER_FADE_DIST;
 
-        const opacity = 1 - ((y - start) / (end - start));
-        headerInner.style.opacity = `${opacity}`;
-    });
+    //     const opacity = 1 - ((y - start) / (end - start));
+    //     headerInner.style.opacity = `${opacity}`;
+    // });
 
     contentRoot.addEventListener("scroll", () => {
             const y = contentRoot.scrollTop;
@@ -654,10 +632,24 @@ function createFooter(): HTMLElement {
     const section = document.createElement("div");
     section.className = "footer";
 
-    section.append(
-        createFooterActionButtons()
-        // createDateRow(),
+    const footerInner = document.createElement("div");
+    footerInner.className = "footer-inner";
+
+    const friendsButton = createActionButton("Friends", Icons.Friends);
+
+    const myDayButton = createActionButton("My Day", Icons.MyDay);
+    myDayButton.onclick = myDayPressed;
+    myDayButton.classList.add("selected")
+
+    const meButton = createActionButton("Me", Icons.Me);
+
+    footerInner.append(
+        friendsButton,
+        myDayButton,
+        meButton,
     );
+
+    section.append(footerInner);
 
     return section;
 }
@@ -990,14 +982,13 @@ function createInnerCard(metricName:string, metricValue:HTMLElement, metricIconC
 
     const icon = document.createElement("i");
     icon.className = metricIconClass;
-    innerCard.append(icon);
     
     const name = document.createElement("div");
     name.className = "metric-label-text";
     name.textContent = metricName;
-    innerCard.append(name);
 
-    innerCard.append(metricValue);
+    // innerCard.append(icon, metricValue, name);
+    innerCard.append(icon, name, metricValue);
 
     return innerCard;
 }
@@ -1121,32 +1112,39 @@ function createHighlightsSection(): HTMLElement {
 // Actions
 // =====================================================
 
-function createFooterActionButtons(): HTMLElement {
+function createReportActionButtons(): HTMLElement {
+
+    const actionButtonsCard = document.createElement("div");
+    actionButtonsCard.className = "card";
 
     const actionButtonRow = document.createElement("div");
     actionButtonRow.className = "action-buttons-row";
 
-    const importButton = createActionButton("Import", Icons.Import); 
-    importButton.onclick = onImportClicked;
+    const cloudSyncButton = createActionButton("Cloud Sync", Icons.CloudSync); 
+    cloudSyncButton.onclick = onDeviceSyncClicked;
 
-    const saveButton = createActionButton("Save", Icons.Save);
-    saveButton.onclick = onSaveClicked;
+    const deviceSync = createActionButton("Device Sync", Icons.DeviceSync);
+    deviceSync.onclick = healthConnectSync;
 
-    const syncButton = createActionButton("Sync", Icons.Sync);
-    syncButton.onclick = healthConnectSync;
+    // const publishToServerButton = createActionButton("Publish", Icons.PublishToServer);
+    // publishToServerButton.onclick = onPublishClicked;
 
-    const publishButton = createActionButton("Publish", Icons.Publish);
-    publishButton.onclick = onPublishClicked;
+    const copyTextButton = createActionButton("Copy Text", Icons.CopyText);
+    copyTextButton.onclick = onCopyTextClicked;
 
     actionButtonRow.append(
-        importButton,
-        syncButton,
-        saveButton,
-        publishButton
+        cloudSyncButton,
+        deviceSync,
+        // publishToServerButton,
+        copyTextButton
     );
 
-    return actionButtonRow;
+    actionButtonsCard.append(actionButtonRow);
+
+    return actionButtonsCard;
 }
+
+// TODO: A more explicit publish prompt
 
 // =====================================================
 // Helpers
@@ -1159,4 +1157,10 @@ function bindTextArea(
 ) {
     textarea.value = getter();
     textarea.oninput = () => setter(textarea.value);
+}
+
+// Maybe later a cooler animation
+async function myDayPressed(this: GlobalEventHandlers, ev: PointerEvent) {
+    if (!isToday(selectedDate))
+        await transitionToDate(new Date(), "left")
 }
