@@ -1,4 +1,4 @@
-import type { MetricTypeId } from "./MetricTypeIds";
+import type { MetricTypeId } from "./MetricRegistry";
 
 
 export class MetricRecord<T> {

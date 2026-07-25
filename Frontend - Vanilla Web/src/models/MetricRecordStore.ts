@@ -1,6 +1,6 @@
 import { MetricRecord } from "./MetricRecord";
 import { ToDateKey, type DateKey } from "./DateKey";
-import type { MetricTypeId } from "./MetricTypeIds";
+import type { MetricTypeId } from "./MetricRegistry";
 
 
 export class MetricRecordStore {
@@ -45,13 +45,16 @@ export class MetricRecordStore {
     }
 
     Get<T>(dateKey: DateKey, metricTypeId: MetricTypeId): MetricRecord<T> | undefined {
+
+        console.log("GET", this.storagePrefix, dateKey, metricTypeId);
+
         this.EnsureLoaded(dateKey);
         return this.metricRecordsByDate[dateKey]?.[metricTypeId] as MetricRecord<T> | undefined;
     }
 
     Set(dateKey: DateKey, metricTypeId: MetricTypeId, data: any) {
 
-        console.log(`${this.storagePrefix} - Set`, dateKey, metricTypeId, data);
+        console.log("SET", this.storagePrefix, dateKey, metricTypeId, JSON.stringify(data));
         
         const record = new MetricRecord(metricTypeId, data);
 

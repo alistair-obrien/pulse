@@ -1,7 +1,7 @@
 import * as api from "../api/API";
 import { ToDateKey, type DateKey } from "../models/DateKey";
 import { metricRepository } from "../models/MetricRepository";
-import { MetricTypeIds, type MetricTypeId } from "../models/MetricTypeIds";
+import { metricsRegistry } from "../models/MetricRegistry";
 
 export async function cloudSync(date: Date) {
     let dateKey = ToDateKey(date);
@@ -13,93 +13,29 @@ export async function cloudSync(date: Date) {
 
 async function downloadMetrics(dateKey: DateKey) {
 
-    const [
-        reflection, steps, restingHeartRate, sleep, nutrition_calories, nutrition_protein, nutrition_carbs, nutrition_fat, nutrition_notes
-    ] = await Promise.all([
-        api.getMetric(dateKey, MetricTypeIds.Reflection),
-        api.getMetric(dateKey, MetricTypeIds.Steps),
-        api.getMetric(dateKey, MetricTypeIds.RestingHeartRate),
-        api.getMetric(dateKey, MetricTypeIds.Sleep),
-        api.getMetric(dateKey, MetricTypeIds.Nutrition_Calories),
-        api.getMetric(dateKey, MetricTypeIds.Nutrition_Protein),
-        api.getMetric(dateKey, MetricTypeIds.Nutrition_Carbs),
-        api.getMetric(dateKey, MetricTypeIds.Nutrition_Fat),
-        api.getMetric(dateKey, MetricTypeIds.Nutrition_Notes),
-    ]);
+    const allMetrics = await api.getMetrics(dateKey);
 
-    console.log(reflection);
+    if (!allMetrics)
+        return;
 
-    if (reflection)
-        metricRepository.cloudCacheStore.Set(dateKey, MetricTypeIds.Reflection, reflection);
-    if (steps)
-        metricRepository.cloudCacheStore.Set(dateKey, MetricTypeIds.Steps, steps);
-    if (restingHeartRate)
-        metricRepository.cloudCacheStore.Set(dateKey, MetricTypeIds.RestingHeartRate, restingHeartRate);
-    if (sleep)
-        metricRepository.cloudCacheStore.Set(dateKey, MetricTypeIds.Sleep, sleep);
-    if (nutrition_calories)
-        metricRepository.cloudCacheStore.Set(dateKey, MetricTypeIds.Nutrition_Calories, nutrition_calories);
-    if (nutrition_protein)
-        metricRepository.cloudCacheStore.Set(dateKey, MetricTypeIds.Nutrition_Protein, nutrition_protein);
-    if (nutrition_carbs)
-        metricRepository.cloudCacheStore.Set(dateKey, MetricTypeIds.Nutrition_Carbs, nutrition_carbs);
-    if (nutrition_fat)
-        metricRepository.cloudCacheStore.Set(dateKey, MetricTypeIds.Nutrition_Fat, nutrition_fat);
-    if (nutrition_notes)
-        metricRepository.cloudCacheStore.Set(dateKey, MetricTypeIds.Nutrition_Notes, nutrition_notes);
+    for (const metric of metricsRegistry) {
+        metricRepository.setCloudMetric(
+            dateKey,
+            metric.id,
+            allMetrics[metric.id]
+        );
+    }
 }
-
 
 async function uploadMetrics(dateKey: DateKey) {
 
-    const reflection = getMetricToUpload<number>(dateKey, MetricTypeIds.Reflection);
-    if (reflection !== undefined)
-        await api.setMetric(dateKey, MetricTypeIds.Reflection, reflection);
+    await Promise.all(
+        metricsRegistry.map(async metric => {
 
-    const steps = getMetricToUpload<number>(dateKey, MetricTypeIds.Steps);
-    if (steps !== undefined)
-        await api.setMetric(dateKey, MetricTypeIds.Steps, steps);
+            const value = metricRepository.getMetricToUpload(dateKey, metric.id);
 
-
-    // const [
-    //     reflection,
-    //     steps,
-    //     restingHeartRate,
-    //     sleep,
-    //     nutrition_calories,
-    //     nutrition_protein,
-    //     nutrition_carbs,
-    //     nutrition_fat,
-    //     nutrition_notes
-    // ] = await Promise.all([
-    //     api.setMetric(dateKey, MetricTypeIds.Reflection, getSelectedDayMetric<string>(MetricTypeIds.Reflection, "")),
-    //     api.setMetric(dateKey, MetricTypeIds.Steps, getSelectedDayMetric<number>(MetricTypeIds.Steps, 0)),
-    //     api.setMetric(dateKey, MetricTypeIds.RestingHeartRate, getSelectedDayMetric<number>(MetricTypeIds.RestingHeartRate, 0)),
-    //     api.setMetric(dateKey, MetricTypeIds.Sleep, getSelectedDayMetric<number>(MetricTypeIds.Sleep, 0)),
-    //     api.setMetric(dateKey, MetricTypeIds.Nutrition_Calories, getSelectedDayMetric<number>(MetricTypeIds.Nutrition_Calories, 0)),
-    //     api.setMetric(dateKey, MetricTypeIds.Nutrition_Protein, getSelectedDayMetric<number>(MetricTypeIds.Nutrition_Protein, 0)),
-    //     api.setMetric(dateKey, MetricTypeIds.Nutrition_Carbs, getSelectedDayMetric<number>(MetricTypeIds.Nutrition_Carbs, 0)),
-    //     api.setMetric(dateKey, MetricTypeIds.Nutrition_Fat, getSelectedDayMetric<number>(MetricTypeIds.Nutrition_Fat, 0)),
-    //     api.setMetric(dateKey, MetricTypeIds.Nutrition_Notes, getSelectedDayMetric<string>(MetricTypeIds.Nutrition_Notes, ""))
-    // ]);
-}
-
-function getMetricToUpload<T>(
-    date: DateKey,
-    metricTypeId: MetricTypeId
-): T | undefined {
-
-    const user = metricRepository.userEditsStore.Get<T>(date, metricTypeId);
-    if (user) {
-        console.log("USER", date, metricTypeId)
-        return user.metricData;
-    }
-
-    const device = metricRepository.deviceCacheStore.Get<T>(date, metricTypeId);
-    if (device) {
-        console.log("DEVICE", date, metricTypeId)
-        return device.metricData;
-    }
-
-    return undefined;
+            if (value !== undefined)
+                await api.setMetric(dateKey, metric.id, value);
+        })
+    );
 }

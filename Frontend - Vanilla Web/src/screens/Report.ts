@@ -22,7 +22,7 @@ import { ToDateKey } from "../models/DateKey";
 import { metricRepository } from "../models/MetricRepository";
 import { getImageUrl as getRandomImageUrl } from "./RandomImage";
 import { Icons } from "./Icons";
-import { MetricTypeIds, type MetricTypeId } from "../models/MetricTypeIds";
+import { MetricTypeIds, type MetricTypeId } from "../models/MetricRegistry";
 import { healthConnectSync } from "./DeviceMetricsSync";
 import { healthConnectAvailable } from "../platform/health-connect";
 import { cloudSync } from "./CloudSync"
@@ -154,8 +154,8 @@ async function loadDate(date: Date) {
     selectedDate = date;
     selectedDateKey = ToDateKey(selectedDate);
 
-    // await downloadSelectedDateFromCloud();
-    // await healthConnectSync(selectedDate);
+    if (healthConnectAvailable) await healthConnectSync(date);
+    await cloudSync(date);
 }
 
 let animating:boolean  = false
@@ -525,7 +525,7 @@ function createTextInputArea(placeholderText:string, metricTypeId: MetricTypeId)
     textArea.placeholder = placeholderText;
     container.append(textArea);
 
-    const getter:() => string = () => metricRepository.resolveMetric<string>(selectedDateKey, metricTypeId, "");
+    const getter:() => string = () => metricRepository.resolveMetric<string>(selectedDateKey, metricTypeId);
     const setter:(value: string) => void = value => metricRepository.userEditsStore.Set(selectedDateKey, metricTypeId, value);
 
     bindTextArea(
@@ -537,8 +537,8 @@ function createTextInputArea(placeholderText:string, metricTypeId: MetricTypeId)
     return container;
 }
 
-function getSelectedDayMetric<T>(metricTypeId:MetricTypeId, defaultValue:T) : T {
-    return metricRepository.resolveMetric<T>(selectedDateKey, metricTypeId, defaultValue);
+function getSelectedDayMetric<T>(metricTypeId:MetricTypeId) : T {
+    return metricRepository.resolveMetric<T>(selectedDateKey, metricTypeId);
 }
 
 function createNutritionCard(): HTMLElement {
@@ -553,19 +553,19 @@ function createNutritionCard(): HTMLElement {
     const nutritionlist = document.createElement("div");
     nutritionlist.className = "metric-list";
 
-    const calories = Math.round(getSelectedDayMetric<number>(MetricTypeIds.Nutrition_Calories, 0));
+    const calories = Math.round(getSelectedDayMetric<number>(MetricTypeIds.Nutrition_Calories));
     const caloriesElement = createMetricValue(calories.toString(), 'kcal');
     const caloriesCard = createMetricRow("Calories", caloriesElement);
     
-    const protein = Math.round(getSelectedDayMetric<number>(MetricTypeIds.Nutrition_Protein, 0));
+    const protein = Math.round(getSelectedDayMetric<number>(MetricTypeIds.Nutrition_Protein));
     const proteinElement = createMetricValue(protein.toString(), 'g');
     const proteinCard = createMetricRow("Protein", proteinElement);
     
-    const carbs = Math.round(getSelectedDayMetric<number>(MetricTypeIds.Nutrition_Carbs, 0));
+    const carbs = Math.round(getSelectedDayMetric<number>(MetricTypeIds.Nutrition_Carbs));
     const carbsElement = createMetricValue(carbs.toString(), 'g');
     const carbsCard = createMetricRow("Carbs", carbsElement);
 
-    const fat = Math.round(getSelectedDayMetric<number>(MetricTypeIds.Nutrition_Fat, 0));
+    const fat = Math.round(getSelectedDayMetric<number>(MetricTypeIds.Nutrition_Fat));
     const fatElement = createMetricValue(fat.toString(), 'g');
     const fatCard = createMetricRow("Fat", fatElement);
 
@@ -606,7 +606,7 @@ function createWorkoutCard(): HTMLElement {
 
     card.append(title);
 
-    const workoutRecords = getSelectedDayMetric<WorkoutLogData[]>(MetricTypeIds.Workouts, []);
+    const workoutRecords = getSelectedDayMetric<WorkoutLogData[]>(MetricTypeIds.Workouts);
 
     if (workoutRecords.length === 0) {
         const empty = document.createElement("div");
@@ -817,7 +817,7 @@ function createRecoveryCard(): HTMLElement {
     recoveryGrid.className = "metric-grid-3";
 
     // Sleep
-    const sleepRecords = getSelectedDayMetric<SleepLogData[]>(MetricTypeIds.Sleep, []);
+    const sleepRecords = getSelectedDayMetric<SleepLogData[]>(MetricTypeIds.Sleep);
     const totalSleepHours = sleepRecords.reduce(
         (total, sleep) => total + sleep.sleepHours,
         0
@@ -826,12 +826,12 @@ function createRecoveryCard(): HTMLElement {
     const sleepCard = createInnerCard("Total Sleep", sleepText, Icons.Sleep);
     
     // RHR
-    const restingHeartRate = getSelectedDayMetric<number>(MetricTypeIds.RestingHeartRate, 0);
+    const restingHeartRate = getSelectedDayMetric<number>(MetricTypeIds.RestingHeartRate);
     const restingHeartRateMetricElement = createMetricValue(restingHeartRate.toString(), 'bpm');
     const restingHeartRateCard = createInnerCard("Resting HR", restingHeartRateMetricElement, Icons.RestingHeartRate);
     
     // Steps
-    const steps = getSelectedDayMetric<number>(MetricTypeIds.Steps, 0);
+    const steps = getSelectedDayMetric<number>(MetricTypeIds.Steps);
     const stepsMetricElement = createMetricValue(steps.toLocaleString());
     const stepsCard = createInnerCard("Total Steps", stepsMetricElement, Icons.Steps);
 

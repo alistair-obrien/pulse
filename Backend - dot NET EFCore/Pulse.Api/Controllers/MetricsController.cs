@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Identity.Client;
 using Pulse.Api.Requests;
 using Pulse.Api.Responses;
 using Pulse.Domain.Models;
@@ -51,6 +52,21 @@ namespace Pulse.Api.Controllers
             return Ok(metric.JsonValue);
         }
 
+        [HttpGet("metrics/{date}")]
+        public async Task<IActionResult> Get(DateOnly date)
+        {
+            var metrics = await _db.Metrics
+                .Where(m => m.Date == date)
+                .ToListAsync();
+
+            if (metrics.Count == 0)
+                return NotFound();
+
+            return Ok(metrics.ToDictionary(
+               m => m.MetricTypeId,
+               m => JsonSerializer.Deserialize<JsonElement>(m.JsonValue)
+           ));
+        }
 
         [HttpPut("{date}/{metricId}")]
         public async Task<IActionResult> Put(
@@ -58,9 +74,22 @@ namespace Pulse.Api.Controllers
             string metricId,
             SetMetricRequest request)
         {
+            bool isEmpty = IsEmpty(request.MetricData);
+
             var metric = await _db.Metrics.FirstOrDefaultAsync(m =>
                 m.Date == date &&
                 m.MetricTypeId == metricId);
+
+            if (isEmpty)
+            {
+                if (metric != null)
+                {
+                    _db.Metrics.Remove(metric);
+                    await _db.SaveChangesAsync();
+                }
+
+                return Ok(new SetMetricResponse());
+            }
 
             if (metric == null)
             {
@@ -79,6 +108,36 @@ namespace Pulse.Api.Controllers
             await _db.SaveChangesAsync();
 
             return Ok(new SetMetricResponse());
+        }
+
+        private static bool IsEmpty(object? value)
+        {
+            if (value is null)
+                return true;
+
+            if (value is JsonElement json)
+            {
+                switch (json.ValueKind)
+                {
+                    case JsonValueKind.Null:
+                    case JsonValueKind.Undefined:
+                        return true;
+
+                    case JsonValueKind.String:
+                        return string.IsNullOrWhiteSpace(json.GetString());
+
+                    case JsonValueKind.Number:
+                        return json.TryGetDouble(out var d) && d == 0;
+
+                    case JsonValueKind.Array:
+                        return json.GetArrayLength() == 0;
+
+                    case JsonValueKind.Object:
+                        return !json.EnumerateObject().Any();
+                }
+            }
+
+            return false;
         }
     }
 }
