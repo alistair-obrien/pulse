@@ -3,6 +3,6 @@ namespace Pulse.Api.Integrations.IProviders
 {
     public interface INutritionProvider
     {
-        Task<Nutrition> GetNutritionAsync(DateOnly date);
+        //Task<Nutrition> GetNutritionAsync(DateOnly date);
     }
 }

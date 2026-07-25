@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Pulse.Api.Integrations.Hevy;
-using Pulse.Api.Integrations.IProviders;
 using Pulse.Api.Services;
 using Pulse.Infrastructure;
 
@@ -36,10 +35,10 @@ builder.Services.AddSingleton<WorkoutStatisticsCalculator>();
 // Hevy Provider
 builder.Services.Configure<HevyOptions>(builder.Configuration.GetSection("Hevy"));
 builder.Services.AddHttpClient<HevyClient>();
-builder.Services.AddScoped<IWorkoutProvider, HevyWorkoutProvider>();
+//builder.Services.AddScoped<IWorkoutProvider, HevyWorkoutProvider>();
 
 // Daily Log Import Service
-builder.Services.AddScoped<DailyLogImportService>();
+//builder.Services.AddScoped<DailyLogImportService>();
 var app = builder.Build();
 
 app.UseHttpsRedirection();

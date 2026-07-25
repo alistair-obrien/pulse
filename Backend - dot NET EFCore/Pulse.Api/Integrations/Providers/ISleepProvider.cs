@@ -4,6 +4,6 @@ namespace Pulse.Api.Integrations.IProviders
 {
     public interface ISleepProvider
     {
-        Task<IReadOnlyList<SleepLog>> GetSleepAsync(DateOnly date);
+        //Task<IReadOnlyList<SleepLog>> GetSleepAsync(DateOnly date);
     }
 }

@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <Folder Include="Integrations\Cronometer\" />
+    <Folder Include="Models\" />
   </ItemGroup>
 
 </Project>

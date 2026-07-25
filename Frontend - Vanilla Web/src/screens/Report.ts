@@ -1,29 +1,3 @@
-const imageIds = [
-    11, 
-    13, 
-    17, 
-    29, 
-    27, 
-    38, 
-    49, 
-    62, 
-    66, 
-    128, 
-    179, 
-    213, 
-    222, 
-    231, 
-    327, 
-    350,
-    362,
-    365,
-    368,
-    381,
-    392,
-    404,
-    443
-]
-
 // The total height of the hero area (Partly occluded by content based on visible height)
 const HERO_AREA_TOTAL_HEIGHT = 400;
 // The total visible height of the hero area. Used to set the size of the header
@@ -39,52 +13,19 @@ const DATE_FADE_THRESHOLD = 180;
 // How much distance the fade takes to finish
 const DATE_FADE_DIST = 20;
 
-function getImageUrl():string {
-
-    const index = selectedDate.getDay() % imageIds.length;
-    const imageId = imageIds[index];
-
-    return `https://picsum.photos/id/${imageId}/400/400.webp`
-}
-
-// https://remixicon.com/
-const Icons = {
-    ListItem: "solid-circle",
-
-    // Action Buttons
-    CloudSync: "ri-cloud-fill",
-    DeviceSync: "ri-smartphone-fill",
-    PublishToServer: "ri-send-plane-fill",
-    CopyText: "ri-file-copy-2-fill",
-    
-    // Cards
-    Reflection: "ri-feather-fill",
-    Recovery: "ri-seedling-fill",
-    Nutrition: "ri-restaurant-fill",
-    Activity: "ri-heart-pulse-fill",
-
-    // Recovery
-    Sleep: "ri-moon-clear-fill",
-    RestingHeartRate: "ri-hearts-fill",
-    Steps: "ri-footprint-fill",
-
-    EditTextField: "ri-edit-2-fill",
-
-    ChooseImage: "ri-image-circle-ai-fill",
-
-    // Footer
-    Friends: "ri-tree-fill",
-    MyDay: "ri-sun-foggy-fill",
-    Me: "ri-seedling-fill",
-
-} as const;
-
 import "../style.css"
 import "remixicon/fonts/remixicon.css";
 
-import * as dailyLogs from "../api/dailyLogs";
-import type { DailyLogData, SleepLogData } from "../models/DailyLog";
-import { HealthConnect } from "../platform/health-connect";
+import * as api from "../api/API";
+import type { SleepLogData, WorkoutLogData } from "../models/DailyLog";
+import { ToDateKey } from "../models/DateKey";
+import { metricRepository } from "../models/MetricRepository";
+import { getImageUrl as getRandomImageUrl } from "./RandomImage";
+import { Icons } from "./Icons";
+import { MetricTypeIds, type MetricTypeId } from "../models/MetricTypeIds";
+import { healthConnectSync } from "./DeviceMetricsSync";
+import { healthConnectAvailable } from "../platform/health-connect";
+import { cloudSync } from "./CloudSync"
 
 // =====================================================
 // Helpers
@@ -104,7 +45,7 @@ function startAutoSync() {
 
     const tick = async () => {
         if (isToday(selectedDate)) {
-            await healthConnectSync();
+            await healthConnectSync(selectedDate);
         }
 
         syncTimer = window.setTimeout(tick, SYNC_INTERVAL_MS);
@@ -159,73 +100,14 @@ function enableDaySwipe(element: HTMLElement) {
     }, { passive: true });
 }
 
-/**
- * Returns the UTC range covering exactly one local calendar day.
- */
-export function getLocalDayUtcRange(date = new Date()): UtcDateRange {
-    const start = new Date(date);
-    start.setHours(0, 0, 0, 0);
-
-    const end = new Date(date);
-    end.setHours(23, 59, 59, 999);
-
-    return {
-        startUtc: start.toISOString(),
-        endUtc: end.toISOString(),
-    };
-}
-
 // =====================================================
 // State
 // =====================================================
 
 let selectedDate = new Date();
-
-let currentLog!: DailyLogData;
-let currentId: number | null = null;
+let selectedDateKey = ToDateKey(selectedDate);
 
 let root!: HTMLElement;
-
-async function healthConnectSync() {
-    if (syncing)
-        return;
-
-    syncing = true;
-
-    try {
-        console.log("SYNCING");
-
-        const dateRange = getLocalDayUtcRange(selectedDate);
-
-        const steps = await HealthConnect.readSteps(dateRange);
-        currentLog.steps = steps.totalSteps;
-
-        const restingHeartRate = await HealthConnect.readRestingHeartRate(dateRange);
-        currentLog.restingHeartRate = restingHeartRate.averageRestingHeartRate;
-
-        const sleep = await HealthConnect.readSleep(dateRange);
-
-        currentLog.sleeps = sleep.sessions.map(session => ({
-            sleepHours:
-                (new Date(session.endTime).getTime() -
-                 new Date(session.startTime).getTime()) /
-                (1000 * 60 * 60),
-            sleepNotes: session.notes ?? ""
-        }));
-
-        const nutrition = await HealthConnect.readNutrition(dateRange);
-
-        currentLog.nutrition.calories = Math.round(nutrition.totalCalories);
-        currentLog.nutrition.protein = Math.round(nutrition.totalProtein);
-        currentLog.nutrition.carbs = Math.round(nutrition.totalCarbohydrates);
-        currentLog.nutrition.fat = Math.round(nutrition.totalFats);
-
-        rerender();
-    }
-    finally {
-        syncing = false;
-    }
-}
 
 // =====================================================
 // Mounting
@@ -237,8 +119,7 @@ export async function mount(container: HTMLElement) {
     root.style.setProperty('--hero-area-visible-height', `${HERO_AREA_VISIBLE_HEIGHT}px`);
     root.style.setProperty('--hero-area-total-height', `${HERO_AREA_TOTAL_HEIGHT}px`);
 
-    await changeDate(new Date())
-    await healthConnectSync()
+    await loadDate(new Date());
     rerender();
 
     enableDaySwipe(container);
@@ -271,18 +152,10 @@ function isToday(date: Date): boolean {
 
 async function loadDate(date: Date) {
     selectedDate = date;
+    selectedDateKey = ToDateKey(selectedDate);
 
-    const response = await dailyLogs.getByDate(
-        date.toISOString().substring(0, 10)
-    );
-
-    if (response) {
-        currentId = response.id;
-        currentLog = response;
-    } else {
-        currentId = null;
-        currentLog = createEmptyLog(date);
-    }
+    // await downloadSelectedDateFromCloud();
+    // await healthConnectSync(selectedDate);
 }
 
 let animating:boolean  = false
@@ -337,90 +210,16 @@ function waitForAnimation(element: HTMLElement): Promise<void> {
     });
 }
 
-async function changeDate(date: Date) {
-
-    selectedDate = date;
-
-    const response = await dailyLogs.getByDate(
-        selectedDate.toISOString().substring(0, 10)
-    );
-
-    if (response != null) {
-
-        currentId = response.id;
-        currentLog = response;
-
-    } else {
-        currentLog = createEmptyLog(selectedDate)
-        currentId = null;
-    }
-
-    rerender();
-}
-
-function createEmptyLog(date: Date): DailyLogData {
-    return {
-        date: date.toISOString().substring(0, 10),
-        isPublished: false,
-        reflection: "",
-
-        sleeps: [],
-
-        nutrition: {
-            calories: 0,
-            protein: 0,
-            carbs: 0,
-            fat: 0,
-            nutritionNotes: ""
-        },
-
-        workouts: [],
-
-        weight: 0,
-        bodyFatPercentage: 0,
-
-        restingHeartRate: 0,
-        steps: 0,
-
-        sharePublicly: false
-    };
-}
-
 // =====================================================
 // Actions
 // =====================================================
-
-async function createOnServer() {
-    const created = await dailyLogs.create(currentLog);
-
-    currentId = created.id;
-    currentLog = created;
-}
-
-async function onDeviceSyncClicked() {
-
-    if (currentId == null) {
-        await createOnServer();
-    }
-
-    currentLog = await dailyLogs.update(currentId!, currentLog); // Uploads ourself
-    currentLog = await dailyLogs.importLog(currentId!); // Server processes cloud services
-    rerender();
-}
-
 async function onPublishClicked() {
-
-    if (currentId == null) {
-        await createOnServer();
-    }
-
-    currentLog = await dailyLogs.update(currentId!, currentLog);
-    currentLog = await dailyLogs.publish(currentId!);
-    rerender();
+    await cloudSync(selectedDate);
+    await api.publish(selectedDateKey);
 }
 
 async function onCopyTextClicked() {
-
+    //TODO: 
 }
 
 // =====================================================
@@ -463,10 +262,6 @@ export function render(): HTMLElement {
     return screenContainer;
 }
 
-document.addEventListener("click", e => {
-    console.log(e.target);
-});
-
 // =====================================================
 // Header
 // =====================================================
@@ -477,7 +272,8 @@ function createHeroArea(contentRoot: HTMLElement): HTMLElement {
     heroArea.id = "hero-area";
     
     const heroImage = document.createElement("img");
-    heroImage.src = getImageUrl();
+    
+    heroImage.src = getRandomImageUrl(selectedDate.getDay());
     heroImage.id = "hero-image"
 
     heroArea.append(
@@ -678,11 +474,8 @@ function createReflectionCard(): HTMLElement {
     // const textarea = document.createElement("textarea");
     // textarea.placeholder = "How did today go?";
 
-    const textArea = createTextInputArea(
-        "...what did you achieve today?",
-        () => currentLog.reflection,
-        value => currentLog.reflection = value
-    );
+    const textArea = createTextInputArea("...what did you achieve today?", MetricTypeIds.Reflection);
+      
 
     card.append(
         title,
@@ -690,39 +483,6 @@ function createReflectionCard(): HTMLElement {
     );
 
     return card;
-}
-
-// =====================================================
-// Sleep
-// =====================================================
-
-function createSleepsSection(): HTMLElement {
-
-    const sleeps = document.createElement("div");
-
-    currentLog.sleeps.forEach((element) => {
-        const totalMinutes = Math.round(element.sleepHours * 60);
-        const hours = Math.floor(totalMinutes / 60);
-        const minutes = totalMinutes % 60;
-
-        const duration = document.createElement("div");
-        duration.textContent =
-            `Sleep: ${hours}h ${minutes}m` +
-            (element.sleepNotes ? ` • ${element.sleepNotes}` : "");
-
-        sleeps.append(duration);
-    });
-
-    const notes = document.createElement("textarea");
-    notes.placeholder = "How did you sleep?";
-
-    if (currentLog.sleeps.length == 0) {
-        const noSleeps = document.createElement("div");
-        noSleeps.textContent = "No Sleep Recorded."
-        sleeps.append(noSleeps)
-    }
-
-    return sleeps;
 }
 
 // =====================================================
@@ -753,10 +513,7 @@ function createMetricRow(metricName:string, metricValue:HTMLElement, metricIconC
     return row;
 }
 
-function createTextInputArea(
-    placeholderText:string, 
-    getter: () => string,
-    setter: (value: string) => void): HTMLElement {
+function createTextInputArea(placeholderText:string, metricTypeId: MetricTypeId) : HTMLElement {
     const container = document.createElement("div");
     container.className = "text-area";
 
@@ -768,6 +525,9 @@ function createTextInputArea(
     textArea.placeholder = placeholderText;
     container.append(textArea);
 
+    const getter:() => string = () => metricRepository.resolveMetric<string>(selectedDateKey, metricTypeId, "");
+    const setter:(value: string) => void = value => metricRepository.userEditsStore.Set(selectedDateKey, metricTypeId, value);
+
     bindTextArea(
         textArea,
         getter,
@@ -775,6 +535,10 @@ function createTextInputArea(
     );
 
     return container;
+}
+
+function getSelectedDayMetric<T>(metricTypeId:MetricTypeId, defaultValue:T) : T {
+    return metricRepository.resolveMetric<T>(selectedDateKey, metricTypeId, defaultValue);
 }
 
 function createNutritionCard(): HTMLElement {
@@ -789,16 +553,20 @@ function createNutritionCard(): HTMLElement {
     const nutritionlist = document.createElement("div");
     nutritionlist.className = "metric-list";
 
-    const caloriesElement =  createMetricValue(Math.round(currentLog.nutrition.calories).toString(), 'kcal');
+    const calories = Math.round(getSelectedDayMetric<number>(MetricTypeIds.Nutrition_Calories, 0));
+    const caloriesElement = createMetricValue(calories.toString(), 'kcal');
     const caloriesCard = createMetricRow("Calories", caloriesElement);
     
-    const proteinElement = createMetricValue(Math.round(currentLog.nutrition.protein).toString(), 'g');
+    const protein = Math.round(getSelectedDayMetric<number>(MetricTypeIds.Nutrition_Protein, 0));
+    const proteinElement = createMetricValue(protein.toString(), 'g');
     const proteinCard = createMetricRow("Protein", proteinElement);
     
-    const carbsElement = createMetricValue(Math.round(currentLog.nutrition.carbs).toString(), 'g');
+    const carbs = Math.round(getSelectedDayMetric<number>(MetricTypeIds.Nutrition_Carbs, 0));
+    const carbsElement = createMetricValue(carbs.toString(), 'g');
     const carbsCard = createMetricRow("Carbs", carbsElement);
 
-    const fatElement = createMetricValue(Math.round(currentLog.nutrition.fat).toString(), 'g');
+    const fat = Math.round(getSelectedDayMetric<number>(MetricTypeIds.Nutrition_Fat, 0));
+    const fatElement = createMetricValue(fat.toString(), 'g');
     const fatCard = createMetricRow("Fat", fatElement);
 
     nutritionlist.append(
@@ -810,8 +578,7 @@ function createNutritionCard(): HTMLElement {
 
     const textArea = createTextInputArea(
         "...how were your meals?",
-        () => currentLog.nutrition.nutritionNotes,
-        value => currentLog.nutrition.nutritionNotes = value
+        MetricTypeIds.Nutrition_Notes
     );
 
     card.append(
@@ -839,7 +606,9 @@ function createWorkoutCard(): HTMLElement {
 
     card.append(title);
 
-    if (currentLog.workouts.length === 0) {
+    const workoutRecords = getSelectedDayMetric<WorkoutLogData[]>(MetricTypeIds.Workouts, []);
+
+    if (workoutRecords.length === 0) {
         const empty = document.createElement("div");
         empty.textContent = "No activity logged for today";
         
@@ -852,7 +621,7 @@ function createWorkoutCard(): HTMLElement {
         return card;
     }
 
-    for (const workout of currentLog.workouts) {
+    for (const workout of workoutRecords) {
 
         const workoutCard = document.createElement("div");
 
@@ -880,11 +649,11 @@ function createWorkoutCard(): HTMLElement {
         const notes = document.createElement("textarea");
         notes.placeholder = "Any workout notes?";
 
-        bindTextArea(
-            notes,
-            () => currentLog.nutrition.nutritionNotes,
-            value => currentLog.nutrition.nutritionNotes = value
-        );
+        // bindTextArea(
+        //     notes,
+        //     () => currentLog.nutrition.nutritionNotes,
+        //     value => currentLog.nutrition.nutritionNotes = value
+        // );
 
         // const section = document.createElement("div");
         // section.className = "workout";
@@ -933,32 +702,32 @@ function createWorkoutCard(): HTMLElement {
 // Body
 // =====================================================
 
-function createBodyCard(): HTMLElement {
+// function createBodyCard(): HTMLElement {
 
-    const card = document.createElement("div");
-    card.className = "card";
+//     const card = document.createElement("div");
+//     card.className = "card";
 
-    const title = cardHeader(
-        "Body", 
-        `<path d="M8 2v4"/>
-        <path d="M16 2v4"/>
-        <rect x="3" y="4" width="18" height="18" rx="2"/>
-        <path d="M3 10h18"/>`);
+//     const title = cardHeader(
+//         "Body", 
+//         `<path d="M8 2v4"/>
+//         <path d="M16 2v4"/>
+//         <rect x="3" y="4" width="18" height="18" rx="2"/>
+//         <path d="M3 10h18"/>`);
 
-    const weight = document.createElement("div");
-    weight.textContent = `Weight: ${currentLog.weight}kg`;
+//     const weight = document.createElement("div");
+//     weight.textContent = `Weight: ${currentLog.weight}kg`;
 
-    const bodyFat = document.createElement("div");
-    bodyFat.textContent = `Body Fat: ${currentLog.bodyFatPercentage}%`;
+//     const bodyFat = document.createElement("div");
+//     bodyFat.textContent = `Body Fat: ${currentLog.bodyFatPercentage}%`;
 
-    card.append(
-        title,
-        weight,
-        bodyFat
-    );
+//     card.append(
+//         title,
+//         weight,
+//         bodyFat
+//     );
 
-    return card;
-}
+//     return card;
+// }
 
 // =====================================================
 // Recovery
@@ -1047,18 +816,23 @@ function createRecoveryCard(): HTMLElement {
     const recoveryGrid = document.createElement("div");
     recoveryGrid.className = "metric-grid-3";
 
-    const totalSleepHours = currentLog.sleeps.reduce(
+    // Sleep
+    const sleepRecords = getSelectedDayMetric<SleepLogData[]>(MetricTypeIds.Sleep, []);
+    const totalSleepHours = sleepRecords.reduce(
         (total, sleep) => total + sleep.sleepHours,
         0
     );
-
     const sleepText = createTimeSpanMetricElement(totalSleepHours);
     const sleepCard = createInnerCard("Total Sleep", sleepText, Icons.Sleep);
     
-    const restingHeartRateMetricElement = createMetricValue(currentLog.restingHeartRate.toString(), 'bpm');
+    // RHR
+    const restingHeartRate = getSelectedDayMetric<number>(MetricTypeIds.RestingHeartRate, 0);
+    const restingHeartRateMetricElement = createMetricValue(restingHeartRate.toString(), 'bpm');
     const restingHeartRateCard = createInnerCard("Resting HR", restingHeartRateMetricElement, Icons.RestingHeartRate);
     
-    const stepsMetricElement = createMetricValue(currentLog.steps.toLocaleString());
+    // Steps
+    const steps = getSelectedDayMetric<number>(MetricTypeIds.Steps, 0);
+    const stepsMetricElement = createMetricValue(steps.toLocaleString());
     const stepsCard = createInnerCard("Total Steps", stepsMetricElement, Icons.Steps);
 
     recoveryGrid.append(
@@ -1079,34 +853,34 @@ function createRecoveryCard(): HTMLElement {
 // Highlights
 // =====================================================
 
-function createHighlightsSection(): HTMLElement {
+// function createHighlightsSection(): HTMLElement {
 
-    const section = document.createElement("div");
+//     const section = document.createElement("div");
 
-    const title = document.createElement("h3");
-    title.textContent = "Highlights";
+//     const title = document.createElement("h3");
+//     title.textContent = "Highlights";
 
-    // const highlight1 = document.createElement("div");
-    // highlight1.className = "card";
-    // highlight1.textContent = "⭐ One week until your 1-year lifting anniversary";
+//     // const highlight1 = document.createElement("div");
+//     // highlight1.className = "card";
+//     // highlight1.textContent = "⭐ One week until your 1-year lifting anniversary";
 
-    // const highlight2 = document.createElement("div");
-    // highlight2.className = "card";
-    // highlight2.textContent = "🔥 4 workout streak";
+//     // const highlight2 = document.createElement("div");
+//     // highlight2.className = "card";
+//     // highlight2.textContent = "🔥 4 workout streak";
 
-    // const highlight3 = document.createElement("div");
-    // highlight3.className = "card";
-    // highlight3.textContent = "📉 Weight down 0.8kg this month";
+//     // const highlight3 = document.createElement("div");
+//     // highlight3.className = "card";
+//     // highlight3.textContent = "📉 Weight down 0.8kg this month";
 
-    // section.append(
-    //     title,
-    //     highlight1,
-    //     highlight2,
-    //     highlight3
-    // );
+//     // section.append(
+//     //     title,
+//     //     highlight1,
+//     //     highlight2,
+//     //     highlight3
+//     // );
 
-    return section;
-}
+//     return section;
+// }
 
 // =====================================================
 // Actions
@@ -1121,10 +895,16 @@ function createReportActionButtons(): HTMLElement {
     actionButtonRow.className = "action-buttons-row";
 
     const cloudSyncButton = createActionButton("Cloud Sync", Icons.CloudSync); 
-    cloudSyncButton.onclick = onDeviceSyncClicked;
+    cloudSyncButton.onclick = async () => { 
+        await cloudSync(selectedDate); 
+        rerender(); 
+    }
 
     const deviceSync = createActionButton("Device Sync", Icons.DeviceSync);
-    deviceSync.onclick = healthConnectSync;
+    deviceSync.onclick = async () => { 
+        await healthConnectSync(selectedDate); 
+        rerender(); 
+    }
 
     // const publishToServerButton = createActionButton("Publish", Icons.PublishToServer);
     // publishToServerButton.onclick = onPublishClicked;
@@ -1135,9 +915,12 @@ function createReportActionButtons(): HTMLElement {
     actionButtonRow.append(
         cloudSyncButton,
         deviceSync,
-        // publishToServerButton,
         copyTextButton
     );
+
+    if (!healthConnectAvailable) { 
+        deviceSync.remove();
+    }
 
     actionButtonsCard.append(actionButtonRow);
 

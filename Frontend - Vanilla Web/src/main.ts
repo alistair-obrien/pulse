@@ -38,37 +38,14 @@ screenContainer.id = "Screen"
 screenContainer.className = "screen";
 document.body.append(screenContainer);
 
-let healthConnectAvailable = false;
-
 // TEST
 
-import { HealthConnect } from "./platform/health-connect";
+import * as HealthConnect from "./platform/health-connect";
 
 await Error.mount(screenContainer);
 changeScreen(errorScreen());
 
-const available = await HealthConnect.isAvailable();
-console.log(JSON.stringify(available));
-
-if (available.available) {
-    const hasPerms = await HealthConnect.hasHealthConnectPermissions();
-    console.log(JSON.stringify(hasPerms));
-
-    if (!hasPerms.has_permissions) {
-        console.log("Requesting permissions...");
-
-        const result = await HealthConnect.requestHealthConnectPermissions();
-
-        console.log(JSON.stringify(result));
-
-        const after = await HealthConnect.hasHealthConnectPermissions();
-
-        console.log(JSON.stringify(after));
-    }
-
-    healthConnectAvailable = true;
-}
-
+await HealthConnect.initialize();
 
 changeScreen(splashScreen())
 

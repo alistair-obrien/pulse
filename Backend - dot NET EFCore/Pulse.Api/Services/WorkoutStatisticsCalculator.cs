@@ -5,14 +5,14 @@ namespace Pulse.Api.Services
 {
     public class WorkoutStatisticsCalculator
     {
-        internal int GetTotalPersonalRecordsCount(IEnumerable<WorkoutLog> workouts)
-        {
-            return workouts.Sum(x => x.PersonalRecords);
-        }
+        //internal int GetTotalPersonalRecordsCount(IEnumerable<WorkoutLog> workouts)
+        //{
+        //    return workouts.Sum(x => x.PersonalRecords);
+        //}
 
-        internal int GetTotalWorkoutVolume(IEnumerable<WorkoutLog> workouts)
-        {
-            return workouts.Sum(x => x.WorkoutVolume);
-        }
+        //internal int GetTotalWorkoutVolume(IEnumerable<WorkoutLog> workouts)
+        //{
+        //    return workouts.Sum(x => x.WorkoutVolume);
+        //}
     }
 }

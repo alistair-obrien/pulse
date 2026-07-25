@@ -69,6 +69,31 @@ interface ReadRestingHeartRateResult {
     averageRestingHeartRate: number;
 }
 
+export let healthConnectAvailable:boolean = false;
+
+export async function initialize() {
+
+    const response = await HealthConnect.isAvailable()
+    
+    if (response.available) {
+        const hasPerms = await HealthConnect.hasHealthConnectPermissions();
+        console.log(JSON.stringify(hasPerms));
+
+        if (!hasPerms.has_permissions) {
+            console.log("Requesting permissions...");
+
+            const result = await HealthConnect.requestHealthConnectPermissions();
+
+            console.log(JSON.stringify(result));
+
+            const after = await HealthConnect.hasHealthConnectPermissions();
+
+            console.log(JSON.stringify(after));
+        }
+
+        healthConnectAvailable = true;
+    }
+}
 
 interface HealthConnectPlugin {
     isAvailable() : Promise<AvailabilityResult>;

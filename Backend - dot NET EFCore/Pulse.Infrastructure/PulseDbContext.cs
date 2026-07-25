@@ -10,5 +10,5 @@ public class PulseDbContext : DbContext
     {
     }
 
-    public DbSet<DailyLog> DailyLogs => Set<DailyLog>();
+    public DbSet<Metric> Metrics => Set<Metric>();
 }
