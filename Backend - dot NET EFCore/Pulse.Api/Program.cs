@@ -10,23 +10,24 @@ builder.Services.AddControllers();
 // Adds the SQL DB
 builder.Services.AddDbContext<PulseDbContext>(options =>
 {
-    options.UseSqlServer(builder.Configuration.GetConnectionString("Default"));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("Pulse"));
 });
 
 // Cors for Local builds only
-if (builder.Environment.IsDevelopment())
+builder.Services.AddCors(options =>
 {
-    builder.Services.AddCors(options =>
+    options.AddPolicy("Default", policy =>
     {
-        options.AddPolicy("Frontend", policy =>
-        {
-            policy
-                .AllowAnyOrigin()
-                .AllowAnyHeader()
-                .AllowAnyMethod();
-        });
+        policy
+            .WithOrigins(
+                "https://localhost",
+                "http://localhost:5173",
+                "https://pulse-flow.app"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
     });
-}
+});
 
 // Workouts
 // Add this singleton. It does not require scoped services. Its just data transformation
@@ -42,7 +43,7 @@ builder.Services.AddHttpClient<HevyClient>();
 var app = builder.Build();
 
 app.UseHttpsRedirection();
-app.UseCors("Frontend");
+app.UseCors("Default");
 app.MapControllers();
 app.Run();
 

@@ -95,6 +95,9 @@ export async function healthConnectSync(date: Date) {
             );
         }
     }
+    catch(e) {
+        console.error("Device sync failed", e);
+    }
     finally {
         syncing = false;
     }

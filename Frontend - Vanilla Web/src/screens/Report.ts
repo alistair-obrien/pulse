@@ -3,10 +3,10 @@ const HERO_AREA_TOTAL_HEIGHT = 400;
 // The total visible height of the hero area. Used to set the size of the header
 const HERO_AREA_VISIBLE_HEIGHT = 280;
 
-// At what scroll distance the header should start fading out
-const HEADER_FADE_THRESHOLD = 50;
-// How much distance the fade takes to finish
-const HEADER_FADE_DIST = 10;
+// // At what scroll distance the header should start fading out
+// const HEADER_FADE_THRESHOLD = 50;
+// // How much distance the fade takes to finish
+// const HEADER_FADE_DIST = 10;
 
 // At what scroll distance the date should start fading out
 const DATE_FADE_THRESHOLD = 180;
@@ -16,7 +16,7 @@ const DATE_FADE_DIST = 20;
 import "../style.css"
 import "remixicon/fonts/remixicon.css";
 
-import * as api from "../api/API";
+// import * as api from "../api/API";
 import type { SleepLogData, WorkoutLogData } from "../models/DailyLog";
 import { ToDateKey } from "../models/DateKey";
 import { metricRepository } from "../models/MetricRepository";
@@ -27,6 +27,17 @@ import { healthConnectSync } from "./DeviceMetricsSync";
 import { healthConnectAvailable } from "../platform/health-connect";
 import { cloudSync } from "./CloudSync"
 
+import { App } from '@capacitor/app';
+
+App.addListener('resume', async () => {
+
+    if (healthConnectAvailable) { 
+        await healthConnectSync(selectedDate);
+    }
+
+    await cloudSync(selectedDate);
+});
+
 // =====================================================
 // Helpers
 // =====================================================
@@ -35,31 +46,31 @@ export interface UtcDateRange {
     endUtc: string;
 }
 
-let syncTimer: number | null = null;
-let syncing = false;
+// let syncTimer: number | null = null;
+// let syncing = false;
 
-const SYNC_INTERVAL_MS = 10_000;
+// const SYNC_INTERVAL_MS = 10_000;
 
-function startAutoSync() {
-    stopAutoSync();
+// function startAutoSync() {
+//     stopAutoSync();
 
-    const tick = async () => {
-        if (isToday(selectedDate)) {
-            await healthConnectSync(selectedDate);
-        }
+//     const tick = async () => {
+//         if (isToday(selectedDate)) {
+//             await healthConnectSync(selectedDate);
+//         }
 
-        syncTimer = window.setTimeout(tick, SYNC_INTERVAL_MS);
-    };
+//         syncTimer = window.setTimeout(tick, SYNC_INTERVAL_MS);
+//     };
 
-    syncTimer = window.setTimeout(tick, SYNC_INTERVAL_MS);
-}
+//     syncTimer = window.setTimeout(tick, SYNC_INTERVAL_MS);
+// }
 
-function stopAutoSync() {
-    if (syncTimer !== null) {
-        clearTimeout(syncTimer);
-        syncTimer = null;
-    }
-}
+// function stopAutoSync() {
+//     if (syncTimer !== null) {
+//         clearTimeout(syncTimer);
+//         syncTimer = null;
+//     }
+// }
 
 function enableDaySwipe(element: HTMLElement) {
     let startX = 0;
@@ -155,7 +166,7 @@ async function loadDate(date: Date) {
     selectedDateKey = ToDateKey(selectedDate);
 
     if (healthConnectAvailable) await healthConnectSync(date);
-    await cloudSync(date);
+    void cloudSync(date);
 }
 
 let animating:boolean  = false
@@ -213,10 +224,10 @@ function waitForAnimation(element: HTMLElement): Promise<void> {
 // =====================================================
 // Actions
 // =====================================================
-async function onPublishClicked() {
-    await cloudSync(selectedDate);
-    await api.publish(selectedDateKey);
-}
+// async function onPublishClicked() {
+//     await cloudSync(selectedDate);
+//     await api.publish(selectedDateKey);
+// }
 
 async function onCopyTextClicked() {
     //TODO: 
@@ -943,7 +954,7 @@ function bindTextArea(
 }
 
 // Maybe later a cooler animation
-async function myDayPressed(this: GlobalEventHandlers, ev: PointerEvent) {
+async function myDayPressed(this: GlobalEventHandlers) {
     if (!isToday(selectedDate))
         await transitionToDate(new Date(), "left")
 }

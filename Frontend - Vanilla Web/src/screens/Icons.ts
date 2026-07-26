@@ -1,5 +1,8 @@
 // https://remixicon.com/
 export const Icons = {
+
+    AppLogo: "ri-seedling-fill",
+
     ListItem: "solid-circle",
 
     // Action Buttons

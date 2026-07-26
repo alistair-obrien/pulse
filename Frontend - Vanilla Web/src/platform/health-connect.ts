@@ -134,19 +134,19 @@ class HealthConnectWeb implements HealthConnectPlugin {
     }
     
     readSteps(options:ReadStepsOptions): Promise<ReadStepsResult> {
-        throw new Error("Method not implemented.");
+        throw new Error(`Method not implemented ${options}.`);
     }
     
     readSleep(options: ReadSleepOptions): Promise<ReadSleepResult> {
-        throw new Error("Method not implemented.");
+        throw new Error(`Method not implemented ${options}.`);
     }
 
     readNutrition(options: ReadNutritionOptions): Promise<ReadNutritionResult> {
-        throw new Error("Method not implemented.");
+        throw new Error(`Method not implemented ${options}.`);
     }
 
     readRestingHeartRate(options: ReadRestingHeartRateOptions): Promise<ReadRestingHeartRateResult> {
-        throw new Error("Method not implemented.");
+        throw new Error(`Method not implemented ${options}.`);
     }
 }
 

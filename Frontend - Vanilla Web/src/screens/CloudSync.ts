@@ -3,12 +3,19 @@ import { ToDateKey, type DateKey } from "../models/DateKey";
 import { metricRepository } from "../models/MetricRepository";
 import { metricsRegistry } from "../models/MetricRegistry";
 
-export async function cloudSync(date: Date) {
+export async function cloudSync(date: Date) : Promise<boolean> {
     let dateKey = ToDateKey(date);
 
-    await uploadMetrics(dateKey);
-    metricRepository.userEditsStore.Clear(dateKey); // Clear user edits
-    await downloadMetrics(dateKey);
+    try {
+        await uploadMetrics(dateKey);
+        metricRepository.userEditsStore.Clear(dateKey); // Clear user edits
+        await downloadMetrics(dateKey);
+
+        return true;
+    } catch (e) {
+        console.log("Cloud sync failed", e);
+        return false;
+    }
 }
 
 async function downloadMetrics(dateKey: DateKey) {
