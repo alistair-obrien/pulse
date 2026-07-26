@@ -3,8 +3,7 @@ import "remixicon/fonts/remixicon.css";
 import { Device } from '@capacitor/device';
 const ENVIRONMENT: string = import.meta.env.VITE_ENVIRONMENT;
 const API_BASE: string = import.meta.env.VITE_API_URL;
-
-
+const SPLASH_ENABLED: boolean = import.meta.env.VITE_SPLASH_ENABLED === "true";
 // import * as Error from "./screens/Error"
 // let cachedErrorScreen:HTMLElement|null = null;
 // function errorScreen():HTMLElement { return cachedErrorScreen ??= Error.render() } 
@@ -55,8 +54,10 @@ document.body.append(screenContainer);
 
 import * as HealthConnect from "./platform/health-connect";
 
-const splash = splashScreen();
-document.body.append(splash);
+if (SPLASH_ENABLED) {
+    const splash = splashScreen();
+    document.body.append(splash);
+}
 
 // await Error.mount(screenContainer);
 await HealthConnect.initialize();
@@ -64,7 +65,9 @@ await Report.mount(screenContainer);
 
 changeScreen(reportScreen())
 
-await Splash.finish();
+if (SPLASH_ENABLED) {
+    await Splash.finish();
+}
 
 function changeScreen(newScreen:HTMLElement) {
     screenContainer.replaceChildren(newScreen)
