@@ -46,15 +46,11 @@ export class MetricRecordStore {
 
     Get<T>(dateKey: DateKey, metricTypeId: MetricTypeId): MetricRecord<T> | undefined {
 
-        console.log("GET", this.storagePrefix, dateKey, metricTypeId);
-
         this.EnsureLoaded(dateKey);
         return this.metricRecordsByDate[dateKey]?.[metricTypeId] as MetricRecord<T> | undefined;
     }
 
     Set(dateKey: DateKey, metricTypeId: MetricTypeId, data: any) {
-
-        console.log("SET", this.storagePrefix, dateKey, metricTypeId, JSON.stringify(data));
         
         const record = new MetricRecord(metricTypeId, data);
 
@@ -94,8 +90,6 @@ export class MetricRecordStore {
     }
 
     Clear(dateKey:DateKey) {
-
-        console.log("CLEAR ", dateKey);
 
         this.loadedDates.delete(dateKey);
         delete this.metricRecordsByDate[dateKey];

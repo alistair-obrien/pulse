@@ -4,6 +4,7 @@ import { metricRepository } from "../models/MetricRepository";
 import { MetricTypeIds } from "../models/MetricRegistry";
 import { HealthConnect, healthConnectAvailable } from "../platform/health-connect";
 import { getLocalDayUtcRange } from "./DateTime";
+import { Device } from '@capacitor/device';
 
 type HealthConnectData = {
     steps: Awaited<ReturnType<typeof HealthConnect.readSteps>>;
@@ -51,6 +52,34 @@ const IMPORTERS = [
 ] as const;
 
 let syncing = false;
+
+const device = await (await Device.getInfo()).platform;
+
+export function deviceSyncAvailable() : boolean {
+    if (device == "android") {
+        return healthConnectAvailable;
+    }
+    else if (device == "ios") {
+        return false;
+    }
+
+    return false;
+}
+
+export async function deviceSync(date: Date) {
+    
+    if (device == "android") {
+        await healthConnectSync(date);
+    }
+    else if (device == "ios") {
+        await healthKitSync(date); //TODO
+    }
+}
+
+export async function healthKitSync(date: Date) {
+    void date;
+    console.log("Health Kit not yet implemented.");
+}
 
 export async function healthConnectSync(date: Date) {
 

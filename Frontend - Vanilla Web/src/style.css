@@ -357,6 +357,10 @@ h3 {
     color: var(--accent-secondary-light);
 }
 
+.action-button:hover i {
+    color: var(--accent-secondary-hover);
+}
+
 .action-button.selected i {
     color: var(--accent-secondary);
 }

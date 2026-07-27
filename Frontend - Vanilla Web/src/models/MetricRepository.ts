@@ -1,12 +1,26 @@
 import type { DateKey } from "./DateKey";
 import { MetricRecordStore } from "./MetricRecordStore";
 import { metricsRegistry, type MetricTypeId } from "./MetricRegistry";
+const ENV = import.meta.env.VITE_ENVIRONMENT;
+
+const storagePrefix = (() => {
+    switch (ENV) {
+        case "Development":
+            return "pulse_dev";
+        case "Production":
+            return "pulse";
+        case "Local":
+            return "pulse_local";
+        default:
+            throw new Error(`Unknown environment: ${ENV}`);
+    }
+})();
 
 class MetricRepository {
 
-    readonly userEditsStore = new MetricRecordStore("pulse:user:");
-    readonly deviceCacheStore = new MetricRecordStore("pulse:device:");
-    readonly cloudCacheStore = new MetricRecordStore("pulse:cloud:");
+    readonly userEditsStore = new MetricRecordStore(`${storagePrefix}:user:`);
+    readonly deviceCacheStore = new MetricRecordStore(`${storagePrefix}:device:`);
+    readonly cloudCacheStore = new MetricRecordStore(`${storagePrefix}:cloud:`);
 
     constructor() {
         const today = new Date();

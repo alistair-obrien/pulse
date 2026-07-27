@@ -23,16 +23,15 @@ import { metricRepository } from "../models/MetricRepository";
 import { getImageUrl as getRandomImageUrl } from "./RandomImage";
 import { Icons } from "./Icons";
 import { MetricTypeIds, type MetricTypeId } from "../models/MetricRegistry";
-import { healthConnectSync } from "./DeviceMetricsSync";
-import { healthConnectAvailable } from "../platform/health-connect";
+import { deviceSync, deviceSyncAvailable } from "./DeviceMetricsSync";
 import { cloudSync } from "./CloudSync"
 
 import { App } from '@capacitor/app';
 
 App.addListener('resume', async () => {
 
-    if (healthConnectAvailable) { 
-        await healthConnectSync(selectedDate);
+    if (deviceSyncAvailable()) { 
+        await deviceSync(selectedDate);
     }
 
     await cloudSync(selectedDate);
@@ -165,7 +164,7 @@ async function loadDate(date: Date) {
     selectedDate = date;
     selectedDateKey = ToDateKey(selectedDate);
 
-    if (healthConnectAvailable) await healthConnectSync(date);
+    if (deviceSyncAvailable()) { await deviceSync(date); }
     void cloudSync(date);
 }
 
@@ -228,9 +227,45 @@ function waitForAnimation(element: HTMLElement): Promise<void> {
 //     await cloudSync(selectedDate);
 //     await api.publish(selectedDateKey);
 // }
+import { Toast } from "@capacitor/toast";
 
+import { Clipboard } from "@capacitor/clipboard";
 async function onCopyTextClicked() {
-    //TODO: 
+
+    const sleepRecords = getSelectedDayMetric<SleepLogData[]>(MetricTypeIds.Sleep);
+    const totalSleepHours = sleepRecords.reduce(
+        (total, sleep) => total + sleep.sleepHours,
+        0
+    );
+    const sleepText = getHoursAndMinutesStrFromTime(totalSleepHours);
+
+    const calories = Math.round(getSelectedDayMetric<number>(MetricTypeIds.Nutrition_Calories));
+    const protein = Math.round(getSelectedDayMetric<number>(MetricTypeIds.Nutrition_Protein));
+    const carbs = Math.round(getSelectedDayMetric<number>(MetricTypeIds.Nutrition_Carbs));
+    const fat = Math.round(getSelectedDayMetric<number>(MetricTypeIds.Nutrition_Fat));
+    const nutritionNotes = getSelectedDayMetric<string>(MetricTypeIds.Nutrition_Notes);
+
+    const reflectionNotes = getSelectedDayMetric<string>(MetricTypeIds.Reflection);
+
+    let dailyJournaltext = [];
+
+    // https://hevy.com/workout/FNNqHdwBvc0
+    dailyJournaltext.push("😪 Sleep");
+    dailyJournaltext.push(sleepText);             // 7h 30m
+    dailyJournaltext.push(``);
+    dailyJournaltext.push(`🥩 Food`);
+    dailyJournaltext.push(`${calories} calories`) // 2584 calories
+    dailyJournaltext.push(`${protein}g protein`)  // 184g protein
+    dailyJournaltext.push(`${carbs}g carbs`)      // 289g carbs
+    dailyJournaltext.push(`${fat}g fat`)          // 77g fat
+    nutritionNotes && dailyJournaltext.push(nutritionNotes);
+    dailyJournaltext.push(``);
+    dailyJournaltext.push(`💪 Workout`);
+    reflectionNotes && dailyJournaltext.push(reflectionNotes);
+
+    await Clipboard.write({
+        string: dailyJournaltext.join('\n')
+    });
 }
 
 // =====================================================
@@ -410,7 +445,6 @@ function createHeader(contentRoot:HTMLElement): HTMLElement {
 
     const dateRow = createDateRow();
     header.append(dateRow);
-
 
     // If we need a top header again we can use this to smooth fade it out when scrolling
     // contentRoot.addEventListener("scroll", () => {
@@ -775,6 +809,26 @@ function createInnerCard(metricName:string, metricValue:HTMLElement, metricIconC
 
 //01:51:00
 //13.933333333333334
+// -> 3h 14m
+function getHoursAndMinutesStrFromTime(time: number | string): string {
+
+    let hours: number;
+    let minutes: number;
+
+    if (typeof time === "number") {
+        hours = Math.floor(time);
+        minutes = Math.round((time - hours) * 60);
+    } else {
+        const [h, m] = time.split(":").map(Number);
+        hours = h;
+        minutes = m;
+    }
+
+    return `${hours}h ${minutes}m`;
+}
+
+//01:51:00
+//13.933333333333334
 function createTimeSpanMetricElement(time: number | string): HTMLElement {
     const element = document.createElement("div");
     element.className = "metric-time-span";
@@ -904,36 +958,40 @@ function createReportActionButtons(): HTMLElement {
 
     const actionButtonRow = document.createElement("div");
     actionButtonRow.className = "action-buttons-row";
+    actionButtonsCard.append(actionButtonRow);
 
     const cloudSyncButton = createActionButton("Cloud Sync", Icons.CloudSync); 
     cloudSyncButton.onclick = async () => { 
-        await cloudSync(selectedDate); 
-        rerender(); 
+        await cloudSync(selectedDate);
+        rerender();
+        await Toast.show({
+            text: "Synced with Cloud!",
+            duration: "short",
+            position: "bottom",
+        });
     }
+    actionButtonRow.append(cloudSyncButton);
 
-    const deviceSync = createActionButton("Device Sync", Icons.DeviceSync);
-    deviceSync.onclick = async () => { 
-        await healthConnectSync(selectedDate); 
-        rerender(); 
+    if (deviceSyncAvailable()) {
+        const deviceSyncButton = createActionButton("Device Sync", Icons.DeviceSync);
+        deviceSyncButton.onclick = async () => { 
+            await deviceSync(selectedDate); 
+            rerender(); 
+            await Toast.show({
+            text: "Synced with Device!",
+            duration: "short",
+            position: "bottom",
+        });
+        }
+        actionButtonRow.append(deviceSyncButton);
     }
-
-    // const publishToServerButton = createActionButton("Publish", Icons.PublishToServer);
-    // publishToServerButton.onclick = onPublishClicked;
-
+    
     const copyTextButton = createActionButton("Copy Text", Icons.CopyText);
     copyTextButton.onclick = onCopyTextClicked;
-
-    actionButtonRow.append(
-        cloudSyncButton,
-        deviceSync,
-        copyTextButton
-    );
-
-    if (!healthConnectAvailable) { 
-        deviceSync.remove();
-    }
-
-    actionButtonsCard.append(actionButtonRow);
+    actionButtonRow.append(copyTextButton);
+    
+    // const publishToServerButton = createActionButton("Publish", Icons.PublishToServer);
+    // publishToServerButton.onclick = onPublishClicked;
 
     return actionButtonsCard;
 }
