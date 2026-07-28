@@ -18,17 +18,10 @@ $ErrorActionPreference = "Stop"
 # Create Release
 # ============================================================================
 
-Write-Host ">>> Creating Release <<<"
+. "$PSScriptRoot/process-start-header.ps1" -Title "Uploading $Environment $Application"
 
 $Release = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd-HHmmss")
 $RemoteRelease = "$($Config.ReleaseRoot)/$Release"
-
-Write-Host ""
-Write-Host "Environment: $Environment"
-Write-Host "Creating release..."
-Write-Host $RemoteRelease
-
-Write-Host "ssh $($Config.Server)"
 
 ssh $Config.Server "sudo mkdir -p '$($Config.ReleaseRoot)'"
 ssh $Config.Server "sudo chown -R ubuntu:ubuntu '$($Config.ReleaseRoot)'"
@@ -41,8 +34,6 @@ if ($LASTEXITCODE -ne 0)
 # ============================================================================
 # Upload
 # ============================================================================
-
-Write-Host ">>> Uploading <<<"
 
 $Source = "$PSScriptRoot/../$($Config.PublishRoot)"
 $Destination = "$($Config.Server):$RemoteRelease"
@@ -59,7 +50,8 @@ if ($LASTEXITCODE -ne 0)
     throw "!!! Upload failed."
 }
 
-Write-Host ">>> Release uploaded successfully. <<<"
-Write-Host "Release: $Release"
+. "$PSScriptRoot/process-end-header.ps1" -Title "Uploaded $Environment $Application"
+
+
 
 return $Release

@@ -42,10 +42,12 @@ builder.Services.AddHttpClient<HevyClient>();
 
 var migrate = args.Contains("--migrate", StringComparer.OrdinalIgnoreCase);
 
-Console.WriteLine($"Migrate: {migrate}");
 // Migration Mode
 if (migrate)
 {
+    Console.WriteLine($"Migration Starting");
+    Console.WriteLine($"Environment: {builder.Environment.EnvironmentName}");
+
     var services = builder.Services.BuildServiceProvider();
 
     using var scope = services.CreateScope();
@@ -53,9 +55,6 @@ if (migrate)
     var db = scope.ServiceProvider.GetRequiredService<PulseDbContext>();
 
     await db.Database.MigrateAsync();
-
-    Console.WriteLine($"Environment: {builder.Environment.EnvironmentName}");
-    Console.WriteLine($"Connection: {db.Database.GetConnectionString()}");
 
     var applied = await db.Database.GetAppliedMigrationsAsync();
     var pending = await db.Database.GetPendingMigrationsAsync();

@@ -10,7 +10,8 @@ $Config = Get-EnvironmentConfig -Environment $Environment -Application Api
 
 $ErrorActionPreference = "Stop"
 
-Write-Host ">>> Deploying $Environment Server <<<"
+. "$PSScriptRoot/process-start-header.ps1" -Title "Deploying $Environment Server"
+
 & "$PSScriptRoot/build-server.ps1" -Environment $Environment
 
 if ($LASTEXITCODE -ne 0)
@@ -25,7 +26,7 @@ if ($LASTEXITCODE -ne 0)
     throw "!!! Upload failed."
 }
 
- & "$PSScriptRoot/migrate-database.ps1" -Environment $Environment -Release $Release
+& "$PSScriptRoot/migrate-database.ps1" -Environment $Environment -Release $Release
 
 if ($LASTEXITCODE -ne 0)
 {
@@ -41,6 +42,6 @@ if ($LASTEXITCODE -ne 0)
 
 & "$PSScriptRoot/restart-server.ps1" -Environment $Environment
 
+& "$PSScriptRoot/log-server.ps1" -Environment $Environment
 
-Write-Host ""
-Write-Host ">>> Deployed $Environment Server <<<"
+. "$PSScriptRoot/process-end-header.ps1" -Title "Deployed $Environment Server"

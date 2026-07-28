@@ -21,5 +21,5 @@ export function setMetric<T>(dateKey:DateKey, metricTypeId:MetricTypeId, value:T
 export function getMetrics(
     dateKey: DateKey
 ): Promise<Partial<Record<MetricTypeId, unknown>> | null> {
-    return get(`/api/metrics/metrics/${dateKey}`);
+    return get(`/api/metrics/${dateKey}`);
 }

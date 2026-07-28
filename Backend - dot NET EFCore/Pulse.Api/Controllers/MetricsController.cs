@@ -52,9 +52,11 @@ namespace Pulse.Api.Controllers
             return Ok(metric.JsonValue);
         }
 
-        [HttpGet("metrics/{date}")]
+        [HttpGet("{date}")]
         public async Task<IActionResult> Get(DateOnly date)
         {
+            Console.WriteLine("Get " + date.ToString());
+
             var metrics = await _db.Metrics
                 .Where(m => m.Date == date)
                 .ToListAsync();

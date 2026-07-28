@@ -10,7 +10,8 @@ $Config = Get-EnvironmentConfig -Environment $Environment -Application Web
 
 $ErrorActionPreference = "Stop"
 
-Write-Host ">>> Deploying $Environment Web Client <<<"
+. "$PSScriptRoot/process-start-header.ps1" -Title "Deploying $Environment Web Client"
+
 & "$PSScriptRoot/build-webclient.ps1" -Environment $Environment
 
 if ($LASTEXITCODE -ne 0)
@@ -32,5 +33,4 @@ if ($LASTEXITCODE -ne 0)
     throw "!!! Activation failed."
 }
 
-Write-Host ""
-Write-Host ">>> Deployed $Environment Web Client <<<"
+. "$PSScriptRoot/process-end-header.ps1" -Title "Deployed $Environment Web Client"

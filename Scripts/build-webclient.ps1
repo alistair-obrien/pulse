@@ -10,7 +10,8 @@ $Config = Get-EnvironmentConfig -Environment $Environment -Application Web
 
 $ErrorActionPreference = "Stop"
 
-Write-Host ">>> Building Pulse Web ($Environment) <<<"
+. "$PSScriptRoot/process-start-header.ps1" -Title "Building Pulse $Environment Web Client"
+
 
 $ProjectRoot = Resolve-Path "$PSScriptRoot/../Frontend - Vanilla Web"
 
@@ -42,6 +43,4 @@ finally
     Pop-Location
 }
 
-Write-Host ""
-Write-Host "Web publish completed."
-Write-Host "Environment: $Environment"
+. "$PSScriptRoot/process-end-header.ps1" -Title "Pulse $Environment Web Client Build Completed"

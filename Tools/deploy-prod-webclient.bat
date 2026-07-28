@@ -1,4 +1,7 @@
 @echo off
+
+title Deploy Production Web Client
+
 setlocal
 
 set "Environment=Production"

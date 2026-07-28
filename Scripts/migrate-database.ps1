@@ -11,7 +11,7 @@ param(
 
 $Config = Get-EnvironmentConfig -Environment $Environment -Application Api
 
-Write-Host ">>> Migrating ($Environment) Database <<<"
+. "$PSScriptRoot/process-start-header.ps1" -Title "Migrating ($Environment) Database"
 
 ssh $Config.Server sudo "/usr/local/bin/pulse-migrate $Environment $Release"
 
@@ -19,3 +19,5 @@ if ($LASTEXITCODE -ne 0)
 {
     throw "Migration failed."
 }
+
+. "$PSScriptRoot/process-end-header.ps1" -Title "Migrated ($Environment) Database"

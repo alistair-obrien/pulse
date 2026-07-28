@@ -1,4 +1,7 @@
 @echo off
+
+title Deploy Development Web Client
+
 setlocal
 
 set "Environment=Development"
