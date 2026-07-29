@@ -1,0 +1,30 @@
+.action-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+
+    width: 100%;
+}
+
+.action-button i {
+    font-size: 24px;
+    color: var(--accent-secondary-light);
+}
+
+.action-button:hover i {
+    color: var(--accent-secondary-hover);
+}
+
+.action-button.selected i {
+    color: var(--accent-secondary);
+}
+
+.action-button span {
+    font-size: smaller;
+}

@@ -9,7 +9,7 @@ const storagePrefix = (() => {
             return "pulse_dev";
         case "Production":
             return "pulse";
-        case "Local":
+        case "LocalHost":
             return "pulse_local";
         default:
             throw new Error(`Unknown environment: ${ENV}`);

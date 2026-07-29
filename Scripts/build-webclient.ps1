@@ -6,11 +6,11 @@ param(
 
 . "$PSScriptRoot/config.ps1"
 
-$Config = Get-EnvironmentConfig -Environment $Environment -Application Web
+$Config = Get-EnvironmentConfig -Environment ($Environment) -Application Web
 
 $ErrorActionPreference = "Stop"
 
-. "$PSScriptRoot/process-start-header.ps1" -Title "Building Pulse $Environment Web Client"
+. "$PSScriptRoot/process-start-header.ps1" -Title "Building Pulse Web Client" -Environment $Environment 
 
 
 $ProjectRoot = Resolve-Path "$PSScriptRoot/../Frontend - Vanilla Web"
@@ -43,4 +43,4 @@ finally
     Pop-Location
 }
 
-. "$PSScriptRoot/process-end-header.ps1" -Title "Pulse $Environment Web Client Build Completed"
+. "$PSScriptRoot/process-end-header.ps1" -Title "Web Client Built "

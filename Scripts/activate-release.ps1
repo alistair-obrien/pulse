@@ -20,10 +20,7 @@ $ErrorActionPreference = "Stop"
 $Current = $Config.CurrentRoot
 $Target = "$($Config.ReleaseRoot)/$Release"
 
-Write-Host ""
-Write-Host ">>> Activating Release $Target <<<"
-
-. "$PSScriptRoot/process-start-header.ps1" -Title "Activating $Environment $API Release $Target $Release"
+. "$PSScriptRoot/process-start-header.ps1" -Title "Activating $API Release $Target $Release" -Environment $Environment
 
 ssh $Config.Server "ln -sfn '$Target' '$Current'"
 
@@ -32,4 +29,4 @@ if ($LASTEXITCODE -ne 0)
     throw "Failed to activate release."
 }
 
-. "$PSScriptRoot/process-end-header.ps1" -Title "Activated $Environment $API Release $Target $Release"
+. "$PSScriptRoot/process-end-header.ps1" -Title "$API Release $Target $Release Activated"

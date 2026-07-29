@@ -1,0 +1,17 @@
+/* >>> FOOTER <<< */
+.footer {
+    background-color: var(--elevated-card);
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    z-index: 1; /* HACK */
+}
+
+.footer-inner {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 5px 20px;
+}

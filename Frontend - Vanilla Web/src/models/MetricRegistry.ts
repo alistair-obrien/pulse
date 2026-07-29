@@ -1,4 +1,4 @@
-import type { SleepLogData, WorkoutLogData } from "./DailyLog";
+import type { SleepLogData, WorkoutLogData } from "./Models";
 
 export type MetricTypeId = string;
 

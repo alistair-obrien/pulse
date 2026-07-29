@@ -2,8 +2,12 @@ import * as api from "../api/API";
 import { ToDateKey, type DateKey } from "../models/DateKey";
 import { metricRepository } from "../models/MetricRepository";
 import { metricsRegistry } from "../models/MetricRegistry";
+import * as Auth from "../api/Auth"
 
-export async function cloudSync(date: Date) : Promise<boolean> {
+export function isAvailable() {
+    return Auth.isLoggedIn();
+}
+export async function sync(date: Date) : Promise<boolean> {
     let dateKey = ToDateKey(date);
 
     try {
@@ -46,3 +50,5 @@ async function uploadMetrics(dateKey: DateKey) {
         })
     );
 }
+
+

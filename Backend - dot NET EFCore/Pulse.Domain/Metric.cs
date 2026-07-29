@@ -2,6 +2,8 @@
 
 public class Metric
 {
+    public string? UserId { get; set; } = null!; // Temp nullable while migrating
+
     public int Id { get; set; }
 
     public DateOnly Date { get; set; }

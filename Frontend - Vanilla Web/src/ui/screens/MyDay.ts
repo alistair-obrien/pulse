@@ -13,29 +13,30 @@ const DATE_FADE_THRESHOLD = 180;
 // How much distance the fade takes to finish
 const DATE_FADE_DIST = 20;
 
-import "../style.css"
+import "../styles/main.css"
 import "remixicon/fonts/remixicon.css";
 
 // import * as api from "../api/API";
-import type { SleepLogData, WorkoutLogData } from "../models/DailyLog";
-import { ToDateKey } from "../models/DateKey";
-import { metricRepository } from "../models/MetricRepository";
-import { getImageUrl as getRandomImageUrl } from "./RandomImage";
-import { Icons } from "./Icons";
-import { MetricTypeIds, type MetricTypeId } from "../models/MetricRegistry";
-import { deviceSync, deviceSyncAvailable } from "./DeviceMetricsSync";
-import { cloudSync } from "./CloudSync"
+import { WorkoutTypes, type SleepLogData, type WorkoutLogData, type WorkoutType } from "../../models/Models";
+import { ToDateKey } from "../../models/DateKey";
+import { metricRepository } from "../../models/MetricRepository";
+import { getImageUrl as getRandomImageUrl } from "../../controllers/RandomImage";
+import { Icons } from "../components/Icons";
+import { MetricTypeIds, type MetricTypeId } from "../../models/MetricRegistry";
+import * as DeviceSync from "../../controllers/DeviceMetricsSync";
+import * as CloudSync from "../../controllers/CloudSync"
+import * as ExternalAPISync from "../../controllers/ExternalAPISync"
 
-import { App } from '@capacitor/app';
+// import { App } from '@capacitor/app';
 
-App.addListener('resume', async () => {
+// App.addListener('resume', async () => {
 
-    if (deviceSyncAvailable()) { 
-        await deviceSync(selectedDate);
-    }
+//     if (DeviceSync.isAvailable()) { 
+//         await DeviceSync.sync(selectedDate);
+//     }
 
-    await cloudSync(selectedDate);
-});
+//     await CloudSync.cloudSync(selectedDate);
+// });
 
 // =====================================================
 // Helpers
@@ -140,32 +141,13 @@ export function rerender() {
     root.replaceChildren(render());
 }
 
-function isFuture(date: Date): boolean {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const check = new Date(date);
-    check.setHours(0, 0, 0, 0);
-
-    return check > today;
-}
-
-function isToday(date: Date): boolean {
-    const today = new Date();
-
-    return (
-        date.getFullYear() === today.getFullYear() &&
-        date.getMonth() === today.getMonth() &&
-        date.getDate() === today.getDate()
-    );
-}
-
 async function loadDate(date: Date) {
     selectedDate = date;
     selectedDateKey = ToDateKey(selectedDate);
 
-    if (deviceSyncAvailable()) { await deviceSync(date); }
-    void cloudSync(date);
+    if (DeviceSync.isAvailable()) { await DeviceSync.sync(date); }
+    if (CloudSync.isAvailable()) { await CloudSync.sync(date); } 
+    void ExternalAPISync.sync(date);
 }
 
 let animating:boolean  = false
@@ -230,6 +212,9 @@ function waitForAnimation(element: HTMLElement): Promise<void> {
 import { Toast } from "@capacitor/toast";
 
 import { Clipboard } from "@capacitor/clipboard";
+import { ActionButton } from "../components/ActionButton";
+import { Card } from "../components/Card";
+import { isFuture, isToday } from "../../controllers/DateTime";
 async function onCopyTextClicked() {
 
     const sleepRecords = getSelectedDayMetric<SleepLogData[]>(MetricTypeIds.Sleep);
@@ -292,17 +277,17 @@ export function render(): HTMLElement {
         createReflectionCard(),
         createRecoveryCard(),
         createNutritionCard(),
-        createWorkoutCard(),
+        createActivityCard(),
         createReportActionButtons(),
     );
 
-    const footer = createFooter();
+    // const footer = createFooter();
 
     screenContainer.append(
         header,
         heroArea,
         content,
-        footer,
+        // footer,
     );
 
     return screenContainer;
@@ -423,21 +408,6 @@ function createDateRow(): HTMLElement {
     return dateRow;
 }
 
-function createActionButton(name: string, iconClass: string): HTMLButtonElement {
-    const button = document.createElement("button");
-    button.className = "action-button";
-
-    const icon = document.createElement("i");
-    icon.className = iconClass;
-
-    const label = document.createElement("span");
-    label.textContent = name;
-
-    button.append(icon, label);
-
-    return button;
-}
-
 function createHeader(contentRoot:HTMLElement): HTMLElement {
 
     const header = document.createElement("div");
@@ -469,70 +439,121 @@ function createHeader(contentRoot:HTMLElement): HTMLElement {
     return header;
 }
 
-function createFooter(): HTMLElement {
-    const section = document.createElement("div");
-    section.className = "footer";
-
-    const footerInner = document.createElement("div");
-    footerInner.className = "footer-inner";
-
-    const friendsButton = createActionButton("Friends", Icons.Friends);
-
-    const myDayButton = createActionButton("My Day", Icons.MyDay);
-    myDayButton.onclick = myDayPressed;
-    myDayButton.classList.add("selected")
-
-    const meButton = createActionButton("Me", Icons.Me);
-
-    footerInner.append(
-        friendsButton,
-        myDayButton,
-        meButton,
-    );
-
-    section.append(footerInner);
-
-    return section;
-}
-
 // =====================================================
 // Reflection
 // =====================================================
 
 function createReflectionCard(): HTMLElement {
 
-    const card = document.createElement("div");
-    card.className = "card"
-    // card.className = "card image-card";
-    // card.style.setProperty(
-    //     "--reflection-image",
-    //     `url(${getImageUrl()})`
-    // );    
-    
-    // card.style.minHeight = '300px';
+    const card = new Card("Reflections", Icons.Reflection); 
 
-    const title = cardHeader(
-        "Reflections", 
-        `<path d="M4.7134 7.12811L4.46682 7.69379C4.28637 8.10792 3.71357 8.10792 3.53312 7.69379L3.28656 7.12811C2.84706 6.11947 2.05545 5.31641 1.06767 4.87708L0.308047 4.53922C-0.102682 4.35653 -0.102682 3.75881 0.308047 3.57612L1.0252 3.25714C2.03838 2.80651 2.84417 1.97373 3.27612 0.930828L3.52932 0.319534C3.70578 -0.106511 4.29417 -0.106511 4.47063 0.319534L4.72382 0.930828C5.15577 1.97373 5.96158 2.80651 6.9748 3.25714L7.69188 3.57612C8.10271 3.75881 8.10271 4.35653 7.69188 4.53922L6.93228 4.87708C5.94451 5.31641 5.15288 6.11947 4.7134 7.12811ZM3.06361 21.6132C4.08854 15.422 6.31105 1.99658 21 1.99658C19.5042 4.99658 18.5 6.49658 17.5 7.49658L16.5 8.49658L18 9.49658C17 12.4966 14 15.9966 10 16.4966C7.33146 16.8301 5.66421 18.6635 4.99824 21.9966H3C3.02074 21.8722 3.0419 21.7443 3.06361 21.6132Z"></path>`
-        );
+    const textArea = createTextInputArea(
+        "...what did you achieve today?", 
+        MetricTypeIds.Reflection
+    );
 
-    // const textarea = document.createElement("textarea");
-    // textarea.placeholder = "How did today go?";
-
-    const textArea = createTextInputArea("...what did you achieve today?", MetricTypeIds.Reflection);
-      
-
-    card.append(
-        title,
+    card.addContent(
         textArea
     );
 
-    return card;
+    return card.root;
 }
 
 // =====================================================
 // Nutrition
 // =====================================================
+
+function createNutritionCard(): HTMLElement {
+
+    const card = new Card("Nutrition", Icons.Nutrition); 
+
+    const nutritionlist = document.createElement("div");
+    nutritionlist.className = "metric-list";
+
+    const calories = Math.round(getSelectedDayMetric<number>(MetricTypeIds.Nutrition_Calories));
+    const caloriesElement = createMetricValue(calories.toString(), 'kcal');
+    const caloriesCard = createMetricRow("Calories", caloriesElement);
+    
+    const protein = Math.round(getSelectedDayMetric<number>(MetricTypeIds.Nutrition_Protein));
+    const proteinElement = createMetricValue(protein.toString(), 'g');
+    const proteinCard = createMetricRow("Protein", proteinElement);
+    
+    const carbs = Math.round(getSelectedDayMetric<number>(MetricTypeIds.Nutrition_Carbs));
+    const carbsElement = createMetricValue(carbs.toString(), 'g');
+    const carbsCard = createMetricRow("Carbs", carbsElement);
+
+    const fat = Math.round(getSelectedDayMetric<number>(MetricTypeIds.Nutrition_Fat));
+    const fatElement = createMetricValue(fat.toString(), 'g');
+    const fatCard = createMetricRow("Fat", fatElement);
+
+    nutritionlist.append(
+        caloriesCard,
+        proteinCard,
+        carbsCard,
+        fatCard
+    );
+
+    const textArea = createTextInputArea(
+        "...how were your meals?",
+        MetricTypeIds.Nutrition_Notes
+    );
+
+    card.addContent(
+        nutritionlist
+    );
+
+    card.addContent(
+        textArea,
+    )
+
+    return card.root;
+}
+
+// =====================================================
+// Workout
+// =====================================================
+
+const WORKOUT_ICONS: Record<WorkoutType, string> = {
+    [WorkoutTypes.Strength]: Icons.Strength,
+    [WorkoutTypes.Cardio]: Icons.Cardio,
+    [WorkoutTypes.Sports]: Icons.Sports,
+    [WorkoutTypes.HIIT]: Icons.HIIT,
+    [WorkoutTypes.FlexibilityMobility]: Icons.FlexibilityMobility,
+};
+
+function createActivityCard(): HTMLElement {
+
+    const card = new Card("Activity", Icons.Activity); 
+
+    const workoutRecords = getSelectedDayMetric<WorkoutLogData[]>(MetricTypeIds.Workouts);
+
+    if (workoutRecords.length === 0) {
+        const empty = document.createElement("div");
+        empty.textContent = "No activity logged for today";
+        
+        const empty2 = document.createElement("div");
+        empty2.innerHTML = `
+            Log a workout, or enjoy your rest day <i class="ri-emotion-happy-fill"></i>
+        `;
+        
+        card.addContent(empty);
+        card.addContent(empty2);
+        return card.root;
+    }
+
+    for (const workout of workoutRecords) {
+        const icon = WORKOUT_ICONS[workout.workoutType] ?? Icons.Activity;
+        const workoutDurationElement =  createTimeSpanMetricElement(workout.workoutDuration / 60);
+        const restingHeartRateCard = createInnerCard(workout.workoutType, workoutDurationElement, icon); 
+
+        const notes = document.createElement("textarea");
+        notes.placeholder = "Any workout notes?";
+
+        card.addContent(restingHeartRateCard);
+    }
+
+    return card.root;
+}
 
 function createMetricRow(metricName:string, metricValue:HTMLElement, metricIconClass:string | null = null): HTMLElement {
     const row = document.createElement("div");
@@ -586,163 +607,6 @@ function getSelectedDayMetric<T>(metricTypeId:MetricTypeId) : T {
     return metricRepository.resolveMetric<T>(selectedDateKey, metricTypeId);
 }
 
-function createNutritionCard(): HTMLElement {
-
-    const card = document.createElement("div");
-    card.className = "card";
-
-    const title = cardHeader(
-        "Nutrition", 
-        `<path d="M4.22235 3.80753L10.9399 10.525L8.11144 13.3535L4.22235 9.46438C2.66026 7.90229 2.66026 5.36963 4.22235 3.80753ZM14.2683 12.1464L13.4147 12.9999L20.4858 20.071L19.0716 21.4852L12.0005 14.4141L4.92946 21.4852L3.51525 20.071L12.854 10.7322C12.2664 9.27525 12.8738 7.1769 14.4754 5.5753C16.428 3.62268 19.119 3.1478 20.4858 4.51464C21.8526 5.88147 21.3778 8.57242 19.4251 10.525C17.8235 12.1267 15.7252 12.7341 14.2683 12.1464Z"></path>`);
-
-    const nutritionlist = document.createElement("div");
-    nutritionlist.className = "metric-list";
-
-    const calories = Math.round(getSelectedDayMetric<number>(MetricTypeIds.Nutrition_Calories));
-    const caloriesElement = createMetricValue(calories.toString(), 'kcal');
-    const caloriesCard = createMetricRow("Calories", caloriesElement);
-    
-    const protein = Math.round(getSelectedDayMetric<number>(MetricTypeIds.Nutrition_Protein));
-    const proteinElement = createMetricValue(protein.toString(), 'g');
-    const proteinCard = createMetricRow("Protein", proteinElement);
-    
-    const carbs = Math.round(getSelectedDayMetric<number>(MetricTypeIds.Nutrition_Carbs));
-    const carbsElement = createMetricValue(carbs.toString(), 'g');
-    const carbsCard = createMetricRow("Carbs", carbsElement);
-
-    const fat = Math.round(getSelectedDayMetric<number>(MetricTypeIds.Nutrition_Fat));
-    const fatElement = createMetricValue(fat.toString(), 'g');
-    const fatCard = createMetricRow("Fat", fatElement);
-
-    nutritionlist.append(
-        caloriesCard,
-        proteinCard,
-        carbsCard,
-        fatCard
-    );
-
-    const textArea = createTextInputArea(
-        "...how were your meals?",
-        MetricTypeIds.Nutrition_Notes
-    );
-
-    card.append(
-        title,
-        nutritionlist,
-        textArea
-    );
-
-    return card;
-}
-
-// =====================================================
-// Workout
-// =====================================================
-
-function createWorkoutCard(): HTMLElement {
-
-    const card = document.createElement("div");
-    card.className = "card";
-
-    const title = cardHeader(
-        "Activity", 
-        `<path d="M16.5 3C19.5376 3 22 5.5 22 9C22 16 14.5 20 12 21.5C10.0224 20.3135 4.91625 17.5626 2.8685 13L7.56619 13L8.5 11.4437L11.5 16.4437L13.5662 13H17V11H12.4338L11.5 12.5563L8.5 7.55635L6.43381 11L2.21024 10.9999C2.07418 10.3626 2 9.69615 2 9C2 5.5 4.5 3 7.5 3C9.35997 3 11 4 12 5C13 4 14.64 3 16.5 3Z"></path>`
-    );
-
-    card.append(title);
-
-    const workoutRecords = getSelectedDayMetric<WorkoutLogData[]>(MetricTypeIds.Workouts);
-
-    if (workoutRecords.length === 0) {
-        const empty = document.createElement("div");
-        empty.textContent = "No activity logged for today";
-        
-        const empty2 = document.createElement("div");
-        empty2.innerHTML = `
-            Log a workout, or enjoy your rest day <i class="ri-emotion-happy-fill"></i>
-        `;
-        
-        card.append(empty, empty2);
-        return card;
-    }
-
-    for (const workout of workoutRecords) {
-
-        const workoutCard = document.createElement("div");
-
-        const workoutTitle = document.createElement("div");
-        workoutTitle.textContent = workout.workoutName;
-        workoutCard.append(workoutTitle);
-
-        const workoutlist = document.createElement("div");
-        workoutlist.className = "metric-list";
-
-        workoutCard.append(workoutlist);
-
-        const workoutDurationElement =  createTimeSpanMetricElement(workout.workoutDuration);
-        //  createMetricValue(currentLog.nutrition.calories.toString(), 'kcal');
-        const durationRow = createMetricRow("Duration", workoutDurationElement);
-        
-        const volumeElement = createMetricValue(workout.workoutVolume.toString(), 'kg');
-        const volumeCard = createMetricRow("Volume", volumeElement);
-
-        workoutlist.append(
-            durationRow,
-            volumeCard,
-        );
-
-        const notes = document.createElement("textarea");
-        notes.placeholder = "Any workout notes?";
-
-        // bindTextArea(
-        //     notes,
-        //     () => currentLog.nutrition.nutritionNotes,
-        //     value => currentLog.nutrition.nutritionNotes = value
-        // );
-
-        // const section = document.createElement("div");
-        // section.className = "workout";
-
-        // const name = document.createElement("h4");
-        // name.textContent = workout.workoutName;
-
-
-
-        // const duration = document.createElement("div");
-        // duration.textContent =
-        //     `Duration: ${workout.workoutDuration}`;
-
-        // const volume = document.createElement("div");
-        // volume.textContent =
-        //     `Volume: ${workout.workoutVolume.toLocaleString()} kg`;
-
-        // const prs = document.createElement("div");
-        // prs.textContent =
-        //     `PRs: ${workout.personalRecords}`;
-
-        // const notes = document.createElement("textarea");
-        // notes.placeholder = "How did the workout go?";
-
-        // bindTextArea(
-        //     notes,
-        //     () => workout.workoutNotes,
-        //     value => workout.workoutNotes = value
-        // );
-
-        // section.append(
-        //     name,
-        //     duration,
-        //     volume,
-        //     prs,
-        //     notes
-        // );
-
-        card.append(workoutCard);
-    }
-
-    return card;
-}
-
 // =====================================================
 // Body
 // =====================================================
@@ -777,18 +641,6 @@ function createWorkoutCard(): HTMLElement {
 // =====================================================
 // Recovery
 // =====================================================
-
-function cardHeader(text:string, iconPath:string): HTMLElement {
-    const header = document.createElement("h3");
-
-    header.innerHTML = 
-    `<span class="header-content">
-        <svg viewBox="0 0 24 24" fill="currentColor"> ${iconPath}</svg>
-        <span>${text}</span>
-    </span>`;
-
-    return header;
-}
 
 function createInnerCard(metricName:string, metricValue:HTMLElement, metricIconClass:string) : HTMLElement {
     const innerCard = document.createElement("div");
@@ -845,10 +697,11 @@ function createTimeSpanMetricElement(time: number | string): HTMLElement {
         minutes = m;
     }
 
-    element.append(
-        createMetricValue(hours.toString(), "h"),
-        createMetricValue(minutes.toString(), "m")
-    );
+    if (hours > 0) {
+        element.append(createMetricValue(hours.toString(), "h"))
+    }
+
+    element.append(createMetricValue(minutes.toString(), "m"));
 
     return element;
 }
@@ -871,12 +724,7 @@ function createMetricValue(value: string, unit?: string): HTMLElement {
 
 function createRecoveryCard(): HTMLElement {
 
-    const card = document.createElement("div");
-    card.className = "card";
-
-    const title = cardHeader(
-        "Recovery", 
-        `<path d="M21.998 7V9.5C21.998 13.0899 19.0879 16 15.498 16H12.998V21H10.998V14L11.0169 13.0007C11.2719 9.64413 14.0762 7 17.498 7H21.998ZM5.99805 3C9.0904 3 11.7144 5.00519 12.6408 7.78626C11.1417 9.06119 10.1516 10.9143 10.0144 13.0004L8.99805 13C5.13205 13 1.99805 9.86599 1.99805 6V3H5.99805Z"></path>`);
+    const card = new Card("Recovery", Icons.Recovery) 
 
     const recoveryGrid = document.createElement("div");
     recoveryGrid.className = "metric-grid-3";
@@ -906,12 +754,11 @@ function createRecoveryCard(): HTMLElement {
         restingHeartRateCard,
     );
 
-    card.append(
-        title,
+    card.addContent(
         recoveryGrid
     );
 
-    return card;
+    return card.root;
 }
 
 // =====================================================
@@ -953,47 +800,62 @@ function createRecoveryCard(): HTMLElement {
 
 function createReportActionButtons(): HTMLElement {
 
-    const actionButtonsCard = document.createElement("div");
-    actionButtonsCard.className = "card";
+    const actionButtonsCard = new Card();
 
     const actionButtonRow = document.createElement("div");
     actionButtonRow.className = "action-buttons-row";
-    actionButtonsCard.append(actionButtonRow);
+    actionButtonsCard.addContent(actionButtonRow);
 
-    const cloudSyncButton = createActionButton("Cloud Sync", Icons.CloudSync); 
-    cloudSyncButton.onclick = async () => { 
-        await cloudSync(selectedDate);
-        rerender();
-        await Toast.show({
-            text: "Synced with Cloud!",
-            duration: "short",
-            position: "bottom",
-        });
+    if (CloudSync.isAvailable()) {
+        const cloudSyncButton = new ActionButton(
+            "Cloud Sync", 
+            Icons.CloudSync, 
+            async () => { 
+                await CloudSync.sync(selectedDate);
+                rerender();
+                await Toast.show({
+                    text: "Synced with Cloud!",
+                duration: "short",
+                position: "bottom",
+            });
+        }); 
+        actionButtonRow.append(cloudSyncButton.root);
     }
-    actionButtonRow.append(cloudSyncButton);
 
-    if (deviceSyncAvailable()) {
-        const deviceSyncButton = createActionButton("Device Sync", Icons.DeviceSync);
-        deviceSyncButton.onclick = async () => { 
-            await deviceSync(selectedDate); 
-            rerender(); 
-            await Toast.show({
-            text: "Synced with Device!",
-            duration: "short",
-            position: "bottom",
-        });
-        }
-        actionButtonRow.append(deviceSyncButton);
+    if (DeviceSync.isAvailable()) {
+        const deviceSyncButton = new ActionButton(
+            "Device Sync", 
+            Icons.DeviceSync,
+            async () => { 
+                await DeviceSync.sync(selectedDate); 
+                rerender(); 
+                await Toast.show({
+                    text: "Synced with Device!",
+                    duration: "short",
+                    position: "bottom",
+                });
+            });
+        actionButtonRow.append(deviceSyncButton.root);
     }
-    
-    const copyTextButton = createActionButton("Copy Text", Icons.CopyText);
-    copyTextButton.onclick = onCopyTextClicked;
-    actionButtonRow.append(copyTextButton);
-    
-    // const publishToServerButton = createActionButton("Publish", Icons.PublishToServer);
-    // publishToServerButton.onclick = onPublishClicked;
 
-    return actionButtonsCard;
+    const extApiSyncButton = new ActionButton(
+            "Ext API Sync", 
+            Icons.ExtAPISync,
+            async () => { 
+                await ExternalAPISync.sync(selectedDate); 
+                rerender(); 
+                await Toast.show({
+                    text: "Synced with External APIs!",
+                    duration: "short",
+                    position: "bottom",
+                });
+            });
+        actionButtonRow.append(extApiSyncButton.root);
+    
+    const copyTextButton = new ActionButton("Copy Text", Icons.CopyText, onCopyTextClicked);
+    actionButtonRow.append(copyTextButton.root);
+    
+    return actionButtonsCard.root;
 }
 
 // TODO: A more explicit publish prompt
@@ -1012,7 +874,7 @@ function bindTextArea(
 }
 
 // Maybe later a cooler animation
-async function myDayPressed(this: GlobalEventHandlers) {
+export async function myDayPressed(this: GlobalEventHandlers) {
     if (!isToday(selectedDate))
         await transitionToDate(new Date(), "left")
 }

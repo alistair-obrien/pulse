@@ -10,7 +10,7 @@ $Config = Get-EnvironmentConfig -Environment $Environment -Application Api
 
 $ErrorActionPreference = "Stop"
 
-. "$PSScriptRoot/process-start-header.ps1" -Title "Deploying $Environment Server"
+. "$PSScriptRoot/process-start-header.ps1" -Title "Deploying Server" -Environment $Environment
 
 & "$PSScriptRoot/build-server.ps1" -Environment $Environment
 
@@ -44,4 +44,4 @@ if ($LASTEXITCODE -ne 0)
 
 & "$PSScriptRoot/log-server.ps1" -Environment $Environment
 
-. "$PSScriptRoot/process-end-header.ps1" -Title "Deployed $Environment Server"
+. "$PSScriptRoot/process-end-header.ps1" -Title "Server Deployed"

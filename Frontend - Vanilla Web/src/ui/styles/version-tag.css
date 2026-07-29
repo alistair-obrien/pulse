@@ -1,0 +1,37 @@
+.version-annotation {
+    background-color: black;
+    color: wheat;
+
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+
+    font-family: "Jetbrains Mono", sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: capitalize;
+    padding: 4px 10px;
+}
+
+.version-annotation span {
+    opacity: 0.7;
+}
+
+.version-annotation .version-separator {
+    font-size: 16px;
+    font-weight: 100;
+    line-height: 1;
+    opacity: 0.5;
+}
+
+.version-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+}
+
+.version-item i {
+    font-size: 13px;
+}
+

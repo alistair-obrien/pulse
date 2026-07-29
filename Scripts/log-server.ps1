@@ -10,6 +10,6 @@ $Config = Get-EnvironmentConfig -Environment $Environment -Application Api
 
 $ErrorActionPreference = "Stop"
 
-. "$PSScriptRoot/process-start-header.ps1" -Title "Logging ($Environment) Service"
+. "$PSScriptRoot/process-start-header.ps1" -Title "Logging Server Service" -Environment $Environment
 
 ssh $Config.Server "journalctl -u $($Config.Service) -f"

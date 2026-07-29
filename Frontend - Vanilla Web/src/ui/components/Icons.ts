@@ -8,6 +8,7 @@ export const Icons = {
     // Action Buttons
     CloudSync: "ri-cloud-fill",
     DeviceSync: "ri-smartphone-fill",
+    ExtAPISync: "ri-bubble-chart-fill",
     PublishToServer: "ri-send-plane-fill",
     CopyText: "ri-file-copy-2-fill",
 
@@ -27,7 +28,15 @@ export const Icons = {
     ChooseImage: "ri-image-circle-ai-fill",
 
     // Footer
-    Friends: "ri-tree-fill",
+    Journey: "ri-treasure-map-fill",
     MyDay: "ri-sun-foggy-fill",
     Me: "ri-seedling-fill",
+
+    //Workout Types
+    Strength: "ri-image-circle-ai-fill",
+    Cardio: "ri-sun-foggy-fill",
+    Sports: "ri-heart-pulse-fill",
+    HIIT: "ri-heart-pulse-fill",
+    FlexibilityMobility: "ri-heart-pulse-fill",
+
 } as const;

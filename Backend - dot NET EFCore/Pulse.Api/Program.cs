@@ -9,25 +9,39 @@ builder.Configuration.AddCommandLine(args);
 
 builder.Services.AddControllers();
 
-// Adds the SQL DB
 builder.Services.AddDbContext<PulseDbContext>(options =>
 {
     options.UseNpgsql(builder.Configuration.GetConnectionString("Pulse"));
 });
 
-// Cors for Local builds only
+builder.Services
+    .AddIdentityApiEndpoints<ApplicationUser>()
+    .AddEntityFrameworkStores<PulseDbContext>();
+
+builder.Services.AddAuthorization();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Default", policy =>
     {
-        policy
-            .WithOrigins(
-                "https://localhost",
-                "http://localhost:5173",
-                "https://pulse-flow.app"
-            )
-            .AllowAnyHeader()
-            .AllowAnyMethod();
+        if (builder.Environment.IsDevelopment())
+        {
+            policy
+                .AllowAnyOrigin()
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        }
+        else
+        {
+            policy
+                .WithOrigins(
+                    "https://pulse-flow.app",
+                    "capacitor://localhost",
+                    "http://localhost"
+                )
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        }
     });
 });
 
@@ -42,8 +56,43 @@ builder.Services.AddHttpClient<HevyClient>();
 
 var migrate = args.Contains("--migrate", StringComparer.OrdinalIgnoreCase);
 
-// Migration Mode
 if (migrate)
+{
+    await Migrate(builder);
+    return;
+}
+
+// Daily Log Import Service
+//builder.Services.AddScoped<DailyLogImportService>();
+var app = builder.Build();
+
+// Web Server Mode
+app.UseHttpsRedirection();
+app.UseCors("Default");
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapIdentityApi<ApplicationUser>();
+app.MapControllers();
+app.Run();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ==== MIGRATION ===
+// TODO: Move to its own console app
+static async Task Migrate(WebApplicationBuilder builder)
 {
     Console.WriteLine($"Migration Starting");
     Console.WriteLine($"Environment: {builder.Environment.EnvironmentName}");
@@ -66,16 +115,4 @@ if (migrate)
     Console.WriteLine($"Pending: {pending.Count()}");
     foreach (var migration in pending)
         Console.WriteLine($"  Pending: {migration}");
-
-    return;
 }
-
-// Daily Log Import Service
-//builder.Services.AddScoped<DailyLogImportService>();
-var app = builder.Build();
-
-// Web Server Mode
-app.UseHttpsRedirection();
-app.UseCors("Default");
-app.MapControllers();
-app.Run();

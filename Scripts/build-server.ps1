@@ -10,7 +10,7 @@ $Config = Get-EnvironmentConfig -Environment $Environment -Application Api
 
 $ErrorActionPreference = "Stop"
 
-. "$PSScriptRoot/process-start-header.ps1" -Title "Building Pulse $Environment API"
+. "$PSScriptRoot/process-start-header.ps1" -Title "Building Pulse Api" -Environment $Environment
 
 $SolutionRoot = Resolve-Path "$PSScriptRoot/../Backend - dot NET EFCore"
 
@@ -34,4 +34,4 @@ if ($LASTEXITCODE -ne 0)
     throw "Publish failed."
 }
 
-. "$PSScriptRoot/process-end-header.ps1" -Title "Pulse $Environment API Built"
+. "$PSScriptRoot/process-end-header.ps1" -Title "API Built"

@@ -1,48 +1,32 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Identity.Client;
 using Pulse.Api.Requests;
 using Pulse.Api.Responses;
 using Pulse.Domain.Models;
 using Pulse.Infrastructure;
+using System.Security.Claims;
 using System.Text.Json;
 
 namespace Pulse.Api.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/[controller]")]
-    public class MetricsController : ControllerBase
+    public class MetricsController : PulseController
     {
         private readonly PulseDbContext _db;
-        //private readonly DailyLogImportService _importService;
 
-        public MetricsController(PulseDbContext db/*, DailyLogImportService import*/)
+        public MetricsController(PulseDbContext db)
         {
             _db = db;
-            //_importService = import;
         }
-
-        //[HttpPut("{id}/import")]
-        //public async Task<IActionResult> Import(int id)
-        //{
-        //    var metric = _db. //
-
-        //    if (metric == null)
-        //        return NotFound();
-
-        //    var imported = await _importService.ImportAsync(metric);
-        //    imported.ApplyTo(metric);
-
-        //    await _db.SaveChangesAsync();
-
-        //    return Ok(new DailyLogImportResponse(metric));
-        //}
-
 
         [HttpGet("{date}/{metricId}")]
         public async Task<IActionResult> Get(DateOnly date, string metricId)
         {
             var metric = await _db.Metrics.FirstOrDefaultAsync(m =>
+                m.UserId == UserId &&
                 m.Date == date &&
                 m.MetricTypeId == metricId);
 
@@ -58,7 +42,9 @@ namespace Pulse.Api.Controllers
             Console.WriteLine("Get " + date.ToString());
 
             var metrics = await _db.Metrics
-                .Where(m => m.Date == date)
+                .Where(
+                    m => m.UserId == UserId &&
+                    m.Date == date)
                 .ToListAsync();
 
             if (metrics.Count == 0)
@@ -79,6 +65,7 @@ namespace Pulse.Api.Controllers
             bool isEmpty = IsEmpty(request.MetricData);
 
             var metric = await _db.Metrics.FirstOrDefaultAsync(m =>
+                m.UserId == UserId &&
                 m.Date == date &&
                 m.MetricTypeId == metricId);
 
@@ -97,6 +84,7 @@ namespace Pulse.Api.Controllers
             {
                 metric = new Metric
                 {
+                    UserId = UserId,
                     Date = date,
                     MetricTypeId = metricId
                 };

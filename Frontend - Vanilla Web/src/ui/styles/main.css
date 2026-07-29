@@ -1,54 +1,11 @@
-:root {
-  /* Brand colors */
-
-  --surface-gradient:
-    radial-gradient(
-        circle at right bottom,
-        var(--elevated-card) 0%,
-        var(--surface) 45%,
-        var(--elevated-card) 100%
-    );
-
-  --bg-color: #F2EDE5; /* Warm sand */
-  --bg-color: #829673; /* Fresh Sage */
-  --surface: #F7F3EC; /* Soft Ivory */
-  --elevated-card: #ECE4D7; /* Stone */
-  --border: #D9CEBD; /* Sand Line */
-  
-  --primary-text: #2E2B27; /* Charcoal */
-  --primary-text-muted: #47433d; /* Dim Charcoal */
- 
-  --primary-text-light: #F2EDE5; /* Warm sand */
-  --primary-text-light-muted: #ECE4D7; /* Stone */
-
-  --text-shadow: 
-    0 1px 2px rgba(0,0,0,.35),
-    0 6px 18px rgba(0,0,0,.15);
-
-  --secondary-text: #766F65; /* Weathered Stone */
-  --secondary-muted-text: #A39A8D; /* Pebble */
-  --accent-primary: #579199; /* Splash */
-  --accent-secondary: #6E8064; /* Sage */
-  --accent-secondary-light: #A8B89E; /* Moss */
-  --accent-secondary-hover: #829673; /* Fresh Sage */
-
-  --secondary-icon: #797065; /* Rock */
-
-  --success: #708C65; /* Bamboo */
-
-  --card-shadow: 0 0px 4px rgba(46,43,39,.08);
-
-  --hero-area-total-height: 400px;
-  --hero-area-visible-height: 280px;
-}
-
 body {
     background-color: rgb(40, 39, 44);
     margin: 0;
     min-height: 100vh;
     display: flex;
     justify-content: center;
-    align-items: flex-start;
+    align-items: center;
+    flex-direction: column;
 
     font-family: "Manrope", sans-serif;
     font-size: small;
@@ -57,42 +14,38 @@ body {
     width: 100%;
 }
 
-.version-annotation {
-    color: white;
-    background-color: black;
-    position: absolute;
-    z-index: 10000;
-    text-align: left;
-    left: 0;
-}
-
-/* >>> SCREEN <<< */
-.screen {    
+/* >>> APP <<< */
+.app {
     height: 100dvh;
     width: 100%;
     max-width: 450px;
     background-color: var(--bg-color);
     position: relative;
-    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* >>> SCREEN <<< */
+.screen {
+    flex: 1;
+    min-height: 0;
 }
 
 .screen-container {
-    position: absolute;
-    inset: 0;
-
+    /* position: absolute; */
+    /* inset: 0; */
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    height: 100%;
 }
 
 .content {
-    overflow-y: auto;
-    min-height: 0;
+    padding: 6px;
     display: flex;
     flex-direction: column;
     gap: 6px;
-    padding: 6px;
     background: none;
+    overflow-y: auto;
 }
 
 /* >>> Text <<< */
@@ -150,38 +103,6 @@ h3 {
 
 .text-area:has(textarea:not(:placeholder-shown)) i {
     opacity: 0;
-}
-
-/* Card */
-.card.image-card textarea {
-    background: none;
-    border: none;
-    color: var(--accent-primary);
-    height: 100%;
-    field-sizing: fixed;
-}
-
-.card.image-card textarea:focus {
-    outline: none
-}
-
-/* >>> CARDS <<< */
-.card {
-    display: flex;
-    flex-direction: column;
-    padding: 12px;
-    gap: 8px;
-    /* background-color: var(--surface); */
-
-    background: var(--surface-gradient);
-
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    box-shadow: var(--card-shadow);
-}
-
-.card h3 {
-    color: var(--accent-secondary-light);
 }
 
 .metric-grid-3 {
@@ -263,28 +184,6 @@ h3 {
     border-bottom: none;
 }
 
-.card.image-card {
-    /* background-image:
-        linear-gradient(
-            to bottom,
-            var(--surface),
-            color-mix(in srgb, var(--surface) 80%, transparent) 30%,
-            color-mix(in srgb, var(--surface) 20%, transparent) 50%,
-            transparent
-        ),
-        var(--reflection-image);
-
-    background-size: cover;
-    background-position: center; */
-}
-
-/* Not sold. For Cards I thinK? */
-.header-content {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-}
-
 .header .date-row {
     position: absolute;
     left: 0;
@@ -292,16 +191,6 @@ h3 {
     padding-left: 20px;
     padding-right: 20px;
     height: 100%;
-}
-
-.header-content svg {
-    width: 24px;
-    height: 24px;
-}
-
-.card h3 {
-    text-align: left;
-    margin: 0px;
 }
 
 /* >>> HEADER <<< */
@@ -316,57 +205,9 @@ h3 {
     z-index: 100;
 }
 
-/* >>> FOOTER <<< */
-.footer {
-    background-color: var(--elevated-card);
-    border: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    padding-top: 8px;
-    padding-bottom: 8px;
-}
-
-.footer-inner {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    padding: 5px 20px;
-}
-
 .action-buttons-row {
     display: flex;
     flex-direction: row;
-}
-
-.action-button {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-
-    background: none;
-    border: none;
-    color: inherit;
-    cursor: pointer;
-
-    width: 100%;
-}
-
-.action-button i {
-    font-size: 24px;
-    color: var(--accent-secondary-light);
-}
-
-.action-button:hover i {
-    color: var(--accent-secondary-hover);
-}
-
-.action-button.selected i {
-    color: var(--accent-secondary);
-}
-
-.action-button span {
-    font-size: smaller;
 }
 
 /* >>> DATE <<< */

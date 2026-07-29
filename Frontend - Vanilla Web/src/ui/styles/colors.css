@@ -1,0 +1,43 @@
+:root {
+  /* Brand colors */
+
+  --surface-gradient:
+    radial-gradient(
+        circle at right bottom,
+        var(--elevated-card) 0%,
+        var(--surface) 45%,
+        var(--elevated-card) 100%
+    );
+
+  --bg-color: #F2EDE5; /* Warm sand */
+  --bg-color: #829673; /* Fresh Sage */
+  --surface: #F7F3EC; /* Soft Ivory */
+  --elevated-card: #ECE4D7; /* Stone */
+  --border: #D9CEBD; /* Sand Line */
+  
+  --primary-text: #2E2B27; /* Charcoal */
+  --primary-text-muted: #47433d; /* Dim Charcoal */
+ 
+  --primary-text-light: #F2EDE5; /* Warm sand */
+  --primary-text-light-muted: #ECE4D7; /* Stone */
+
+  --text-shadow: 
+    0 1px 2px rgba(0,0,0,.35),
+    0 6px 18px rgba(0,0,0,.15);
+
+  --secondary-text: #766F65; /* Weathered Stone */
+  --secondary-muted-text: #A39A8D; /* Pebble */
+  --accent-primary: #579199; /* Splash */
+  --accent-secondary: #6E8064; /* Sage */
+  --accent-secondary-light: #A8B89E; /* Moss */
+  --accent-secondary-hover: #829673; /* Fresh Sage */
+
+  --secondary-icon: #797065; /* Rock */
+
+  --success: #708C65; /* Bamboo */
+
+  --card-shadow: 0 0px 4px rgba(46,43,39,.08);
+
+  --hero-area-total-height: 400px;
+  --hero-area-visible-height: 280px;
+}
