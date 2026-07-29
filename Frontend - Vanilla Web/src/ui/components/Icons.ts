@@ -1,7 +1,9 @@
 // https://remixicon.com/
-export const Icons = {
+export const ICONS = {
 
     AppLogo: "ri-seedling-fill",
+
+    None: "",
 
     ListItem: "solid-circle",
 
@@ -13,7 +15,7 @@ export const Icons = {
     CopyText: "ri-file-copy-2-fill",
 
     // Cards
-    Reflection: "ri-feather-fill",
+    Reflection: "ri-quill-pen-fill",
     Recovery: "ri-seedling-fill",
     Nutrition: "ri-restaurant-fill",
     Activity: "ri-heart-pulse-fill",
@@ -38,5 +40,10 @@ export const Icons = {
     Sports: "ri-heart-pulse-fill",
     HIIT: "ri-heart-pulse-fill",
     FlexibilityMobility: "ri-heart-pulse-fill",
+
+    // Journal
+    Like: "ri-heart-3-line",
+    LikeFilled: "ri-heart-3-fill",
+    Comment: "ri-chat-1-line",
 
 } as const;

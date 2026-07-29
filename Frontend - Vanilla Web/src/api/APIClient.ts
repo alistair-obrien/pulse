@@ -1,5 +1,5 @@
 import type { AppConfig } from "../AppConfig";
-import * as Auth from "./Auth";
+import * as Auth from "../controllers/AuthController";
 
 let _appConfig:AppConfig;
 export function initialize(appConfig:AppConfig) {

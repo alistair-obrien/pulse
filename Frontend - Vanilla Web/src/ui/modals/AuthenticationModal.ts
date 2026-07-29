@@ -1,4 +1,4 @@
-import * as Auth from "../../api/Auth"
+import * as Auth from "../../controllers/AuthController"
 import { Card } from "../components/Card";
 
 export function render(): HTMLElement {
@@ -53,7 +53,7 @@ function renderLoggedOut(): HTMLElement {
         }
     };
 
-    card.addContent(
+    card.append(
         email,
         password,
         register,

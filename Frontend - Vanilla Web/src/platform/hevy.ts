@@ -1,8 +1,8 @@
-import { isSameDay } from "../controllers/DateTime";
-import type { WorkoutLogData, WorkoutType } from "../models/Models";
-import { ToDateKey } from "../models/DateKey";
+import { isSameDay } from "../controllers/DateTimeController";
+import type { WorkoutLogData, WorkoutType } from "../models/WorkoutLogData";
+import { ToDateKey } from "../data-store/DateKey";
 import { MetricTypeIds } from "../models/MetricRegistry";
-import { metricRepository } from "../models/MetricRepository";
+import { metricRepository } from "../controllers/MetricRepositoryController";
 
 const HEVY_API_KEY = "hevy-api-key";
 
@@ -63,7 +63,7 @@ export async function sync(date: Date): Promise<void> {
         page++;
     }
 
-    metricRepository.deviceCacheStore.Set(
+    metricRepository.setDeviceMetric(
         ToDateKey(date),
         MetricTypeIds.Workouts,
         workoutLogs

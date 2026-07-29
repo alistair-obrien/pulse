@@ -14,7 +14,7 @@ import * as Journey from "./screens/Journey";
 import { ActionButton } from './components/ActionButton';
 import { VersionTag } from './components/VersionTag';
 import { Footer } from "./components/Footer";
-import { Icons } from "./components/Icons";
+import { ICONS } from "./components/ICONS";
 
 export class PulseApp {
 
@@ -41,9 +41,9 @@ export class PulseApp {
 
         // Universal Footer. May want to consider a base Screen class instead which takes App via DI and can then decide what footer means in that context or if its even on
         const footer = new Footer();
-        footer.appendButton(new ActionButton("Journey", Icons.Journey, () => this.changeScreen(this.journeyScreen)));
-        footer.appendButton(new ActionButton("My Day", Icons.MyDay, () => this.changeScreen(this.myDayScreen)));
-        footer.appendButton(new ActionButton("Me", Icons.Me, () => this.changeScreen(this.meScreen)));
+        footer.appendButton(new ActionButton("Journey", ICONS.Journey, () => this.changeScreen(this.journeyScreen)));
+        footer.appendButton(new ActionButton("My Day", ICONS.MyDay, () => this.changeScreen(this.myDayScreen)));
+        footer.appendButton(new ActionButton("Me", ICONS.Me, () => this.changeScreen(this.meScreen)));
         app.append(footer.root);
 
         this.version_tag = new VersionTag(appConfig);
@@ -78,7 +78,10 @@ export class PulseApp {
         }
         
         await MyDay.mount(this.screenContainer); //Kinda hacky tbh
+        await Me.mount(this.screenContainer);
         this.changeScreen(this.myDayScreen);
+
+        // this.changeScreen(this.journeyScreen);
         
         if (this.splashEnabled) {
             await Splash.finish();

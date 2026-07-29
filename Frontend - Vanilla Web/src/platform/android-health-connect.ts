@@ -1,9 +1,10 @@
 import { registerPlugin } from "@capacitor/core";
 import { MetricTypeIds } from "../models/MetricRegistry";
-import type { SleepLogData } from "../models/Models";
-import { metricRepository } from "../models/MetricRepository";
-import { getLocalDayUtcRange } from "../controllers/DateTime";
-import { ToDateKey } from "../models/DateKey";
+import type { SleepLogData } from "../models/SleepLogData";
+import { getLocalDayUtcRange } from "../controllers/DateTimeController";
+import { ToDateKey } from "../data-store/DateKey";
+
+import * as MetricRepositoryController from "../controllers/MetricRepositoryController";
 
 interface HealthConnectPlugin {
     isAvailable() : Promise<AvailabilityResult>;
@@ -207,7 +208,7 @@ export async function sync(date: Date) {
         };
 
         for (const { metric, value } of IMPORTERS) {
-            metricRepository.deviceCacheStore.Set(
+            MetricRepositoryController.metricRepository.setDeviceMetric(
                 dateKey,
                 metric,
                 value(healthData)

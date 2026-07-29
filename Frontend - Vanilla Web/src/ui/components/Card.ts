@@ -1,30 +1,42 @@
-import '../styles/card.css'
+import "../styles/card.css";
 
 export class Card {
+    readonly root: HTMLDivElement;
 
-    readonly root:HTMLElement;
-    private readonly header:HTMLElement;
-
-    constructor(title:string = "", iconClass: string = "") {
+    constructor(...content: (Node | string)[]) {
         this.root = document.createElement("div");
         this.root.className = "card";
-        this.header = document.createElement("h3");
-        this.root.append(this.header);
-        
-        if (title || iconClass) {
-            this.setHeader(title, iconClass);
+
+        if (content.length) {
+            this.root.append(...content);
         }
     }
 
-    setHeader(title: string, iconClass: string) {
-        this.header.innerHTML = 
-        `<span class="card-header">
-            <i class=${iconClass}></i>
-            <span>${title}</span>
-        </span>`;
+    append(...content: (Node | string)[]): this {
+        this.root.append(...content);
+        return this;
     }
+}
 
-    addContent(...nodes: (Node | string)[]) {
-        this.root.append(...nodes);
+export class CardHeader {
+    readonly root: HTMLHeadingElement;
+
+    constructor(title: string, iconClass = "") {
+        this.root = document.createElement("h3");
+
+        const row = document.createElement("span");
+        row.className = "card-header";
+
+        if (iconClass) {
+            const icon = document.createElement("i");
+            icon.className = iconClass;
+            row.append(icon);
+        }
+
+        const text = document.createElement("span");
+        text.textContent = title;
+        row.append(text);
+
+        this.root.append(row);
     }
 }

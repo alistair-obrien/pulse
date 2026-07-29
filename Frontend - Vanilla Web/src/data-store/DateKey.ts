@@ -1,6 +1,7 @@
 
 export type DateKey = string; // "2026-07-25"
 
+// TODO: Make this static and maybe move into Date Controller
 export function ToDateKey(date: Date): DateKey {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");

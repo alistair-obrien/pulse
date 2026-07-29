@@ -15,12 +15,7 @@ namespace Pulse.Api.Controllers
     [Route("api/[controller]")]
     public class MetricsController : PulseController
     {
-        private readonly PulseDbContext _db;
-
-        public MetricsController(PulseDbContext db)
-        {
-            _db = db;
-        }
+        public MetricsController(PulseDbContext db) : base(db) { }
 
         [HttpGet("{date}/{metricId}")]
         public async Task<IActionResult> Get(DateOnly date, string metricId)
@@ -60,7 +55,7 @@ namespace Pulse.Api.Controllers
         public async Task<IActionResult> Put(
             DateOnly date,
             string metricId,
-            SetMetricRequest request)
+            PutMetricRequest request)
         {
             bool isEmpty = IsEmpty(request.MetricData);
 
@@ -77,7 +72,7 @@ namespace Pulse.Api.Controllers
                     await _db.SaveChangesAsync();
                 }
 
-                return Ok(new SetMetricResponse());
+                return Ok(new PutMetricResponse());
             }
 
             if (metric == null)
@@ -97,7 +92,7 @@ namespace Pulse.Api.Controllers
 
             await _db.SaveChangesAsync();
 
-            return Ok(new SetMetricResponse());
+            return Ok(new PutMetricResponse());
         }
 
         private static bool IsEmpty(object? value)

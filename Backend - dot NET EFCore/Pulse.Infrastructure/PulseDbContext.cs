@@ -13,6 +13,9 @@ public class PulseDbContext : IdentityDbContext<ApplicationUser>
     }
 
     public DbSet<Metric> Metrics => Set<Metric>();
+    public DbSet<JourneyStep> JourneySteps => Set<JourneyStep>();
+    public DbSet<JourneyLike> JourneyLikes => Set<JourneyLike>();
+    public DbSet<JourneyComment> JourneyComments => Set<JourneyComment>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -31,6 +34,26 @@ public class PulseDbContext : IdentityDbContext<ApplicationUser>
                 m.UserId,
                 m.Date,
                 m.MetricTypeId
+            })
+            .IsUnique();
+
+        builder.Entity<JourneyStep>()
+            .HasOne<ApplicationUser>()
+            .WithMany()
+            .HasForeignKey(m => m.UserId);
+
+        builder.Entity<JourneyStep>()
+            .HasOne(j => j.Metric)
+            .WithOne(m => m.JourneyStep)
+            .HasForeignKey<JourneyStep>(j => j.MetricId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<JourneyLike>()
+            .HasIndex(m => new
+            {
+                m.JourneyUserId,
+                m.JourneyDate,
+                m.LikedByUserId
             })
             .IsUnique();
     }

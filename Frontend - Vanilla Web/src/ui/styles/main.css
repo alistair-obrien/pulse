@@ -105,11 +105,24 @@ h3 {
     opacity: 0;
 }
 
-.metric-grid-3 {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
+.text-block {
+    white-space: pre-wrap;      /* Preserve line breaks */
+    word-break: break-word;     /* Prevent long words/URLs overflowing */
+    line-height: 1.5;
 }
+
+.metric-grid-3 {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+}
+
+/* .metric-grid-3 > * {
+    width: 80px;
+    height: 90px;
+    
+} */
 
 .metric-grid-2 {
     display: grid;

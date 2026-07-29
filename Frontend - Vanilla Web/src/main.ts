@@ -1,7 +1,7 @@
 import './ui/styles/main.css'
 
 import { Device } from "@capacitor/device";
-import * as DeviceMetricsSync from "./controllers/DeviceMetricsSync";
+import * as DeviceMetricsSync from "./controllers/DeviceMetricsSyncController";
 import * as APIClient from "./api/APIClient"
 import { PulseApp } from "./ui/PulseApp";
 import type { AppConfig } from "./AppConfig";

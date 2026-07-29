@@ -1,0 +1,38 @@
+/* >>> JOURNEY CARDS <<< */
+.shared-journey-entry .header-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+}
+
+.shared-journey-entry .footer-action-buttons-row {
+    display: flex;
+    flex-direction: row;
+    margin-left: auto;
+}
+
+
+/* >>> DATE <<< */
+.journey-date-separator {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    margin: 8px 0;
+
+    color: var(--primary-text-light);
+    font-size: medium;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.journey-date-separator::before,
+.journey-date-separator::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--primary-text-light-muted);
+}

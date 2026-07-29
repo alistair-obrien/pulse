@@ -1,6 +1,6 @@
 import { MetricRecord } from "./MetricRecord";
 import { ToDateKey, type DateKey } from "./DateKey";
-import type { MetricTypeId } from "./MetricRegistry";
+import type { MetricTypeId, MetricTypes } from "../models/MetricRegistry";
 
 
 export class MetricRecordStore {
@@ -12,7 +12,12 @@ export class MetricRecordStore {
     }
 
     private loadedDates = new Set<DateKey>();
-    private metricRecordsByDate: Record<DateKey, Record<MetricTypeId, MetricRecord<any>>> = {};
+    private metricRecordsByDate: Record<
+        DateKey,
+        Partial<{
+            [K in MetricTypeId]: MetricRecord<K>;
+        }>
+    > = {};
 
     private EnsureLoaded(dateKey: DateKey) {
 
@@ -44,19 +49,28 @@ export class MetricRecordStore {
         this.metricRecordsByDate[date] = JSON.parse(json);
     }
 
-    Get<T>(dateKey: DateKey, metricTypeId: MetricTypeId): MetricRecord<T> | undefined {
-
+    Get<K extends MetricTypeId>(
+        dateKey: DateKey,
+        metricTypeId: K
+    ): MetricRecord<K> | undefined {
         this.EnsureLoaded(dateKey);
-        return this.metricRecordsByDate[dateKey]?.[metricTypeId] as MetricRecord<T> | undefined;
+        return this.metricRecordsByDate[dateKey]?.[metricTypeId];
     }
 
-    Set(dateKey: DateKey, metricTypeId: MetricTypeId, data: any) {
+    Set<K extends MetricTypeId>(
+        dateKey: DateKey,
+        metricTypeId: K,
+        data: MetricTypes[K]
+    ) {
         
         const record = new MetricRecord(metricTypeId, data);
 
         this.EnsureLoaded(dateKey);
         this.metricRecordsByDate[dateKey] ??= {};
-        this.metricRecordsByDate[dateKey][metricTypeId] = record;
+        
+        const day = (this.metricRecordsByDate[dateKey] ??= {});
+        (day as any)[metricTypeId] = record;
+
         this.SaveDate(dateKey);
     }
 

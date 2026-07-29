@@ -1,63 +1,68 @@
-import type { SleepLogData, WorkoutLogData } from "./Models";
+import type { SleepLogData } from "./SleepLogData";
+import type { WorkoutLogData } from "./WorkoutLogData";
 
-export type MetricTypeId = string;
+export const metricsRegistry = {
+    // Recovery
+    "Steps": {
+        defaultValue: 0 as number,
+    },
+    "RestingHeartRate": {
+        defaultValue: 0 as number,
+    },
+    "Sleep": {
+        defaultValue: [] as SleepLogData[],
+    },
 
-export const MetricTypeIds = {
-    Steps: "steps",
-    RestingHeartRate: "restingHeartRate",
-    Sleep: "sleep",
+    // Nutrition
+    "Nutrition_Calories": {
+        defaultValue: 0 as number,
+    },
+    "Nutrition_Protein": {
+        defaultValue: 0 as number,
+    },
+    "Nutrition_Carbs": {
+        defaultValue: 0 as number,
+    },
+    "Nutrition_Fat": {
+        defaultValue: 0 as number,
+    },
+    "Nutrition_Notes": {
+        defaultValue: "" as string,
+    },
 
-    Nutrition_Notes: "nutrition.notes",
-    Nutrition_Calories: "nutrition.calories",
-    Nutrition_Protein: "nutrition.protein",
-    Nutrition_Carbs: "nutrition.carbs",
-    Nutrition_Fat: "nutrition.fat",
-    
-    Reflection: "reflection",
-    Weight: "weight",
+    // Reflection
+    "Reflection": {
+        defaultValue: "" as string,
+    },
 
-    Workouts: "workouts",
+    // Body
+    "Weight": {
+        defaultValue: 0 as number,
+    },
+
+    // Activity
+    "Workouts": {
+        defaultValue: [] as WorkoutLogData[],
+    },
 } as const;
 
-export const metricsRegistry = [
-    {
-        id: MetricTypeIds.Reflection,
-        defaultValue: ""
-    },
-    {
-        id: MetricTypeIds.Steps,
-        defaultValue: 0
-    },
-    {
-        id: MetricTypeIds.RestingHeartRate,
-        defaultValue: 0
-    },
-    {
-        id: MetricTypeIds.Sleep,
-        defaultValue: [] as SleepLogData[]
-    },
-    {
-        id: MetricTypeIds.Nutrition_Calories,
-        defaultValue: 0
-    },
-    {
-        id: MetricTypeIds.Nutrition_Protein,
-        defaultValue: 0
-    },
-    {
-        id: MetricTypeIds.Nutrition_Carbs,
-        defaultValue: 0
-    },
-    {
-        id: MetricTypeIds.Nutrition_Fat,
-        defaultValue: 0
-    },
-    {
-        id: MetricTypeIds.Nutrition_Notes,
-        defaultValue: ""
-    },
-    {
-        id: MetricTypeIds.Workouts,
-        defaultValue: [] as WorkoutLogData[]
-    }
-] as const;
+export type MetricTypes = {
+    [K in keyof typeof metricsRegistry]:
+        typeof metricsRegistry[K]["defaultValue"];
+};
+
+export type MetricTypeId = keyof typeof metricsRegistry;
+
+export type StringMetricTypeId = {
+    [K in MetricTypeId]: MetricTypes[K] extends string ? K : never
+}[MetricTypeId];
+
+export const MetricTypeIds = Object.fromEntries(
+    Object.keys(metricsRegistry).map(key => [key, key])
+) as {
+    readonly [K in MetricTypeId]: K;
+};
+
+export const MetricTypeIdsArray = Object.freeze(
+    Object.keys(metricsRegistry)
+) as readonly MetricTypeId[];

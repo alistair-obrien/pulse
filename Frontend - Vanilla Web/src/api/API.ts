@@ -1,25 +1,44 @@
-import type { DateKey } from "../models/DateKey";
-import type { MetricTypeId } from "../models/MetricRegistry";
+import type { DateKey } from "../data-store/DateKey";
+import { JourneyStep } from "../models/JourneyStep";
+import type { MetricTypeId, MetricTypes } from "../models/MetricRegistry";
 import { get, post, put } from "./APIClient";
 
-// >>> PUBLISH : TODO: This is old <<<
-export function publish(dateKey:DateKey): Promise<boolean> {
-    return post(`/api/dailylogs/${dateKey}/publish`);
-}
+
 
 // >>> METRICS <<<
-export function getMetrics(
-    dateKey: DateKey
-): Promise<Partial<Record<MetricTypeId, unknown>> | null> {
-    return get(`/api/metrics/${dateKey}`);
-}
 
-export function getMetric<T>(dateKey:DateKey, metricTypeId:MetricTypeId): Promise<T | null> {
+// Single metric
+export function getMetric<K extends MetricTypeId>(
+    dateKey: DateKey,
+    metricTypeId: K
+): Promise<MetricTypes[K] | null> {
     return get(`/api/metrics/${dateKey}/${metricTypeId}`);
 }
 
-export function setMetric<T>(dateKey:DateKey, metricTypeId:MetricTypeId, value:T): Promise<boolean> {
-    return put(`/api/metrics/${dateKey}/${metricTypeId}`, { metricData: value });
+// Get all metrics for day
+export function getMetrics(
+    dateKey: DateKey
+): Promise<Partial<MetricTypes> | null> {
+    return get(`/api/metrics/${dateKey}`);
+}
+
+// Set single metric
+export function setMetric<K extends MetricTypeId>(
+    dateKey: DateKey,
+    metricTypeId: K,
+    value: MetricTypes[K]
+): Promise<boolean> {
+    return put(`/api/metrics/${dateKey}/${metricTypeId}`, {
+        metricData: value
+    });
+}
+
+// Set all input metrics for day
+export function setMetrics(
+    dateKey: DateKey,
+    value: Partial<MetricTypes>
+): Promise<boolean> {
+    return put(`/api/metrics/${dateKey}/${value}`);
 }
 
 // >>> AUTH <<<
@@ -59,7 +78,36 @@ export function refresh(request: RefreshRequest): Promise<RefreshResponse> {
     return post("/refresh", request);
 }
 
+// >>> JOURNEY <<<
+export async function getJourneySteps(
+    page: number
+): Promise<GetJourneyStepsResponse | null> {
+    const result = await get<GetJourneyStepsResponse>(
+        `/api/journeysteps/${page}`
+    );
 
-// share
+    console.log(result);
 
-// addFriend
+    if (!result)
+        return null;
+
+    return {
+        page: result.page,
+        pages: result.pages,
+        journeySteps: result.journeySteps.map(x => JourneyStep.fromJson(x))
+    };
+}
+
+export function likeJourneyStep(dateKey:DateKey, userId: string): Promise<{ liked: boolean }> {
+    return put(`/api/journeysteps/${dateKey}/${userId}/like`); 
+}
+
+export function putJournalStep(dateKey: DateKey): Promise<boolean> {
+    return put(`/api/journeysteps/${dateKey}`); 
+}
+
+export interface GetJourneyStepsResponse {
+    page: number;
+    pages: number;
+    journeySteps: JourneyStep[];
+}
