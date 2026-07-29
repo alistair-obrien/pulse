@@ -3,14 +3,20 @@ import "../styles/version-tag.css";
 
 const PlatformIcons: Record<string, string> = {
     web: "ri-global-line",
-    android: "ri-android-line",
-    ios: "ri-apple-line",
+    android: "ri-android-fill",
+    ios: "ri-apple-fill",
 };
 
 const EnvIcons: Record<string, string> = {
     LocalHost: "ri-computer-line",
-    Development: "ri-test-tube-line",
-    Production: "ri-rocket-line",
+    Development: "ri-code-line",
+    Production: "ri-sparkling-2-fill"
+};
+
+const EnvNames: Record<string, string> = {
+    LocalHost: "Local",
+    Development: "Dev",
+    Production: "Prod",
 };
 
 export class VersionTag {
@@ -29,12 +35,13 @@ export class VersionTag {
             ),
             this.createSeparator(),
             this.createItem(
-                versionData.environment,
+                EnvNames[versionData.environment] ?? "???",
                 EnvIcons[versionData.environment] ?? "ri-question-line"
             ),
             this.createSeparator(),
             this.createItem(
                 versionData.apiBase,
+                "ri-server-fill"
             ),
         );
     }
