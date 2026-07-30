@@ -1,4 +1,5 @@
 import * as API from "../api/API"
+import type { AppConfig } from "../AppConfig";
 
 interface AuthState {
     accessToken: string;
@@ -8,9 +9,13 @@ interface AuthState {
 
 let currentSession: AuthState | null = null;
 
-const STORAGE_KEY = "auth";
+let STORAGE_KEY = '';
 
 loadSession();
+
+export function initialize(appConfig:AppConfig) {
+    STORAGE_KEY = `${appConfig.environment}:auth`
+}
 
 export function isLoggedIn(): boolean {
     return currentSession !== null && Date.now() < currentSession.expiresAtUtc;

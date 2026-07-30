@@ -1,8 +1,8 @@
 import { defineConfig } from "vite";
 
-export default defineConfig(({ mode }) => ({
+export default defineConfig(() => ({
     build: {
-        outDir: `../publish/web/${mode.toLowerCase()}`,
+        outDir: process.env.VITE_OUT_DIR ?? "../publish/client/undefined",
         emptyOutDir: true,
     },
 }));

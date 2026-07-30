@@ -13,10 +13,16 @@ const EnvIcons: Record<string, string> = {
     Production: "ri-sparkling-2-fill"
 };
 
+const PlatformNames: Record<string, string> = {
+    web: "Web",
+    android: "Android",
+    ios: "ios",
+};
+
 const EnvNames: Record<string, string> = {
-    LocalHost: "Local",
-    Development: "Dev",
-    Production: "Prod",
+    LocalHost: "Localhost",
+    Development: "Development",
+    Production: "Produsction",
 };
 
 export class VersionTag {
@@ -28,22 +34,30 @@ export class VersionTag {
         this.root.id = "version-tag";
         this.root.className = "version-annotation";
 
-        this.root.append(
+        const topRow = document.createElement("div");
+        topRow.className = "row"
+        topRow.append(
             this.createItem(
-                versionData.platform,
+                PlatformNames[versionData.platform] ?? "???",
                 PlatformIcons[versionData.platform] ?? "ri-question-line"
             ),
+            this.createSeparator(),
+            this.createItem(`v.${versionData.versionNumber}`),
             this.createSeparator(),
             this.createItem(
                 EnvNames[versionData.environment] ?? "???",
                 EnvIcons[versionData.environment] ?? "ri-question-line"
             ),
-            this.createSeparator(),
+        );
+
+        this.root.append(topRow);
+
+        this.root.append(
             this.createItem(
                 versionData.apiBase,
                 "ri-server-fill"
-            ),
-        );
+            )
+        )
     }
 
     private createSeparator(): HTMLElement {

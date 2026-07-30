@@ -6,7 +6,7 @@ setlocal
 
 set "Environment=Local"
 
-powershell.exe -ExecutionPolicy Bypass -File "%~dp0../Scripts/build-server.ps1" -Environment "%Environment%"
+powershell.exe -ExecutionPolicy Bypass -File "%~dp0../../scripts/server/build-server.ps1" -Environment "%Environment%"
 
 if ($LASTEXITCODE -ne 0)
 {

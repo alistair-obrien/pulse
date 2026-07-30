@@ -2,63 +2,63 @@ function Get-EnvironmentConfig
 {
     param(
         [Parameter(Mandatory)]
-        [ValidateSet("Development", "Production", "Local")]
+        [ValidateSet("development", "production", "local")]
         [string]$Environment,
 
         [Parameter(Mandatory)]
-        [ValidateSet("Api", "Web")]
+        [ValidateSet("api", "client")]
         [string]$Application
     )
 
     switch ("$Application-$Environment")
     {
-        "Api-Development" {
+        "api-development" {
             return @{
                 Server      = "pulse"
-                PublishRoot = "/publish/api/development"
+                PublishRoot = "/publish/api"
                 ReleaseRoot = "/opt/pulse/development/releases"
                 CurrentRoot = "/opt/pulse/development/current"
                 Service     = "pulse-development"
             }
         }
 
-        "Api-Production" {
+        "api-production" {
             return @{
                 Server      = "pulse"
-                PublishRoot = "/publish/api/production"
+                PublishRoot = "/publish/api"
                 ReleaseRoot = "/opt/pulse/production/releases"
                 CurrentRoot = "/opt/pulse/production/current"
                 Service     = "pulse-production"
             }
         }
 
-        "Web-Development" {
+        "client-development" {
             return @{
                 Server      = "pulse"
-                PublishRoot = "/publish/web/development"
+                PublishRoot = "/publish/client"
                 ReleaseRoot = "/var/www/pulse/development/releases"
                 CurrentRoot = "/var/www/pulse/development/current"
             }
         }
 
-        "Web-Production" {
+        "client-production" {
             return @{
                 Server      = "pulse"
-                PublishRoot = "/publish/web/production"
+                PublishRoot = "/publish/client"
                 ReleaseRoot = "/var/www/pulse/production/releases"
                 CurrentRoot = "/var/www/pulse/production/current"
             }
         }
 
-        "Api-Local" {
+        "api-localhost" {
             return @{
                 PublishRoot = "/publish/api/local"
             }
         }
 
-        "Web-Local" {
+        "client-Local" {
             return @{
-                PublishRoot = "/publish/web/local"
+                PublishRoot = "/publish/client"
             }
         }
     }
