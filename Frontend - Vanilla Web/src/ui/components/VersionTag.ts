@@ -1,28 +1,56 @@
 import type { AppConfig } from "../../AppConfig";
 import "../styles/version-tag.css";
 
+// App Source
+const AppSourceIcons: Record<string, string> = {
+    LocalDeploy: "ri-u-disk-fill",
+    LiveReload: "ri-terminal-box-line",
+    development_android: "ri-google-play-line",
+    production_android: "ri-google-play-line",
+    development_ios: "ri-app-store-fill",
+    production_ios: "ri-app-store-fill",
+    development_web: "ri-server-fill",
+    production_web: "ri-server-fill"
+}
+
+const AppSourceNames: Record<string, string> = {
+    LocalDeploy: "Local Deploy",
+    LiveReload: "Live Reload",
+    development_android: "Play Store - Internal",
+    production_android: "Play Store",
+    development_ios: "App Store - Testflight",
+    production_ios: "App Store",
+    development_web: "https://dev.pulse-flow.app/",
+    production_web: "https://pulse-flow.app/"
+};
+
+// Platform
+const PlatformNames: Record<string, string> = {
+    web: "Web",
+    android: "Android",
+    ios: "iOS",
+};
 const PlatformIcons: Record<string, string> = {
     web: "ri-global-line",
     android: "ri-android-fill",
     ios: "ri-apple-fill",
 };
 
+// Env
+const EnvNames: Record<string, string> = {
+    LocalHost: "Local Host",
+    Development: "Development",
+    Production: "Production",
+};
 const EnvIcons: Record<string, string> = {
-    LocalHost: "ri-computer-line",
+    LocalHost: "ri-terminal-box-line",
     Development: "ri-code-line",
     Production: "ri-sparkling-2-fill"
 };
-
-const PlatformNames: Record<string, string> = {
-    web: "Web",
-    android: "Android",
-    ios: "ios",
-};
-
-const EnvNames: Record<string, string> = {
-    LocalHost: "Localhost",
-    Development: "Development",
-    Production: "Produsction",
+const EnvHostIcons: Record<string, string> = {
+    LocalHost: "ri-computer-line",
+    Development: "ri-server-fill",
+    Production: "ri-server-fill"
 };
 
 export class VersionTag {
@@ -34,29 +62,43 @@ export class VersionTag {
         this.root.id = "version-tag";
         this.root.className = "version-annotation";
 
-        const topRow = document.createElement("div");
-        topRow.className = "row"
-        topRow.append(
+        const clientRow = document.createElement("div");
+        clientRow.className = "row";
+        clientRow.classList.add("client");
+        clientRow.append(
             this.createItem(
                 PlatformNames[versionData.platform] ?? "???",
                 PlatformIcons[versionData.platform] ?? "ri-question-line"
             ),
             this.createSeparator(),
-            this.createItem(`v.${versionData.versionNumber}`),
+            this.createItem(
+                AppSourceNames[versionData.appSource] ?? "???",
+                AppSourceIcons[versionData.appSource] ?? "ri-question-line"
+            ),
             this.createSeparator(),
+            this.createItem(`v.${versionData.versionNumber}`),
+
+        );
+
+        this.root.append(clientRow);
+
+        const apiRow = document.createElement("div");
+        apiRow.className = "row";
+        apiRow.classList.add("api");
+        apiRow.append(
             this.createItem(
                 EnvNames[versionData.environment] ?? "???",
                 EnvIcons[versionData.environment] ?? "ri-question-line"
             ),
-        );
-
-        this.root.append(topRow);
-
-        this.root.append(
+            this.createSeparator(),
             this.createItem(
                 versionData.apiBase,
-                "ri-server-fill"
+                EnvHostIcons[versionData.environment]
             )
+        );
+
+        this.root.append(
+            apiRow
         )
     }
 

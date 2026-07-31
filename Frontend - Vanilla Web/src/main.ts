@@ -1,5 +1,6 @@
 import './ui/styles/main.css'
 
+
 import { Device } from "@capacitor/device";
 import { App } from "@capacitor/app"
 import * as DeviceMetricsSyncController from "./controllers/DeviceMetricsSyncController";
@@ -15,10 +16,14 @@ let version = "0";
 
 if (platform != "web")
 {
-    version = (await App.getInfo()).version;
+    const appInfo = await App.getInfo();
+    version = appInfo.version;
+    version = appInfo.version;
 }
-
+    
+declare const __APP_SOURCE__: string;
 const appConfig:AppConfig = {
+    appSource: __APP_SOURCE__,
     platform: platform,
     environment: import.meta.env.VITE_ENVIRONMENT,
     apiBase: import.meta.env.VITE_API_URL,

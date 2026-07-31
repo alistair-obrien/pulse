@@ -1,5 +1,6 @@
 
 export interface AppConfig {
+    readonly appSource: string;
     readonly platform: string;
     readonly environment: string;
     readonly apiBase: string;

@@ -11,7 +11,6 @@ def androidKeyPassword = System.getenv("ANDROID_KEY_PASSWORD")
 def defaultVersionCode = 1;
 def versionCodeProperty = project.findProperty("versionCode")
 
-
 android {
     namespace = "com.pixeldust.pulse"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -44,7 +43,33 @@ android {
         }
     }
 
+    flavorDimensions "environment"
+
+    productFlavors {
+        livereload {
+            dimension "environment"
+            applicationIdSuffix ".livereload"
+            resValue "string", "app_name", "Pulse Live Reload"
+        }
+
+        local {
+            dimension "environment"
+            applicationIdSuffix ".local"
+            resValue "string", "app_name", "Pulse Local"
+        }
+
+        production {
+            dimension "environment"
+            resValue "string", "app_name", "Pulse"
+        }
+    }
+
     buildTypes {
+        debug {
+            applicationIdSuffix ".dev"
+            versionNameSuffix "-dev"
+        }
+
         release {
             signingConfig signingConfigs.release
             minifyEnabled false

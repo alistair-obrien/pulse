@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.pixeldust.pulse',
-  appName: 'Pulse',
+  appId: "com.pixeldust.pulse",  
+  appName: "Pulse",
   webDir: process.env.PULSE_WEB_DIR ?? "dist",
   plugins: {
     SocialLogin: {
@@ -17,6 +17,7 @@ const config: CapacitorConfig = {
   }
 };
 
-console.log("webDir =", process.env.PULSE_WEB_DIR);
+console.log("webDir =", config.webDir);
+console.log("appId =", config.appId);
 
 export default config;

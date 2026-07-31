@@ -30,66 +30,63 @@ function PackageClient
 
     $ProjectRoot = Resolve-Path "$PSScriptRoot/../../../Frontend - Vanilla Web"
 
-    if ($Platform -eq "android")
+    $env:PULSE_APP_NAME = "Pulse"
+    try 
     {
-        Push-Location "$ProjectRoot"
-
-        try
+        if ($Platform -eq "android")
         {
-            # Update Capacitor config if required
-            # node scripts/set-capacitor-config.ts $Environment
-
-            Write-Host "Syncing Capacitor..."
-
-            $env:PULSE_WEB_DIR = $BuiltPath
-            npx cap sync android | Out-Host
-            if ($LASTEXITCODE -ne 0) { throw "Capacitor sync failed." }
-
-            # Push-Location $BuiltPath
-            Push-Location "android"
+            Push-Location "$ProjectRoot"
 
             try
             {
-                Write-Host "Building Android App Bundle..."
+                Write-Host "Syncing Capacitor..."
 
-                # TODO: Move these from local secrets to server .env
-                # That way new dev environments are easier to setup and controlled by the ssh user's permissions 
-                $env:ANDROID_STORE_FILE     = Get-Secret AndroidStoreFile -AsPlainText
-                $env:ANDROID_STORE_PASSWORD = Get-Secret AndroidStorePassword -AsPlainText
-                $env:ANDROID_KEY_ALIAS      = Get-Secret AndroidKeyAlias -AsPlainText
-                $env:ANDROID_KEY_PASSWORD   = Get-Secret AndroidKeyPassword -AsPlainText
+                $env:PULSE_WEB_DIR = $BuiltPath
+                npx cap sync android | Out-Host
+                if ($LASTEXITCODE -ne 0) { throw "Capacitor sync failed." }
 
-                $CurrentVersionCode = Get-PlayStoreVersionCode -Environment $Environment
-                $NextVersionCode = $CurrentVersionCode + 1
+                Push-Location "android"
 
-                ./gradlew bundleRelease "-PversionCode=$NextVersionCode" | Out-Host
-                if ($LASTEXITCODE -ne 0) { throw "Gradle build failed." }
+                try
+                {
+                    Write-Host "Building Android App Bundle..."
 
-                $Artifact = Resolve-Path "app/build/outputs/bundle/release/app-release.aab"
-                
-                $OutputFile = Join-Path "$BuiltPath" "Pulse.aab"
-                
-                Copy-Item $Artifact $OutputFile -Force
+                    # TODO: Move these from local secrets to server .env
+                    # That way new dev environments are easier to setup and controlled by the ssh user's permissions 
+                    $env:ANDROID_STORE_FILE     = Get-Secret AndroidStoreFile -AsPlainText
+                    $env:ANDROID_STORE_PASSWORD = Get-Secret AndroidStorePassword -AsPlainText
+                    $env:ANDROID_KEY_ALIAS      = Get-Secret AndroidKeyAlias -AsPlainText
+                    $env:ANDROID_KEY_PASSWORD   = Get-Secret AndroidKeyPassword -AsPlainText
+
+                    $CurrentVersionCode = Get-PlayStoreVersionCode -Environment $Environment
+                    $NextVersionCode = $CurrentVersionCode + 1
+
+                    ./gradlew bundleRelease "-PversionCode=$NextVersionCode" | Out-Host
+                    if ($LASTEXITCODE -ne 0) { throw "Gradle build failed." }
+
+                    $Artifact = Resolve-Path "app/build/outputs/bundle/release/app-release.aab"
+                    
+                    $OutputFile = Join-Path "$BuiltPath" "Pulse.aab"
+                    
+                    Copy-Item $Artifact $OutputFile -Force
+                }
+                finally
+                {
+                    # Pop-Location
+                    Pop-Location
+                }
             }
             finally
             {
-                # Pop-Location
                 Pop-Location
             }
         }
-        finally
-        {
-            Pop-Location
-        }
+    } 
+    finally 
+    {
+        Remove-Item Env:PULSE_APP_ID -ErrorAction Ignore
     }
 
-    # TODO:
-    if ($Platform -eq "ios") 
-    {
-        # TODO: This only needs to be set when we rely on capacitor for a build
-        # node scripts/set-capacitor-config.ts $Environment
-    }
-    
     LogFooter -Title "Pulse Client v.$NextVersionCode Packaged $OutputFile" 
     return [PSCustomObject]@{
         OutputFile  = $OutputFile

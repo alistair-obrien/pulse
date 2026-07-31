@@ -12,6 +12,7 @@ $ErrorActionPreference = "Stop"
 
 LogPipelineHeader -Title "Starting Live Session" -Environment $Environment -Platform $Platform
 
+$env:VITE_APP_SOURCE = "LiveReload"
 $BuiltPath = BuildClient -Environment $Environment -Platform $Platform
 
 # Move to the correct working folder
@@ -25,6 +26,8 @@ if ($Platform -eq "web")
     Pop-Location
     return
 }
+
+Remove-Item Env:VITE_APP_SOURCE -ErrorAction Ignore
 
 $CapPort="5173" # Same as Vite
 $CapHost = (
@@ -47,7 +50,7 @@ $BuiltPath = (Resolve-Path $BuiltPath).Path
 LogHeader -Title "Running Capacitor Run" -Environment $Environment -Platform $Platform
 $env:PULSE_WEB_DIR = $BuiltPath
 npx cap copy $Platform
-npx cap run $Platform --live-reload --host $CapHost --port $CapPort
+npx cap run $Platform --live-reload --host $CapHost --port $CapPort --flavor livereload
 Remove-Item Env:PULSE_WEB_DIR
 
 LogFooter -Title "Capacitor Run Ran"
