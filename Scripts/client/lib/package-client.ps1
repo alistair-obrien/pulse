@@ -61,10 +61,10 @@ function PackageClient
                     $CurrentVersionCode = Get-PlayStoreVersionCode -Environment $Environment
                     $NextVersionCode = $CurrentVersionCode + 1
 
-                    ./gradlew bundleRelease "-PversionCode=$NextVersionCode" | Out-Host
+                    ./gradlew bundleProductionRelease "-PversionCode=$NextVersionCode" | Out-Host
                     if ($LASTEXITCODE -ne 0) { throw "Gradle build failed." }
 
-                    $Artifact = Resolve-Path "app/build/outputs/bundle/release/app-release.aab"
+                    $Artifact = Resolve-Path "app/build/outputs/bundle/productionRelease/app-production-release.aab"
                     
                     $OutputFile = Join-Path "$BuiltPath" "Pulse.aab"
                     

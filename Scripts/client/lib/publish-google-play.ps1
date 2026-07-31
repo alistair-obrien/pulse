@@ -23,6 +23,9 @@ function PublishGooglePlay
 
     Push-Location $AndroidProjectPath
 
+    Write-Host "Version Code"
+    Write-Host $VersionCode
+
     try
     {
         # Authorization
@@ -30,7 +33,7 @@ function PublishGooglePlay
         $json = Get-Content $path -Raw
         $env:ANDROID_PUBLISHER_CREDENTIALS = $json
 
-        ./gradlew publishBundle --artifact-dir $PackagedPath --track=internal
+        ./gradlew publishProductionReleaseBundle --artifact-dir $PackagedPath --track=internal
         # --info <- Add this to get detailed logs when something breaks
 
         if ($LASTEXITCODE -ne 0) 

@@ -46,21 +46,15 @@ android {
     flavorDimensions "environment"
 
     productFlavors {
+        production {
+            dimension "environment"
+            resValue "string", "app_name", "Pulse"
+        }
+
         livereload {
             dimension "environment"
             applicationIdSuffix ".livereload"
             resValue "string", "app_name", "Pulse Live Reload"
-        }
-
-        local {
-            dimension "environment"
-            applicationIdSuffix ".local"
-            resValue "string", "app_name", "Pulse Local"
-        }
-
-        production {
-            dimension "environment"
-            resValue "string", "app_name", "Pulse"
         }
     }
 
