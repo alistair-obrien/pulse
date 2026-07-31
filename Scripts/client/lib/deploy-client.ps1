@@ -15,9 +15,9 @@ function DeployClient
     )
     $ErrorActionPreference = "Stop"
 
-    . "$PSScriptRoot/../common/console-logger.ps1"
-    . "$PSScriptRoot/../common/upload-release.ps1"
-    . "$PSScriptRoot/../common/activate-release.ps1"
+    . "$PSScriptRoot/../../common/lib/console-logger.ps1"
+    . "$PSScriptRoot/../../common/lib/upload-release.ps1"
+    . "$PSScriptRoot/../../common/lib/activate-release.ps1"
     . "$PSScriptRoot/publish-google-play.ps1"
 
     LogHeader -Title "Deploying Pulse Client" -Environment $Environment -Platform $Platform

@@ -2,6 +2,8 @@ import { Card } from "../components/Card";
 import { TextLine } from "../components/TextLine";
 import * as HEVY from "../../platform/hevy";
 import * as AuthController from "../../controllers/AuthController"
+import { ActionButton } from "../components/ActionButton";
+import { ICONS } from "../components/ICONS";
 
 let root!: HTMLElement;
 
@@ -83,12 +85,22 @@ function renderLoggedOut(): HTMLElement {
         }
     };
 
+    const row = document.createElement("div");
+    row.className = "row";
+    row.append(
+        new ActionButton("Google", ICONS.GoogleLogin, () => AuthController.loginGoogle()).root,
+        new ActionButton("Facebook", ICONS.FacebookLogin, () => AuthController.loginFacebook()).root,
+        new ActionButton("Apple", ICONS.AppleLogin, () => AuthController.loginApple()).root,
+        new ActionButton("Twitter", ICONS.TwitterLogin, () => AuthController.loginTwitter()).root,
+    );
+
     card.append(
         email,
         password,
         register,
         login,
-        status
+        status,
+        row
     );
 
     return root;

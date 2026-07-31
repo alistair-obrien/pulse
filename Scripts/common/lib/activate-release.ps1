@@ -15,7 +15,7 @@ function ActivateRelease
     $ErrorActionPreference = "Stop"
 
     . "$PSScriptRoot/config.ps1"
-    . "$PSScriptRoot/../common/console-logger.ps1"
+    . "$PSScriptRoot/console-logger.ps1"
 
     $Config = Get-EnvironmentConfig -Environment $Environment -Application $Application
 

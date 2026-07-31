@@ -23,11 +23,11 @@ export class PulseApp {
     private readonly screenContainer:HTMLElement;
 
     private splashEnabled: boolean;
-    private showVersionText: boolean;
+    private showDebugVersionAnnotation: boolean;
 
-    constructor(appConfig:AppConfig, splashEnabled:boolean = true, showVersionText:boolean = true) {
-        this.splashEnabled = splashEnabled;
-        this.showVersionText = showVersionText;
+    constructor(appConfig:AppConfig) {
+        this.splashEnabled = appConfig.splashEnabled;
+        this.showDebugVersionAnnotation = appConfig.showDebugVersionAnnotation;
     
         const app = document.createElement("div");
         app.className = "app";
@@ -48,7 +48,7 @@ export class PulseApp {
 
         this.version_tag = new VersionTag(appConfig);
         app.append(this.version_tag.root);
-        this.setVersionVisibility(this.showVersionText);
+        this.setVersionVisibility(this.showDebugVersionAnnotation);
     }
 
     cachedSplashScreen:HTMLElement|null = null;
@@ -93,7 +93,7 @@ export class PulseApp {
     }
 
     setVersionVisibility(value:boolean) {
-        this.showVersionText = value;
+        this.showDebugVersionAnnotation = value;
         // TODO: actually disable it
     }
 }

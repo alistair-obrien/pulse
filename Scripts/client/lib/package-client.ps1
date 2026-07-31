@@ -15,7 +15,7 @@ function PackageClient
     )
     $ErrorActionPreference = "Stop"
 
-    . "$PSScriptRoot/../common/console-logger.ps1"
+    . "$PSScriptRoot/../../common/lib/console-logger.ps1"
     . "$PSScriptRoot/play-store-version.ps1"
 
     # Web does not need packaging
@@ -28,7 +28,7 @@ function PackageClient
 
     LogHeader -Title "Packaging Pulse Client" -Environment $Environment -Platform $Platform
 
-    $ProjectRoot = Resolve-Path "$PSScriptRoot/../../Frontend - Vanilla Web"
+    $ProjectRoot = Resolve-Path "$PSScriptRoot/../../../Frontend - Vanilla Web"
 
     if ($Platform -eq "android")
     {
@@ -52,17 +52,14 @@ function PackageClient
             {
                 Write-Host "Building Android App Bundle..."
 
+                # TODO: Move these from local secrets to server .env
+                # That way new dev environments are easier to setup and controlled by the ssh user's permissions 
                 $env:ANDROID_STORE_FILE     = Get-Secret AndroidStoreFile -AsPlainText
                 $env:ANDROID_STORE_PASSWORD = Get-Secret AndroidStorePassword -AsPlainText
                 $env:ANDROID_KEY_ALIAS      = Get-Secret AndroidKeyAlias -AsPlainText
                 $env:ANDROID_KEY_PASSWORD   = Get-Secret AndroidKeyPassword -AsPlainText
 
-                # Write-Host $env:ANDROID_STORE_FILE
-                # Write-Host $env:ANDROID_STORE_PASSWORD
-                # Write-Host $env:ANDROID_KEY_ALIAS
-                # Write-Host $env:ANDROID_KEY_PASSWORD
-
-                $CurrentVersionCode = Get-PlayStoreVersionCode
+                $CurrentVersionCode = Get-PlayStoreVersionCode -Environment $Environment
                 $NextVersionCode = $CurrentVersionCode + 1
 
                 ./gradlew bundleRelease "-PversionCode=$NextVersionCode" | Out-Host

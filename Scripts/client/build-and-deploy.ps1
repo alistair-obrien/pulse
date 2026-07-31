@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory)]
-    [ValidateSet("Development","Production")]
+    [ValidateSet("development", "production")]
     [string]$Environment,
 
     [Parameter(Mandatory)]
@@ -9,14 +9,14 @@ param(
 )
 $ErrorActionPreference = "Stop"
 
-. "$PSScriptRoot/../common/console-logger.ps1"
-. "$PSScriptRoot/build-client.ps1"
-. "$PSScriptRoot/package-client.ps1"
-. "$PSScriptRoot/deploy-client.ps1"
+. "$PSScriptRoot/../common/lib/console-logger.ps1"
+. "$PSScriptRoot/lib/build-client.ps1"
+. "$PSScriptRoot/lib/package-client.ps1"
+. "$PSScriptRoot/lib/deploy-client.ps1"
 
 LogPipelineHeader -Title "Building & Deploying Pulse Client" -Environment $Environment -Platform $Platform
 
-$BuiltPath = BuildClient -Environment $Environment -Platform $Platform
+$BuiltPath = BuildClient -Environment $Environment -Platform $Platform -CleanInstall
  
 $PackageResult = PackageClient -Environment $Environment -Platform $Platform -BuiltPath $BuiltPath
 

@@ -1,3 +1,4 @@
+import type { GoogleLoginResponse } from "@capgo/capacitor-social-login";
 import type { DateKey } from "../data-store/DateKey";
 import { JourneyStep } from "../models/JourneyStep";
 import type { MetricTypeId, MetricTypes } from "../models/MetricRegistry";
@@ -63,6 +64,16 @@ export interface LoginResponse {
 }
 export function login(request: LoginRequest): Promise<LoginResponse> {
     return post("/login", request, false);
+}
+
+export function googleLogin(request: GoogleLoginResponse): Promise<LoginResponse> {
+    if (request.responseType !== "online" || !request.idToken) {
+        throw new Error("Google login did not return an ID token.");
+    }
+
+    return post("/api/auth/google", {
+        idToken: request.idToken
+    }, false);
 }
 
 export interface RefreshRequest {

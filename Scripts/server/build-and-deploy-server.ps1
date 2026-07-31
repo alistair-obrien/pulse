@@ -4,14 +4,14 @@ param(
     [string]$Environment
 )
 
-. "$PSScriptRoot/../common/config.ps1"
-. "$PSScriptRoot/../common/console-logger.ps1"
-. "$PSScriptRoot/restart-server.ps1"
-. "$PSScriptRoot/log-server.ps1"
-. "$PSScriptRoot/../common/upload-release.ps1"
-. "$PSScriptRoot/migrate-database.ps1" 
-. "$PSScriptRoot/../common/activate-release.ps1"
-. "$PSScriptRoot/build-server.ps1"
+. "$PSScriptRoot/../common/lib/config.ps1"
+. "$PSScriptRoot/../common/lib/console-logger.ps1"
+. "$PSScriptRoot/lib/restart-server.ps1"
+. "$PSScriptRoot/lib/log-server.ps1"
+. "$PSScriptRoot/../common/lib/upload-release.ps1"
+. "$PSScriptRoot/lib/migrate-database.ps1" 
+. "$PSScriptRoot/../common/lib/activate-release.ps1"
+. "$PSScriptRoot/lib/build-server.ps1"
 
 $ErrorActionPreference = "Stop"
 

@@ -14,12 +14,12 @@ function PublishGooglePlay
     )
     $ErrorActionPreference = "Stop"
 
-    . "$PSScriptRoot/../common/console-logger.ps1"
+    . "$PSScriptRoot/../../common/lib/console-logger.ps1"
     . "$PSScriptRoot/play-store-version.ps1"
 
     LogHeader -Title "Publishing Pulse Client v.$VersionCode to Google Playstore" -Environment $Environment -Platform "android"
     
-    $AndroidProjectPath = Resolve-Path "$PSScriptRoot/../../Frontend - Vanilla Web/android"
+    $AndroidProjectPath = Resolve-Path "$PSScriptRoot/../../../Frontend - Vanilla Web/android"
 
     Push-Location $AndroidProjectPath
 
@@ -38,7 +38,7 @@ function PublishGooglePlay
             throw "gradlew publish failed."
         }
 
-        Set-PlayStoreVersionCode -VersionCode $VersionCode
+        Set-PlayStoreVersionCode -VersionCode $VersionCode -Environment $Environment
     }
     finally
     {

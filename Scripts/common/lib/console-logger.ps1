@@ -5,7 +5,9 @@ function LogHeader {
 
         [string]$Environment,
         
-        [string]$Platform
+        [string]$Platform,
+
+        [string]$Application
     )
 
     Write-Host ""
@@ -15,10 +17,10 @@ function LogHeader {
     {
         $environmentColor = switch ($Environment)
         {
-            "Development" { "Cyan" }
-            "Production"  { "Magenta" }
-            "Local"       { "White" }
-            "Default"     { "Grey" }
+            "development" { "Cyan" }
+            "production"  { "Magenta" }
+            "localhost"       { "White" }
+            "default"     { "Grey" }
         }
 
         Write-Host "[" -NoNewline -ForegroundColor DarkBlue
@@ -30,15 +32,28 @@ function LogHeader {
     {
         $platformColor = switch ($Platform)
         {
-            "Web"     { "White" }
-            "Android" { "Cyan" }
-            "iOS"     { "Magenta" }
-            "Default" { "Grey" }
+            "web"     { "White" }
+            "android" { "Cyan" }
+            "ios"     { "Magenta" }
+            "default" { "Grey" }
         }
 
         Write-Host "[" -NoNewline -ForegroundColor DarkBlue
         Write-Host $Platform -NoNewline -ForegroundColor $platformColor
         Write-Host "] " -NoNewline -ForegroundColor DarkBlue
+    }
+
+    if ($Application)
+    {
+        $applicationColor = switch ($Application)
+        {
+            "api"     { "White" }
+            "client"  { "Cyan" }
+        }
+
+        Write-Host "[" -NoNewline -ForegroundColor Blue
+        Write-Host $Application -NoNewline -ForegroundColor $applicationColor
+        Write-Host "] " -NoNewline -ForegroundColor Blue
     }
 
     Write-Host $Title -NoNewline -ForegroundColor DarkBlue
@@ -65,7 +80,9 @@ function LogPipelineHeader {
 
         [string]$Environment,
         
-        [string]$Platform
+        [string]$Platform,
+
+        [string]$Application
     )
 
     Write-Host ""
@@ -75,10 +92,10 @@ function LogPipelineHeader {
     {
         $environmentColor = switch ($Environment)
         {
-            "Development" { "Cyan" }
-            "Production"  { "Magenta" }
-            "Local"       { "White" }
-            "Default"     { "Grey" }
+            "development" { "Cyan" }
+            "production"  { "Magenta" }
+            "localhost"   { "White" }
+            "default"     { "Grey" }
         }
 
         Write-Host "[" -NoNewline -ForegroundColor Blue
@@ -90,14 +107,27 @@ function LogPipelineHeader {
     {
         $platformColor = switch ($Platform)
         {
-            "Web"     { "White" }
-            "Android" { "Cyan" }
-            "iOS"     { "Magenta" }
-            "Default" { "Grey" }
+            "web"     { "White" }
+            "android" { "Cyan" }
+            "ios"     { "Magenta" }
+            "default" { "Grey" }
         }
 
         Write-Host "[" -NoNewline -ForegroundColor Blue
         Write-Host $Platform -NoNewline -ForegroundColor $platformColor
+        Write-Host "] " -NoNewline -ForegroundColor Blue
+    }
+
+    if ($Application)
+    {
+        $applicationColor = switch ($Application)
+        {
+            "api"     { "White" }
+            "client"  { "Cyan" }
+        }
+
+        Write-Host "[" -NoNewline -ForegroundColor Blue
+        Write-Host $Application -NoNewline -ForegroundColor $applicationColor
         Write-Host "] " -NoNewline -ForegroundColor Blue
     }
 

@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Pulse.Api.Integrations.Hevy;
+using Microsoft.IdentityModel.Tokens;
 using Pulse.Api.Services;
 using Pulse.Infrastructure;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +19,24 @@ builder.Services.AddDbContext<PulseDbContext>(options =>
 builder.Services
     .AddIdentityApiEndpoints<ApplicationUser>()
     .AddEntityFrameworkStores<PulseDbContext>();
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new()
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+        };
+    });
 
 builder.Services.AddAuthorization();
 
@@ -45,13 +65,8 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Workouts
-// Add this singleton. It does not require scoped services. Its just data transformation
-builder.Services.AddSingleton<WorkoutStatisticsCalculator>();
-
 // Hevy Provider
-builder.Services.Configure<HevyOptions>(builder.Configuration.GetSection("Hevy"));
-builder.Services.AddHttpClient<HevyClient>();
+builder.Services.Configure<AuthTokenService>(builder.Configuration.GetSection("Hevy"));
 //builder.Services.AddScoped<IWorkoutProvider, HevyWorkoutProvider>();
 
 var migrate = args.Contains("--migrate", StringComparer.OrdinalIgnoreCase);
@@ -67,7 +82,7 @@ if (migrate)
 var app = builder.Build();
 
 // Web Server Mode
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.UseCors("Default");
 
 app.UseAuthentication();

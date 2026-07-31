@@ -2,7 +2,7 @@ function Get-EnvironmentConfig
 {
     param(
         [Parameter(Mandatory)]
-        [ValidateSet("development", "production", "local")]
+        [ValidateSet("development", "production", "localhost")]
         [string]$Environment,
 
         [Parameter(Mandatory)]
@@ -52,11 +52,11 @@ function Get-EnvironmentConfig
 
         "api-localhost" {
             return @{
-                PublishRoot = "/publish/api/local"
+                PublishRoot = "/publish/api/localhost"
             }
         }
 
-        "client-Local" {
+        "client-localhost" {
             return @{
                 PublishRoot = "/publish/client"
             }

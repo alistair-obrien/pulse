@@ -1,14 +1,13 @@
 param(
     [Parameter(Mandatory)]
-    [ValidateSet("development", "production", "local")]
-    [string]$Environment,
-
-    [switch]$Pipeline
+    [ValidateSet("development", "production", "localhost")]
+    [string]$Environment
 )
 $ErrorActionPreference = "Stop"
 
-. "$PSScriptRoot/log-server.ps1"
-. "$PSScriptRoot/../common/console-logger.ps1"
+
+. "$PSScriptRoot/lib/log-server.ps1"
+. "$PSScriptRoot/../common/lib/console-logger.ps1"
 
 LogPipelineHeader -Title "Logging Server Service" -Environment $Environment
 LogServer -Environment $Environment

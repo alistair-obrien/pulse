@@ -22,15 +22,17 @@ const appConfig:AppConfig = {
     platform: platform,
     environment: import.meta.env.VITE_ENVIRONMENT,
     apiBase: import.meta.env.VITE_API_URL,
-    versionNumber: version
+    versionNumber: version,
+    splashEnabled: import.meta.env.VITE_SPLASH_ENABLED === "true",
+    showDebugVersionAnnotation: import.meta.env.VERSION_TEXT_ENABLED === "true",
+    socialLoginIds: {
+        googleWebClientId: import.meta.env.VITE_GOOGLE_LOGIN_WEBCLIENT_ID
+    }
 }
 
 await DeviceMetricsSyncController.initialize(appConfig);
 await AuthController.initialize(appConfig);
 await APIClient.initialize(appConfig);
 
-const splashEnabled = import.meta.env.VITE_SPLASH_ENABLED === "true";
-const versionTextEnabled = import.meta.env.VERSION_TEXT_ENABLED === "true";
-
- const pulseApp = new PulseApp(appConfig, splashEnabled, versionTextEnabled);
+ const pulseApp = new PulseApp(appConfig);
  await pulseApp.start();

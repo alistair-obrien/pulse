@@ -15,7 +15,7 @@ function UploadRelease
     )
     $ErrorActionPreference = "Stop"
 
-    . "$PSScriptRoot/../common/console-logger.ps1"
+    . "$PSScriptRoot/console-logger.ps1"
     . "$PSScriptRoot/config.ps1"
 
     $Config = Get-EnvironmentConfig -Environment $Environment -Application $Application
