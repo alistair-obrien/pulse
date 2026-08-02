@@ -20,13 +20,13 @@ Write-Host $pwd
 
 try 
 {
-    LogPipelineHeader -Title "Building & Deploying Pulse API" -Environment $Environment
+    LogPipelineHeader -Title "Building & Deploying Pulse API" -Environment $Environment -Application api
 
     # Docker Builds an Image
     $BuildResult = BuildAPI -Environment $Environment 
 
     # Docker Publishes the Image to the Registry
-    $PublishedPackage = PublishPackage -Package $BuildResult
+    $PublishedPackage = PublishPackage -Package $BuildResult -Environment $Environment # Add registry to publish to so local builds can be in a local registry
 
     # We tell the server to pull the new image and restart the container
     ActivateRelease -Environment $Environment -Application api -PublishedPackage $PublishedPackage 

@@ -1,3 +1,7 @@
+. "$PSScriptRoot/console-logger.ps1"
+. "$PSScriptRoot/run-shell-command.ps1"
+
+# ALWAYS LOCAL
 function DockerBuildImage
 {
     param(
@@ -14,54 +18,22 @@ function DockerBuildImage
     )
 
     $DockerArgs = @()
-
     foreach ($arg in $BuildArgs.GetEnumerator())
     {
         $DockerArgs += "--build-arg"
         $DockerArgs += "$($arg.Key)=$($arg.Value)"
     }
+    $BuildArgString = ($DockerArgs -join " ")
 
-    docker build `
-        -f $Dockerfile `
-        -t $Image `
-        @DockerArgs `
-        $Context | Out-Host
-
-    if ($LASTEXITCODE -ne 0)
-    {
-        throw "Docker build failed."
-    }
+    RunShellCommand `
+        -Command "docker build -f $Dockerfile -t $Image $BuildArgString $Context" `
+        -ErrorMessage "Failed to build image $DockerFile $Context $Image."
 
     return [PSCustomObject]@{
         Type = "DockerImage"
         Image = $Image
         BuildArgs = $BuildArgs
     }
-}
-
-function InvokeDockerBuilder
-{
-    param(
-        [string]$Source,
-        [string]$Publish,
-        [string]$Image,
-        [string[]]$Command
-    )
-
-    LogHeader -Title "Building with Docker"
-
-    docker run --rm `
-        --mount "type=bind,src=$Source,dst=/src" `
-        --mount "type=bind,src=$Publish,dst=/publish" `
-        $Image `
-        @Command | Out-Host
-
-    if ($LASTEXITCODE -ne 0)
-    {
-        throw "Docker build failed."
-    }
-
-    LogFooter -Title "Built with Docker"
 }
 
 function DockerRegistryLogin
@@ -71,11 +43,19 @@ function DockerRegistryLogin
         [string]$Registry
     )
 
-    docker manifest inspect "$Registry/pulse-api:development" *> $null
-
-    if ($LASTEXITCODE -eq 0)
+    # Is Docker already authenticated?
+    try
     {
+        Invoke-WebRequest "https://$Registry/v2/" -UseBasicParsing
         return $true
+    }
+    catch
+    {
+        if ($_.Exception.Response.StatusCode -eq 401)
+        {
+            # Registry requires authentication.
+            # This DOES NOT mean Docker isn't already logged in.
+        }
     }
 
     Write-Host "Authentication required for Docker registry '$Registry'."
@@ -103,35 +83,162 @@ function DockerRegistryLogin
     }
 }
 
-# HACK: Not ideal as this does remote execution
-function DockerRestartContainer
+# SELECTED HOST
+function DockerEnsureNetwork
 {
-    param
-    (
+    param(
         [Parameter(Mandatory)]
-        [ValidateSet("development", "production", "localhost")]
-        [string]$Environment,
+        [string]$Server,
 
         [Parameter(Mandatory)]
-        [ValidateSet("api")]
-        [string]$Application
+        [string]$Network
     )
-    $ErrorActionPreference = "Stop"
+
+    LogHeader -Title "Ensuring Docker Network '$Network'"
+
+    $command = @(
+        "sudo docker network inspect $Network > /dev/null 2>&1 ||"
+        "sudo docker network create $Network"
+    ) -join "`n"
+
+    RunShellCommand `
+        -Server $Server `
+        -Command $command `
+        -ErrorMessage "Failed to ensure docker network."
+
+    LogFooter -Title "Docker Network '$Network' Ready"
+}
+
+function DockerEnsureVolume
+{
+    param(
+        [Parameter(Mandatory)]
+        [string]$Server,
+
+        [Parameter(Mandatory)]
+        [string]$Volume
+    )
+
+    LogHeader -Title "Ensuring Docker Volume '$Volume'"
+
+    $command = @(
+        "sudo docker volume inspect $Volume > /dev/null 2>&1 ||"
+        "sudo docker volume create $Volume"
+    ) -join "`n"
+
+    RunShellCommand `
+        -Server $Server `
+        -Command $command `
+        -ErrorMessage "Failed to ensure docker volume."
+
+    LogFooter -Title "Docker Volume '$Volume' Ready"
+}
+
+function DockerPullImage
+{
+    param(
+        [Parameter(Mandatory)]
+        [string]$Server,
+
+        [Parameter(Mandatory)]
+        [string]$Image
+    )
+
+    LogHeader -Title "Pulling Docker Image $Image"
+
+    RunShellCommand `
+        -Server $Server `
+        -Command "sudo docker pull $Image" `
+        -ErrorMessage "Failed to pull docker image."
+
+    LogFooter -Title "Docker Image Pulled"
+}
+
+function DockerRemoveContainer
+{
+    param(
+        [Parameter(Mandatory)]
+        [string]$Server,
+
+        [Parameter(Mandatory)]
+        [string]$Container
+    )
+
+    LogHeader -Title "Removing Docker Container '$Container'"
+
+    $command = @(
+        "sudo docker rm -f $Container 2>/dev/null || true"
+    ) -join "`n"
+
+    RunShellCommand `
+        -Server $Server `
+        -Command $command `
+        -ErrorMessage "Failed to remove docker container."
+
+    LogFooter -Title "Docker Container '$Container' Removed"
+}
+
+function DockerRunContainer
+{
+    param(
+        [Parameter(Mandatory)]
+        [string]$Server,
+
+        [Parameter(Mandatory)]
+        [string]$Arguments
+    )
+
+    LogHeader -Title "Starting Docker Container"
+
+    RunShellCommand `
+        -Server $Server `
+        -Command "sudo docker run $Arguments" `
+        -ErrorMessage "Failed to run docker container."
+
+    LogFooter -Title "Docker Container Started"
+}
+
+# Do later
+function DockerWaitForContainer
+{
+
+}
+
+function DockerRestartContainer
+{
+    param(
+        [Parameter(Mandatory)]
+        [string]$Server,
+        [Parameter(Mandatory)]
+        [string]$Container
+        )
         
-    . "$PSScriptRoot/config.ps1"
-    . "$PSScriptRoot/console-logger.ps1"
-    . "$PSScriptRoot/invoke-remote.ps1"
-    
-    $Config = Get-EnvironmentConfig -Environment $Environment -Application Api
-    
-    LogHeader -Title "Restarting Docker Container" -Environment $Environment -Application $Application
-    
-    InvokeRemote $Config.Server "sudo docker restart pulse-$Application-$Environment"
-    
-    if ($LASTEXITCODE -ne 0)
-    {
-        throw "Restart failed."
-    }
-    
-    LogFooter -Title "Restarted Docker Container"
+    $command = "sudo docker restart $Container"
+    LogHeader -Title "Restarting Docker Container '$Container' on '$Server'"
+
+    RunShellCommand `
+        -Server $Server `
+        -Command $command `
+        -ErrorMessage "Failed to restart container."
+
+    LogFooter -Title "Restarted Docker Container '$Container' on '$Server'"
+}
+
+function DockerLogContainer
+{
+    param(
+        [Parameter(Mandatory)]
+        [string]$Server,
+
+        [Parameter(Mandatory)]
+        [string]$Container
+    )
+
+    LogHeader -Title "Logging Docker Container '$Container' on '$Server'"
+
+
+    RunShellCommand `
+        -Server $Server `
+        -Command "sudo docker logs -f $Container" `
+        -ErrorMessage "Failed to stream docker logs."
 }

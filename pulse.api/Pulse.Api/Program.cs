@@ -69,54 +69,16 @@ builder.Services.AddCors(options =>
 builder.Services.Configure<AuthTokenService>(builder.Configuration.GetSection("Hevy"));
 //builder.Services.AddScoped<IWorkoutProvider, HevyWorkoutProvider>();
 
-var migrate = args.Contains("--migrate", StringComparer.OrdinalIgnoreCase);
-
-if (migrate)
-{
-    await Migrate(builder);
-    return;
-}
-
 // Daily Log Import Service
 //builder.Services.AddScoped<DailyLogImportService>();
 var app = builder.Build();
 
-// Web Server Mode
-//app.UseHttpsRedirection();
-app.UseCors("Default");
-
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.MapIdentityApi<ApplicationUser>();
-app.MapControllers();
-app.Run();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// ==== MIGRATION ===
-// TODO: Move to its own console app
-static async Task Migrate(WebApplicationBuilder builder)
+// Migrations
+using (var scope = app.Services.CreateScope())
 {
-    Console.WriteLine($"Migration Starting");
-    Console.WriteLine($"Environment: {builder.Environment.EnvironmentName}");
-
-    var services = builder.Services.BuildServiceProvider();
-
-    using var scope = services.CreateScope();
-
     var db = scope.ServiceProvider.GetRequiredService<PulseDbContext>();
+
+    Console.WriteLine("Checking for pending migrations");
 
     await db.Database.MigrateAsync();
 
@@ -131,3 +93,14 @@ static async Task Migrate(WebApplicationBuilder builder)
     foreach (var migration in pending)
         Console.WriteLine($"  Pending: {migration}");
 }
+
+// Web Server Mode
+//app.UseHttpsRedirection();
+app.UseCors("Default");
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapIdentityApi<ApplicationUser>();
+app.MapControllers();
+app.Run();

@@ -16,35 +16,29 @@ function ActivateRelease
 
     . "$PSScriptRoot/config.ps1"
     . "$PSScriptRoot/console-logger.ps1"
-    . "$PSScriptRoot/invoke-remote.ps1"
+    . "$PSScriptRoot/run-shell-command.ps1"
     . "$PSScriptRoot/docker.ps1"
 
     $Config = Get-EnvironmentConfig -Environment $Environment -Application $Application
 
-    $RegistryImage = $PublishedPackage.Image
+    $RegistryImage = $PublishedPackage.RegistryImage
 
-    LogHeader -Title "Activating $Application Release $RegistryImage" -Environment $Environment
+    LogHeader -Title "Activating $RegistryImage" -Environment $Environment -Application $Application
 
     $ContainerName = "pulse-$Application-$Environment"
     $Port = $Config.Port
 
-    # This block probably belongs on the server
-    # Then ideally we can just do:
-    # ssh pulse /opt/pulse/bin/activate-release.ps1 -Environment $Environment -Application $Application -Release $PublishedPackage
-    InvokeRemote `
+    DockerPullImage `
         -Server $Config.Server `
-        -Command "sudo docker pull '$RegistryImage'" `
-        -ErrorMessage "Failed to pull image."
+        -Image $RegistryImage
 
-    InvokeRemote `
+    DockerRemoveContainer `
         -Server $Config.Server `
-        -Command "sudo docker rm -f $ContainerName || true" `
-        -ErrorMessage "Failed to remove existing container."
+        -Container $ContainerName
 
-    InvokeRemote `
+    DockerRunContainer `
         -Server $Config.Server `
-        -Command "sudo docker run -d --name $ContainerName --restart unless-stopped -p $Port`:8080 --env-file /etc/pulse/config/$Application/$Environment.env $RegistryImage" `
-        -ErrorMessage "Failed to start container."
+        -Arguments "-d --name $ContainerName --restart unless-stopped -p $Port`:8080 --env-file /etc/pulse/$Application/$Environment.env $RegistryImage"
     
     LogFooter -Title "$Application Release $RegistryImage Activated"
 }

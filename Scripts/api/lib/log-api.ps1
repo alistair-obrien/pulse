@@ -11,7 +11,7 @@ function LogAPI {
 
     . "$PSScriptRoot/../../common/lib/config.ps1"
     . "$PSScriptRoot/../../common/lib/console-logger.ps1"
-    . "$PSScriptRoot/../../common/lib/invoke-remote.ps1"
+    . "$PSScriptRoot/../../common/lib/docker.ps1"
 
     $Config = Get-EnvironmentConfig -Environment $Environment -Application $Application
 
@@ -19,8 +19,7 @@ function LogAPI {
 
     LogHeader -Title "Connecting to Docker logs" -Environment $Environment
     
-    InvokeRemote `
+    DockerLogContainer `
         -Server $Config.Server `
-        -Command "sudo docker logs --tail 100 -f pulse-$Application-$Environment" `
-        -ErrorMessage "Failed to connect to Docker logs."   
+        -Container "pulse-$Application-$Environment"
 }

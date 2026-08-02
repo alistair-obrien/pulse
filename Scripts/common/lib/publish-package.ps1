@@ -2,7 +2,11 @@ function PublishPackage
 {
     param(
         [Parameter(Mandatory)]
-        [PSCustomObject]$Package
+        [PSCustomObject]$Package,
+
+        [Parameter(Mandatory)]
+        [ValidateSet("development", "production", "localhost")]
+        [string]$Environment
     )
     $ErrorActionPreference = "Stop"
 
@@ -10,48 +14,37 @@ function PublishPackage
     . "$PSScriptRoot/../../common/lib/docker.ps1"
     . "$PSScriptRoot/../../common/lib/upload-release.ps1"
 
-    $Registry = "registry.pulse-flow.app"
-    $RegistryImage = "$Registry/$($Package.Image)"
+    . "$PSScriptRoot/../../registry/lib/registry-config.ps1"
+    $RegistryConfig = Get-RegistryConfig -Environment $Environment
 
-    LogHeader -Title "Publishing Package to $Registry"
+    $RegistryImage = "$($RegistryConfig.ServerUrl)/$($Package.Image)"
 
-    if (!(DockerRegistryLogin -Registry $Registry))
+    LogHeader -Title "Publishing $($Package.Image) to $($RegistryConfig.ServerUrl)"
+
+    # TODO: Move the login to the Registry space
+    if (!(DockerRegistryLogin -Registry $($RegistryConfig.ServerUrl)))
     {
         throw "Docker registry authentication failed."
     }
 
-    docker tag `
-        $Package.Package.Image `
-        $RegistryImage | Out-Host
+    docker tag $Package.Image $RegistryImage | Out-Host
 
     if ($LASTEXITCODE -ne 0)
     {
         throw "Docker tag failed."
     }
 
-    docker push `
-        $RegistryImage | Out-Host
+    docker push $RegistryImage | Out-Host
 
     if ($LASTEXITCODE -ne 0)
     {
         throw "Docker push failed."
     }
 
-    $PublishedPackage = [PSCustomObject]@{
-        Type = "DockerImage"
+    LogFooter -Title "Published $($Package.Image) to $($RegistryConfig.ServerUrl)"
 
-        Application = $Package.Application
-        Environment = $Package.Environment
-
-        Registry = $Registry
-
-        ImageName = $Package.ImageName
-        ImageTag = $Package.ImageTag
-
-        ImageFullName = $RegistryImage
+    return [PSCustomObject]@{
+        Type  = "DockerImage"
+        RegistryImage = $RegistryImage
     }
-
-    LogFooter -Title "Published $($Package.Image) to $Registry"
-
-    return $PublishedPackage
 }

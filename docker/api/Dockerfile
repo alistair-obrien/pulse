@@ -9,7 +9,7 @@ COPY Pulse.Domain/Pulse.Domain.csproj Pulse.Domain/
 COPY Pulse.Infrastructure/Pulse.Infrastructure.csproj Pulse.Infrastructure/
 COPY Pulse.Tests/Pulse.Tests.csproj Pulse.Tests/
 
-RUN dotnet restore
+RUN dotnet restore Pulse.Api/Pulse.Api.csproj
 
 COPY Pulse.Api/ Pulse.Api/
 COPY Pulse.Domain/ Pulse.Domain/
@@ -20,6 +20,7 @@ RUN dotnet publish Pulse.Api/Pulse.Api.csproj \
     -c ${CONFIGURATION} \
     -o /publish \
     --no-restore
+
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 
