@@ -2,14 +2,6 @@ function PublishPackage
 {
     param(
         [Parameter(Mandatory)]
-        [ValidateSet("development", "production", "localhost")]
-        [string]$Environment,
-
-        [Parameter(Mandatory)]
-        [ValidateSet("api", "client")]
-        [string]$Application,
-
-        [Parameter(Mandatory)]
         [PSCustomObject]$Package
     )
     $ErrorActionPreference = "Stop"
@@ -18,56 +10,31 @@ function PublishPackage
     . "$PSScriptRoot/../../common/lib/docker.ps1"
     . "$PSScriptRoot/../../common/lib/upload-release.ps1"
 
+    $Registry = "registry.pulse-flow.app"
+    $RegistryImage = "$Registry/$($Package.Image)"
 
-    if ($Package.Type -eq "Folder")
+    LogHeader -Title "Publishing Package to $Registry"
+
+    if (!(DockerRegistryLogin -Registry $Registry))
     {
-        $PublishedPackage = [PSCustomObject]@{
-            Type = "Folder"
-
-            Application = $Package.Application
-            Environment = $Package.Environment
-
-            SourcePath = $SourcePath
-            PackagePath = $SourcePath
-        }
-
-        UploadRelease -Environment $Environment -Application $Application -SourcePath $Package.SourcePath
-        if ($LASTEXITCODE -ne 0)
-        {
-            throw "Upload failed."
-        }
-
-        return $PublishedPackage
+        throw "Docker registry authentication failed."
     }
 
-    if ($Package.Type -eq "DockerImage")
+    docker tag `
+        $Package.Package.Image `
+        $RegistryImage | Out-Host
+
+    if ($LASTEXITCODE -ne 0)
     {
-        $Registry = "registry.pulse-flow.app"
-        $RegistryImage = "$Registry/$($Package.ImageFullName)"
+        throw "Docker tag failed."
+    }
 
-        LogHeader -Title "Publishing Package to $Registry" -Environment $Environment -Application $Application
+    docker push `
+        $RegistryImage | Out-Host
 
-        if (!(DockerRegistryLogin -Registry $Registry))
-        {
-            throw "Docker registry authentication failed."
-        }
-
-        docker tag `
-            $Package.ImageFullName `
-            $RegistryImage | Out-Host
-
-        if ($LASTEXITCODE -ne 0)
-        {
-            throw "Docker tag failed."
-        }
-
-        docker push `
-            $RegistryImage | Out-Host
-
-        if ($LASTEXITCODE -ne 0)
-        {
-            throw "Docker push failed."
-        }
+    if ($LASTEXITCODE -ne 0)
+    {
+        throw "Docker push failed."
     }
 
     $PublishedPackage = [PSCustomObject]@{
@@ -84,7 +51,7 @@ function PublishPackage
         ImageFullName = $RegistryImage
     }
 
-    LogFooter -Title "Published Package to $Registry"
+    LogFooter -Title "Published $($Package.Image) to $Registry"
 
     return $PublishedPackage
 }

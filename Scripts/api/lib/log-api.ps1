@@ -1,4 +1,4 @@
-function LogServer {
+function LogAPI {
     param(
         [Parameter(Mandatory)]
         [ValidateSet("development", "production", "localhost")]

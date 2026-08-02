@@ -14,7 +14,6 @@ function Get-EnvironmentConfig
     {
         "api-development" {
             return @{
-                PublishRoot = "/publish/api"
                 Server      = "pulse"
                 Port        = 5001
             }
@@ -22,7 +21,6 @@ function Get-EnvironmentConfig
 
         "api-production" {
             return @{
-                PublishRoot = "/publish/api"
                 Server      = "pulse"
                 Port        = 5000
             }
@@ -31,26 +29,22 @@ function Get-EnvironmentConfig
         "client-development" {
             return @{
                 Server      = "pulse"
-                PublishRoot = "/publish/client"
             }
         }
 
         "client-production" {
             return @{
                 Server      = "pulse"
-                PublishRoot = "/publish/client"
             }
         }
 
         "api-localhost" {
             return @{
-                PublishRoot = "/publish/api/localhost"
             }
         }
 
         "client-localhost" {
             return @{
-                PublishRoot = "/publish/client"
             }
         }
     }

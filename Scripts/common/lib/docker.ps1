@@ -1,3 +1,44 @@
+function DockerBuildImage
+{
+    param(
+        [Parameter(Mandatory)]
+        [string]$Dockerfile,
+
+        [Parameter(Mandatory)]
+        [string]$Context,
+
+        [Parameter(Mandatory)]
+        [string]$Image,
+
+        [hashtable]$BuildArgs = @{}
+    )
+
+    $DockerArgs = @()
+
+    foreach ($arg in $BuildArgs.GetEnumerator())
+    {
+        $DockerArgs += "--build-arg"
+        $DockerArgs += "$($arg.Key)=$($arg.Value)"
+    }
+
+    docker build `
+        -f $Dockerfile `
+        -t $Image `
+        @DockerArgs `
+        $Context | Out-Host
+
+    if ($LASTEXITCODE -ne 0)
+    {
+        throw "Docker build failed."
+    }
+
+    return [PSCustomObject]@{
+        Type = "DockerImage"
+        Image = $Image
+        BuildArgs = $BuildArgs
+    }
+}
+
 function InvokeDockerBuilder
 {
     param(
