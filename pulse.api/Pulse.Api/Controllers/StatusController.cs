@@ -9,6 +9,6 @@ public class StatusController : ControllerBase
     [HttpGet]
     public IActionResult Check()
     {
-        return Ok(new { success = true });
+        return Ok(new { success = true, msg = "all is good" });
     }
 }

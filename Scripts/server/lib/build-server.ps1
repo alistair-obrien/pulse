@@ -24,14 +24,14 @@ function BuildServer
     $Project = Join-Path $SolutionRoot "Pulse.Api"
     $Publish = "$ProjectRoot/$($Config.PublishRoot)"
 
-
     if (Test-Path $Publish)
     {
         Remove-Item $Publish -Recurse -Force
         New-Item -ItemType Directory -Path $Publish -Force | Out-Null
     }
 
-    if ($Config.UseDocker)
+    $UseDocker = $true
+    if ($UseDocker)
     {
         # Build inside a docker container to ensure a consistent build environment
         InvokeDockerBuilder `

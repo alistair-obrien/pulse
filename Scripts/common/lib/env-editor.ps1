@@ -8,15 +8,14 @@ function SetConfigValue
         [string]$Key,
 
         [Parameter(Mandatory)]
+        [AllowEmptyString()]
         [string]$Value
     )
 
     switch ($Value)
     {
-        "" { }
-
+        ""  { }
         "#" { $Config.Remove($Key) }
-
         default { $Config[$Key] = $Value }
     }
 }

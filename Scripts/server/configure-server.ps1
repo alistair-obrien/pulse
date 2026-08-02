@@ -7,16 +7,16 @@ $ErrorActionPreference = "Stop"
 
 . "$PSScriptRoot/../common/lib/console-logger.ps1"
 . "$PSScriptRoot/../common/lib/env-editor.ps1"
-. "$PSScriptRoot/lib/restart-server.ps1"
+. "$PSScriptRoot/../common/lib/docker.ps1"
 . "$PSScriptRoot/lib/log-server.ps1"
 
 LogPipelineHeader -Title "Configuring Environment" -Environment $Environment -Application api -Platform $Platform
 
 $Settings = @(
-    @{
-        Key = "ASPNETCORE_URLS"
-        Prompt = "ASP.NET URLs"
-    },
+    # @{ Docker maps the port so no need to set explicitly anymore
+    #     Key = "ASPNETCORE_URLS"
+    #     Prompt = "ASP.NET URLs"
+    # },
     @{
         Key = "ASPNETCORE_ENVIRONMENT"
         Prompt = "ASP.NET Environment"
@@ -52,7 +52,7 @@ $ConfigPath = "/etc/pulse/config/api/$Environment.env"
 
 ConfigureEnv -ConfigPath $ConfigPath -Settings $Settings
 
-RestartServer -Environment $Environment
-LogServer -Environment $Environment
+DockerRestartContainer -Environment $Environment -Application api
+LogServer -Environment $Environment -Application api
 
 LogPipelineFooter -Title "Configured Environment"

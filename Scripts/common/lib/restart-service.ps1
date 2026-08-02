@@ -1,4 +1,4 @@
-function RestartServer
+function RestartService
 {
     param
     (
@@ -8,8 +8,8 @@ function RestartServer
     )
     $ErrorActionPreference = "Stop"
         
-    . "$PSScriptRoot/../../common/lib/config.ps1"
-    . "$PSScriptRoot/../../common/lib/console-logger.ps1"
+    . "$PSScriptRoot/config.ps1"
+    . "$PSScriptRoot/console-logger.ps1"
     
     $Config = Get-EnvironmentConfig -Environment $Environment -Application Api
     

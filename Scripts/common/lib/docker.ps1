@@ -61,3 +61,36 @@ function DockerRegistryLogin
         [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($BSTR)
     }
 }
+
+# HACK: Not ideal as this does remote execution
+function DockerRestartContainer
+{
+    param
+    (
+        [Parameter(Mandatory)]
+        [ValidateSet("development", "production", "localhost")]
+        [string]$Environment,
+
+        [Parameter(Mandatory)]
+        [ValidateSet("api")]
+        [string]$Application
+    )
+    $ErrorActionPreference = "Stop"
+        
+    . "$PSScriptRoot/config.ps1"
+    . "$PSScriptRoot/console-logger.ps1"
+    . "$PSScriptRoot/invoke-remote.ps1"
+    
+    $Config = Get-EnvironmentConfig -Environment $Environment -Application Api
+    
+    LogHeader -Title "Restarting Docker Container" -Environment $Environment -Application $Application
+    
+    InvokeRemote $Config.Server "sudo docker restart pulse-$Application-$Environment"
+    
+    if ($LASTEXITCODE -ne 0)
+    {
+        throw "Restart failed."
+    }
+    
+    LogFooter -Title "Restarted Docker Container"
+}

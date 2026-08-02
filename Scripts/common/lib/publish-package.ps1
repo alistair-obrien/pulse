@@ -15,17 +15,35 @@ function PublishPackage
     $ErrorActionPreference = "Stop"
 
     . "$PSScriptRoot/../../common/lib/console-logger.ps1"
+    . "$PSScriptRoot/../../common/lib/docker.ps1"
+    . "$PSScriptRoot/../../common/lib/upload-release.ps1"
+
 
     if ($Package.Type -eq "Folder")
     {
-        return $Package
+        $PublishedPackage = [PSCustomObject]@{
+            Type = "Folder"
+
+            Application = $Package.Application
+            Environment = $Package.Environment
+
+            SourcePath = $SourcePath
+            PackagePath = $SourcePath
+        }
+
+        UploadRelease -Environment $Environment -Application $Application -SourcePath $Package.SourcePath
+        if ($LASTEXITCODE -ne 0)
+        {
+            throw "Upload failed."
+        }
+
+        return $PublishedPackage
     }
 
-    
     if ($Package.Type -eq "DockerImage")
     {
         $Registry = "registry.pulse-flow.app"
-        $RegistryImage = "$Registry/$Package.ImageFullName"
+        $RegistryImage = "$Registry/$($Package.ImageFullName)"
 
         LogHeader -Title "Publishing Package to $Registry" -Environment $Environment -Application $Application
 
@@ -40,7 +58,7 @@ function PublishPackage
 
         if ($LASTEXITCODE -ne 0)
         {
-            throw "Publish failed."
+            throw "Docker tag failed."
         }
 
         docker push `
@@ -48,7 +66,7 @@ function PublishPackage
 
         if ($LASTEXITCODE -ne 0)
         {
-            throw "Publish failed."
+            throw "Docker push failed."
         }
     }
 

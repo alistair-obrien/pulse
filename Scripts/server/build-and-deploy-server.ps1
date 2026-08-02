@@ -8,11 +8,9 @@ param(
 . "$PSScriptRoot/../common/lib/config.ps1"
 . "$PSScriptRoot/../common/lib/package-release.ps1"
 . "$PSScriptRoot/../common/lib/publish-package.ps1"
-# . "$PSScriptRoot/../common/lib/upload-release.ps1"
 . "$PSScriptRoot/../common/lib/activate-release.ps1"
 . "$PSScriptRoot/lib/build-server.ps1"
 . "$PSScriptRoot/lib/migrate-database.ps1" 
-. "$PSScriptRoot/lib/restart-server.ps1"
 . "$PSScriptRoot/lib/log-server.ps1"
 
 $ErrorActionPreference = "Stop"
@@ -27,10 +25,8 @@ $PublishedPackage = PublishPackage -Environment $Environment -Application api -P
     
 # MigrateDatabase -Environment $Environment -Release $PublishedPackage
 
-# ActivateRelease -Environment $Environment -Application api -Release $PublishedPackage 
+ActivateRelease -Environment $Environment -Application api -PublishedPackage $PublishedPackage 
 
-# RestartServer -Environment $Environment
-
-# LogServer -Environment $Environment
+LogServer -Environment $Environment -Application api
 
 LogPipelineFooter -Title "Pulse API Built & Deployed"

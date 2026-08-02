@@ -10,4 +10,4 @@ $ErrorActionPreference = "Stop"
 . "$PSScriptRoot/../common/lib/console-logger.ps1"
 
 LogPipelineHeader -Title "Logging Server Service" -Environment $Environment
-LogServer -Environment $Environment
+LogServer -Environment $Environment -Application api
