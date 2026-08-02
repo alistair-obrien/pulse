@@ -4,7 +4,6 @@ ARG CONFIGURATION=Release
 
 WORKDIR /src
 
-COPY Pulse.slnx .
 COPY Pulse.Api/Pulse.Api.csproj Pulse.Api/
 COPY Pulse.Domain/Pulse.Domain.csproj Pulse.Domain/
 COPY Pulse.Infrastructure/Pulse.Infrastructure.csproj Pulse.Infrastructure/

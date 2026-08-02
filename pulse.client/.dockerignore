@@ -1,0 +1,32 @@
+# Git
+.git
+.gitignore
+
+# IDEs
+.vs
+.vscode
+.idea
+
+# .NET
+**/bin/
+**/obj/
+
+# Node
+**/node_modules/
+
+# Android
+**/.gradle/
+**/build/
+
+# Apple
+**/DerivedData/
+
+# Logs
+**/*.log
+
+# Test output
+TestResults/
+
+# Temporary files
+*.tmp
+*.cache
