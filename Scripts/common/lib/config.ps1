@@ -14,6 +14,7 @@ function Get-EnvironmentConfig
     {
         "api-development" {
             return @{
+                UseDocker   = $true
                 Server      = "pulse"
                 PublishRoot = "/publish/api"
                 ReleaseRoot = "/opt/pulse/development/releases"
@@ -24,6 +25,7 @@ function Get-EnvironmentConfig
 
         "api-production" {
             return @{
+                UseDocker   = $true
                 Server      = "pulse"
                 PublishRoot = "/publish/api"
                 ReleaseRoot = "/opt/pulse/production/releases"
@@ -34,6 +36,7 @@ function Get-EnvironmentConfig
 
         "client-development" {
             return @{
+                UseDocker   = $true
                 Server      = "pulse"
                 PublishRoot = "/publish/client"
                 ReleaseRoot = "/var/www/pulse/development/releases"
@@ -43,6 +46,7 @@ function Get-EnvironmentConfig
 
         "client-production" {
             return @{
+                UseDocker   = $true
                 Server      = "pulse"
                 PublishRoot = "/publish/client"
                 ReleaseRoot = "/var/www/pulse/production/releases"
@@ -52,12 +56,14 @@ function Get-EnvironmentConfig
 
         "api-localhost" {
             return @{
+                UseDocker   = $true
                 PublishRoot = "/publish/api/localhost"
             }
         }
 
         "client-localhost" {
             return @{
+                UseDocker   = $true
                 PublishRoot = "/publish/client"
             }
         }
