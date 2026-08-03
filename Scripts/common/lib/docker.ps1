@@ -40,23 +40,10 @@ function DockerRegistryLogin
 {
     param(
         [Parameter(Mandatory)]
-        [string]$Registry
-    )
+        [string]$Registry,
 
-    # Is Docker already authenticated?
-    try
-    {
-        Invoke-WebRequest "https://$Registry/v2/" -UseBasicParsing
-        return $true
-    }
-    catch
-    {
-        if ($_.Exception.Response.StatusCode -eq 401)
-        {
-            # Registry requires authentication.
-            # This DOES NOT mean Docker isn't already logged in.
-        }
-    }
+        [string]$Server
+    )
 
     Write-Host "Authentication required for Docker registry '$Registry'."
 
@@ -69,25 +56,31 @@ function DockerRegistryLogin
     {
         $PlainPassword = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($BSTR)
 
-        $PlainPassword |
-            docker login $Registry `
-                --username $UserName `
-                --password-stdin |
-            Out-Host
+        RunShellCommand `
+            -Server $Server `
+            -Command {
+                param($Registry, $UserName, $Password)
 
-        return ($LASTEXITCODE -eq 0)
+                $Password |
+                    docker login $Registry `
+                        --username $UserName `
+                        --password-stdin |
+                    Out-Host
+            } `
+            -ArgumentList $Registry, $UserName, $PlainPassword `
+            -ErrorMessage "Failed to log in to Docker registry."
+
+        return $true
     }
     finally
     {
         [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($BSTR)
     }
 }
-
 # SELECTED HOST
 function DockerEnsureNetwork
 {
     param(
-        [Parameter(Mandatory)]
         [string]$Server,
 
         [Parameter(Mandatory)]
@@ -96,14 +89,19 @@ function DockerEnsureNetwork
 
     LogHeader -Title "Ensuring Docker Network '$Network'"
 
-    $command = @(
-        "sudo docker network inspect $Network > /dev/null 2>&1 ||"
-        "sudo docker network create $Network"
-    ) -join "`n"
-
     RunShellCommand `
         -Server $Server `
-        -Command $command `
+        -Command {
+            param($Network)
+
+            docker network inspect $Network *> $null
+
+            if ($LASTEXITCODE -ne 0)
+            {
+                docker network create $Network
+            }
+        } `
+        -ArgumentList $Network `
         -ErrorMessage "Failed to ensure docker network."
 
     LogFooter -Title "Docker Network '$Network' Ready"
@@ -112,7 +110,6 @@ function DockerEnsureNetwork
 function DockerEnsureVolume
 {
     param(
-        [Parameter(Mandatory)]
         [string]$Server,
 
         [Parameter(Mandatory)]
@@ -121,14 +118,19 @@ function DockerEnsureVolume
 
     LogHeader -Title "Ensuring Docker Volume '$Volume'"
 
-    $command = @(
-        "sudo docker volume inspect $Volume > /dev/null 2>&1 ||"
-        "sudo docker volume create $Volume"
-    ) -join "`n"
-
     RunShellCommand `
         -Server $Server `
-        -Command $command `
+        -Command {
+            param($Volume)
+
+            docker volume inspect $Volume *> $null
+
+            if ($LASTEXITCODE -ne 0)
+            {
+                docker volume create $Volume
+            }
+        } `
+        -ArgumentList $Volume `
         -ErrorMessage "Failed to ensure docker volume."
 
     LogFooter -Title "Docker Volume '$Volume' Ready"
@@ -137,7 +139,6 @@ function DockerEnsureVolume
 function DockerPullImage
 {
     param(
-        [Parameter(Mandatory)]
         [string]$Server,
 
         [Parameter(Mandatory)]
@@ -148,7 +149,7 @@ function DockerPullImage
 
     RunShellCommand `
         -Server $Server `
-        -Command "sudo docker pull $Image" `
+        -Command "docker pull $Image" `
         -ErrorMessage "Failed to pull docker image."
 
     LogFooter -Title "Docker Image Pulled"
@@ -157,7 +158,6 @@ function DockerPullImage
 function DockerRemoveContainer
 {
     param(
-        [Parameter(Mandatory)]
         [string]$Server,
 
         [Parameter(Mandatory)]
@@ -166,13 +166,21 @@ function DockerRemoveContainer
 
     LogHeader -Title "Removing Docker Container '$Container'"
 
-    $command = @(
-        "sudo docker rm -f $Container 2>/dev/null || true"
-    ) -join "`n"
-
     RunShellCommand `
         -Server $Server `
-        -Command $command `
+        -Command {
+            param($Container)
+
+            $Exists = docker ps -a `
+                --filter "name=^${Container}$" `
+                --format "{{.Names}}"
+
+            if ($Exists)
+            {
+                docker rm -f $Container
+            }
+        } `
+        -ArgumentList $Container `
         -ErrorMessage "Failed to remove docker container."
 
     LogFooter -Title "Docker Container '$Container' Removed"
@@ -181,7 +189,6 @@ function DockerRemoveContainer
 function DockerRunContainer
 {
     param(
-        [Parameter(Mandatory)]
         [string]$Server,
 
         [Parameter(Mandatory)]
@@ -192,7 +199,7 @@ function DockerRunContainer
 
     RunShellCommand `
         -Server $Server `
-        -Command "sudo docker run $Arguments" `
+        -Command "docker run $Arguments" `
         -ErrorMessage "Failed to run docker container."
 
     LogFooter -Title "Docker Container Started"
@@ -207,13 +214,12 @@ function DockerWaitForContainer
 function DockerRestartContainer
 {
     param(
-        [Parameter(Mandatory)]
         [string]$Server,
         [Parameter(Mandatory)]
         [string]$Container
-        )
+    )
         
-    $command = "sudo docker restart $Container"
+    $command = "docker restart $Container"
     LogHeader -Title "Restarting Docker Container '$Container' on '$Server'"
 
     RunShellCommand `
@@ -227,7 +233,6 @@ function DockerRestartContainer
 function DockerLogContainer
 {
     param(
-        [Parameter(Mandatory)]
         [string]$Server,
 
         [Parameter(Mandatory)]
@@ -236,9 +241,8 @@ function DockerLogContainer
 
     LogHeader -Title "Logging Docker Container '$Container' on '$Server'"
 
-
     RunShellCommand `
         -Server $Server `
-        -Command "sudo docker logs -f $Container" `
+        -Command "docker logs -f $Container" `
         -ErrorMessage "Failed to stream docker logs."
 }

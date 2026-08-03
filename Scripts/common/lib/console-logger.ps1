@@ -19,8 +19,8 @@ function LogHeader {
         {
             "development" { "Cyan" }
             "production"  { "Magenta" }
-            "localhost"       { "White" }
-            "default"     { "Grey" }
+            "localhost"   { "White" }
+            default       { "DarkGray" }
         }
 
         Write-Host "[" -NoNewline -ForegroundColor DarkBlue
@@ -35,7 +35,7 @@ function LogHeader {
             "web"     { "White" }
             "android" { "Cyan" }
             "ios"     { "Magenta" }
-            "default" { "Grey" }
+            default   { "DarkGray" }
         }
 
         Write-Host "[" -NoNewline -ForegroundColor DarkBlue
@@ -95,7 +95,7 @@ function LogPipelineHeader {
             "development" { "Cyan" }
             "production"  { "Magenta" }
             "localhost"   { "White" }
-            "default"     { "Grey" }
+            default       { "DarkGray" }
         }
 
         Write-Host "[" -NoNewline -ForegroundColor Blue
@@ -110,7 +110,7 @@ function LogPipelineHeader {
             "web"     { "White" }
             "android" { "Cyan" }
             "ios"     { "Magenta" }
-            "default" { "Grey" }
+            default   { "DarkGray" }
         }
 
         Write-Host "[" -NoNewline -ForegroundColor Blue

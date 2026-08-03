@@ -1,25 +1,26 @@
 function RunShellCommand
 {
+    [CmdletBinding()]
     param(
         [string]$Server,
         [string]$Command,
+        [object[]]$ArgumentList,
         [string]$ErrorMessage
     )
 
     if ($Server)
     {
-        ssh -tt $Server $Command
+        $Output = ssh $Server pwsh -NoProfile -Command $Command @ArgumentList
     }
-    else 
+    else
     {
-        & powershell -Command $Command | Out-Host
+        $Output = & ([scriptblock]::Create($Command)) @ArgumentList
     }
 
     if ($LASTEXITCODE)
-    {       
-        Write-Host $Server
-        Write-Host $Command
-        Write-Host "Exit code: $LASTEXITCODE"
+    {
         throw $ErrorMessage
     }
+
+    return $Output
 }

@@ -1,206 +1,231 @@
-. "$PSScriptRoot/registry-config.ps1"
 . "$PSScriptRoot/../../common/lib/console-logger.ps1"
-. "$PSScriptRoot/../../common/lib/docker.ps1"
 . "$PSScriptRoot/../../common/lib/run-shell-command.ps1"
 
-function RegistryStart
+function RegistryInitialize
 {
     param(
         [Parameter(Mandatory)]
-        [ValidateSet("development", "production", "localhost")]
-        [string]$Environment
+        [string]$PulseHome,
+        [Parameter(Mandatory)]
+        [string]$RegistryHost,
+
+        [string]$Server #SSH host really
     )
+
     $ErrorActionPreference = "Stop"
 
-    $Config = Get-RegistryConfig -Environment $Environment
+    LogHeader "Initializing Registry"
 
-    LogHeader -Title "Starting $Environment Registry"
-
-    DockerRemoveContainer `
-        -Server $Config.Server `
-        -Container $Config.Container
-
-    $Arguments = @(
-        "-d"
-        "--name $($Config.Container)"
-        "--restart unless-stopped"
-        "-p $($Config.Port):5000"
-        "-v $($Config.Volume):$($Config.DataPath)"
-        "-v $($Config.ConfigFile):/etc/distribution/config.yml:ro"
-    )
-
-    if (Test-Path Variable:\Config.Htpasswd)
-    {
-        $Arguments += "-v $($Config.Htpasswd):$($Config.Htpasswd):ro"
+    $Config = @{
+        ConfigDir  = "$PulseHome/config/registry"
+        ConfigFile = "$PulseHome/config/registry/config.yml"
+        AuthDir    = "$PulseHome/config/registry/auth"
+        CertsDir   = "$PulseHome/config/registry/certs"
+        Htpasswd   = "$PulseHome/config/registry/auth/htpasswd"
     }
 
-    if ($Config.Secure)
-    {
-        $Arguments += "-v $($Config.CertsDir):/certs:ro"
-    }
+    RunShellCommand `
+        -Server $Server `
+        -Command @"
+New-Item -ItemType Directory -Force -Path '$($Config.AuthDir)' | Out-Null
+New-Item -ItemType Directory -Force -Path '$($Config.CertsDir)' | Out-Null
+"@ `
+        -ErrorMessage "Failed to create registry directories."
 
-    $Arguments += $Config.Image
+    RegistryEnsureHtpasswd `
+        -Server $Server `
+        -Htpasswd $Config.Htpasswd
 
-    DockerRunContainer `
-        -Server $Config.Server `
-        -Arguments ($Arguments -join " ") `
+    RegistryWriteConfig `
+        -Server $Server `
+        -ConfigFile $Config.ConfigFile `
+        -HtpasswdPath $Config.Htpasswd
 
-    LogFooter -Title "$Environment Registry Started"
-}
+    # RegistryEnsureCertificates `
+    #     -Server $Server `
+    #     -CertsDir $Config.CertsDir
 
-function RegistryStop
-{
-    param(
-        [Parameter(Mandatory)]
-        [ValidateSet("development", "production", "localhost")]
-        [string]$Environment
-    )
-    $ErrorActionPreference = "Stop"
-
-    $Config = Get-RegistryConfig -Environment $Environment
-
-    LogHeader -Title "Stopping $Environment Registry"
-
-    DockerRemoveContainer `
-        -Server $Config.Server `
-        -Container $Config.Container
-
-    LogFooter -Title "$Environment Registry Stopped"
-}
-
-function RegistryRestart
-{
-    param(
-        [Parameter(Mandatory)]
-        [ValidateSet("development", "production", "localhost")]
-        [string]$Environment
-    )
-    $ErrorActionPreference = "Stop"
-
-    $Config = Get-RegistryConfig -Environment $Environment
-
-    DockerRestartContainer -Server $Config.Server -Container $Config.Container
-}
-
-function RegistryLog
-{
-    param(
-        [Parameter(Mandatory)]
-        [ValidateSet("development", "production", "localhost")]
-        [string]$Environment
-    )
-    $ErrorActionPreference = "Stop"
-
-    $Config = Get-RegistryConfig -Environment $Environment
-    DockerLogContainer $Config.Server $Config.Container
+    LogFooter "Registry Initialized"
 }
 
 function RegistryEnsureHtpasswd
 {
     param(
-        [Parameter(Mandatory)]
         [string]$Server,
 
         [Parameter(Mandatory)]
         [string]$Htpasswd
     )
 
-    $command = @(
-        "if [ ! -f ""$Htpasswd"" ]; then"
-        "    if ! command -v htpasswd >/dev/null 2>&1; then"
-        '        sudo apt-get update'
-        '        sudo apt-get install -y apache2-utils'
-        '    fi'
-        ''
-        '    echo "Registry username:"'
-        '    read username'
-        ''
-        "    sudo htpasswd -Bc ""$Htpasswd"" `"`$username`""
-        'fi'
-    ) -join "`n"
+    if (Test-Path $Htpasswd)
+    {
+        return
+    }
+
+    if (-not (Get-Command htpasswd -ErrorAction SilentlyContinue))
+    {
+        throw "htpasswd is not installed. Please install Apache2 utilities."
+    }
+
+    Write-Host "Registry username: " -NoNewline
+    $Username = Read-Host
 
     RunShellCommand `
         -Server $Server `
-        -Command $command `
+        -Command "htpasswd -Bc '$Htpasswd' '$Username'" `
         -ErrorMessage "Failed to create registry htpasswd."
 }
 
 function RegistryWriteConfig
 {
     param(
-        [Parameter(Mandatory)]
         [string]$Server,
 
         [Parameter(Mandatory)]
-        [hashtable]$Config
+        [string]$ConfigFile,
+
+        [Parameter(Mandatory)]
+        [string]$HtpasswdPath,
+
+        [switch]$Secure
     )
 
-    $yaml = @(
-        'version: 0.1'
-        'http:'
-        "  addr: :5000" # From inside the container
+    $Yaml = @(
+        "version: 0.1"
+        "http:"
+        "  addr: :5000"
     )
 
-    if ($Config.Secure)
+    if ($Secure)
     {
-        $yaml += @(
-            '  tls:'
-            '    certificate: /certs/domain.crt'
-            '    key: /certs/domain.key'
+        $Yaml += @(
+            "  tls:"
+            "    certificate: /certs/domain.crt"
+            "    key: /certs/domain.key"
         )
     }
 
-    $yaml += @(
-        '  auth:'
-        '    htpasswd:'
-        '      realm: Pulse Registry'
-        "      path: $($Config.Htpasswd)"
-        'storage:'
-        '  filesystem:'
-        "    rootdirectory: $($Config.DataPath)"
+    $Yaml += @(
+        "  auth:"
+        "    htpasswd:"
+        "      realm: Pulse Registry"
+        "      path: $HtpasswdPath"
+        "storage:"
+        "  filesystem:"
+        "    rootdirectory: /var/lib/registry"
     )
 
-    $command = @(
-        "sudo tee ""$($Config.ConfigFile)"" > /dev/null <<'EOF'"
-        $yaml
-        'EOF'
-    ) -join "`n"
+    $Content = ($Yaml -join "`n").Replace("'", "''")
 
     RunShellCommand `
         -Server $Server `
-        -Command $command `
-        -ErrorMessage "Failed to create registry config."
+        -Command {
+            param($Path, $Content)
+
+            Set-Content -Path $Path -Value $Content
+        } `
+        -ArgumentList $ConfigFile, ($Yaml -join "`n") `
+        -ErrorMessage "Failed to write registry config."
 }
 
 function RegistryEnsureCertificates
 {
     param(
-        [Parameter(Mandatory)]
         [string]$Server,
 
         [Parameter(Mandatory)]
-        [hashtable]$Config
+        [string]$CertsDir
     )
-
-    if (-not $Config.Secure)
-    {
-        return
-    }
-
-    $certDir = $Config.CertsDir
-
-    $command = @(
-        "sudo mkdir -p ""$certDir"""
-        ""
-        "if [ ! -f ""$certDir/domain.crt"" ]; then"
-        "    sudo openssl req -newkey rsa:4096 -nodes -sha256 -x509 -days 3650 ``"
-        "        -keyout ""$certDir/domain.key"" ``"
-        "        -out ""$certDir/domain.crt"""
-        "fi"
-    ) -join "`n"
 
     RunShellCommand `
         -Server $Server `
-        -Command $command `
-        -ErrorMessage "Failed to generate registry certificates."
+        -Command @"
+if (-not (Test-Path '$CertsDir/domain.crt'))
+{
+    openssl req `
+        -newkey rsa:4096 `
+        -nodes `
+        -sha256 `
+        -x509 `
+        -days 3650 `
+        -keyout '$CertsDir/domain.key' `
+        -out '$CertsDir/domain.crt'
+}
+"@ `
+    -ErrorMessage "Failed to generate registry certificates."
+}
+
+function Get-RegistryConfig
+{
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet("development", "production", "localhost")]
+        [string]$Environment
+    )
+
+    . "$PSScriptRoot/../../common/lib/env-editor.ps1"
+
+    # First get the environments config
+    $EnvConfig = ReadEnvFile -File "$RepoRoot/docker/$Environment.env"
+
+    
+    $RegistryHost = "$($EnvConfig.REGISTRY_HOST):$($EnvConfig.REGISTRY_PORT)"
+
+    return @{
+        Environment = $Environment
+        RegistryHost  = $RegistryHost
+    }
+}
+
+
+function RegistryPush
+{
+    param(
+        [Parameter(Mandatory)]
+        [string]$Environment,
+
+        [string]$Image,
+
+        [string]$Server
+    )
+
+    $RegistryConfig = Get-RegistryConfig -Environment $Environment
+
+    # # TODO: Move the login to the Registry space
+    # if (!(DockerRegistryLogin -Registry $($RegistryConfig.RegistryHost)))
+    # {
+    #     throw "Docker registry authentication failed."
+    # }
+
+    $RegistryImage = "$($RegistryConfig.RegistryHost)/$($Image)"
+
+    RunShellCommand `
+        -Server $Server `
+        -Command "docker tag $Image $RegistryImage" `
+        -ErrorMessage "Failed to write tag image." `
+        | Out-Host
+        
+    
+    RunShellCommand `
+        -Server $Server `
+        -Command "docker push $RegistryImage" `
+        -ErrorMessage "Failed to push image." `
+        | Out-Host
+
+    return $RegistryImage
+}
+
+function RegistryPull
+{
+    param(
+        [Parameter(Mandatory)]
+        [string]$Environment,
+
+        [Parameter]
+        [string]$Image
+    )
+
+    $Config = Get-RegistryConfig -Enviroment $Environment
+
+    
 }

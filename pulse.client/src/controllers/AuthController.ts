@@ -128,54 +128,68 @@ async function refreshToken(): Promise<void> {
     }
 }
 
+
 // >>> GOOFLE <<<
-let googleInitialized = false;
 export async function loginGoogle() {
-    if (!googleInitialized)
-    {
-        googleInitialized = true;
-        // Google
-        if (userPlatform == "web" || userPlatform == "android") {
-            await SocialLogin.initialize({
-                google: {
-                    webClientId: socialLoginIds?.googleWebClientId,
-                },
-            });
-        }
-    }
+    switch (userPlatform) {
+        case "android":
+            return loginGoogleAndroid();
 
-    else if (userPlatform == "android" || userPlatform == "web") {
-        try {
-            const res = await SocialLogin.login({
-                provider: 'google',
-                options: { },
-            });
-            console.log(JSON.stringify(res));
+        case "web":
+            return loginGoogleWeb();
 
-            // TODO
-            const response = await API.googleLogin(res.result);
-            currentSession = {
-                accessToken: response.accessToken,
-                refreshToken: response.refreshToken,
-                expiresAtUtc: Date.now() + response.expiresIn * 1000
-            };
-
-            saveSession();
-
-        } catch (error: any) {
-            console.log(error.message);
-            console.log(error.code);
-            console.dir(error);
-        }
+        default:
+            throw new Error(`Google login not supported on ${userPlatform}`);
     }
 }
 
+async function completeGoogleLogin(idToken: string) {
+    const response = await API.googleLogin(idToken);
+    
+    currentSession = {
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+        expiresAtUtc: Date.now() + response.expiresIn * 1000
+    };
+}
+
+let capgoGoogleInitialized = false;
+async function loginGoogleAndroid() {
+    // Capgo
+    if (!capgoGoogleInitialized)
+    {
+        capgoGoogleInitialized = true;
+        await SocialLogin.initialize({
+            google: {
+                webClientId: socialLoginIds?.googleWebClientId, 
+            },
+        });
+    }
+    const res = await SocialLogin.login({
+        provider: 'google',
+        options: { },
+    });
+
+    if (res.result.responseType !== "online" || !res.result.idToken) {
+        throw new Error("Google login did not return an ID token.");
+    }
+
+    console.log(JSON.stringify(res));
+    return completeGoogleLogin(res.result.idToken);
+}
+
+async function loginGoogleWeb() {
+    // Google Identity Services
+    const token = await getGoogleIdToken();
+    await completeGoogleLogin(token);
+}
+
 // >>> Facebook <<<
-let facebookInitialized = false;
+let capgoFacebookInitialized = false;
 export async function loginFacebook() 
 {
-    if (!facebookInitialized) {
-        facebookInitialized = true;
+    if (!capgoFacebookInitialized) {
+        capgoFacebookInitialized = true;
         // Facebook
         await SocialLogin.initialize({
             facebook: {
@@ -195,11 +209,11 @@ export async function loginFacebook()
 }
 
 // >>> APPLE <<<
-let appleInitialized = false;
+let capgoAppleInitialized = false;
 export async function loginApple() 
 {
-    if (!appleInitialized) {
-        appleInitialized = true;
+    if (!capgoAppleInitialized) {
+        capgoAppleInitialized = true;
         await SocialLogin.initialize({
         apple: {
             clientId: 'your-client-id',

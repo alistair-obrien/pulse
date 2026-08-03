@@ -4,7 +4,6 @@ param(
     [string]$Environment
     )
     
-. "$PSScriptRoot/lib/initialize-registry.ps1"
 . "$PSScriptRoot/lib/registry.ps1"
 . "$PSScriptRoot/../common/lib/console-logger.ps1"
 

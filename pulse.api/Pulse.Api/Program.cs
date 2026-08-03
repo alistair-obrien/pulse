@@ -44,21 +44,28 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("Default", policy =>
     {
-        if (builder.Environment.IsDevelopment())
-        {
-            policy
-                .AllowAnyOrigin()
-                .AllowAnyHeader()
-                .AllowAnyMethod();
-        }
-        else
+        if (builder.Environment.IsEnvironment("Production")) 
         {
             policy
                 .WithOrigins(
-                    "https://pulse-flow.app",
-                    "capacitor://localhost",
-                    "http://localhost"
+                    "https://pulse-flow.app"
                 )
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        }
+
+        if (builder.Environment.IsEnvironment("Development"))
+        {
+            policy
+                 .AllowAnyOrigin()
+                 .AllowAnyHeader()
+                 .AllowAnyMethod();
+        }
+        // Local or Custom environments
+        else
+        {
+            policy
+                .AllowAnyOrigin()
                 .AllowAnyHeader()
                 .AllowAnyMethod();
         }

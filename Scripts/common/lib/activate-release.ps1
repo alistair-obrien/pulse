@@ -2,7 +2,6 @@ function ActivateRelease
 {
     param(
         [Parameter(Mandatory)]
-        [ValidateSet("development", "production")]
         [string]$Environment,
 
         [Parameter(Mandatory)]
@@ -19,26 +18,32 @@ function ActivateRelease
     . "$PSScriptRoot/run-shell-command.ps1"
     . "$PSScriptRoot/docker.ps1"
 
-    $Config = Get-EnvironmentConfig -Environment $Environment -Application $Application
+    LogHeader -Title "Activating $RegistryImage" -Environment $Environment -Application $Application
+    
+    $ConfigPath = (Resolve-Path (Join-Path $PSScriptRoot "../../../docker/$Environment.env")).Path
+    $ComposeFile = (Resolve-Path (Join-Path $PSScriptRoot "../../../docker/compose-api.yml")).Path
 
     $RegistryImage = $PublishedPackage.RegistryImage
+    Write-Host $RegistryImage
 
-    LogHeader -Title "Activating $RegistryImage" -Environment $Environment -Application $Application
+    RunShellCommand `
+        -Command {
+            param($ComposeFile, $Project, $ConfigPath)
 
-    $ContainerName = "pulse-$Application-$Environment"
-    $Port = $Config.Port
+            docker compose `
+                -f $ComposeFile `
+                -p $Project `
+                --env-file $ConfigPath `
+                pull api
 
-    DockerPullImage `
-        -Server $Config.Server `
-        -Image $RegistryImage
-
-    DockerRemoveContainer `
-        -Server $Config.Server `
-        -Container $ContainerName
-
-    DockerRunContainer `
-        -Server $Config.Server `
-        -Arguments "-d --name $ContainerName --restart unless-stopped -p $Port`:8080 --env-file /etc/pulse/$Application/$Environment.env $RegistryImage"
+            docker compose `
+                -f $ComposeFile `
+                -p $Project `
+                --env-file $ConfigPath `
+                up -d api
+        } `
+        -ArgumentList "$ComposeFile", "pulse-$Environment", $ConfigPath `
+        -ErrorMessage "Failed to activate API release."
     
     LogFooter -Title "$Application Release $RegistryImage Activated"
 }

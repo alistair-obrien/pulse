@@ -83,15 +83,30 @@ function ReadEnvFile
 {
     param(
         [Parameter(Mandatory)]
-        [string]$File
+        [string]$File,
+        [string]$Server
     )
 
     $config = [hashtable]@{}
 
-    $lines = ssh pulse "sudo cat '$File'"
+    . "$PSScriptRoot/run-shell-command.ps1"
 
+    $lines = RunShellCommand `
+        -Command "Get-Content -Path $File" `
+        -Server $Server `
+        -ErrorMessage "Failed to read file."
+
+    if (-not $lines)
+    {
+        Write-Host "$File does not exist. Will write a new file after config is set."
+        return $config
+    }
+
+    Write-Host ">>> $File"
+    # Found a file
     foreach ($line in $lines)
     {
+        Write-Host ">>> $line"
         $line = $line.Trim()
 
         if ($line -eq "") { continue }
@@ -138,8 +153,11 @@ function WriteEnvFile
         [string]$File,
 
         [Parameter(Mandatory)]
-        [hashtable]$Config
+        [hashtable]$Config,
+
+        [string]$Server
     )
+    . "$PSScriptRoot/run-shell-command.ps1"
 
     $lines = foreach ($key in ($Config.Keys | Sort-Object))
     {
@@ -149,9 +167,12 @@ function WriteEnvFile
         }
     }
 
-    $text = $lines -join "`n"
+    $joinedLines = ($lines -join "`n").Replace("'", "''")
 
-    $text | ssh pulse "sudo tee '$File' > /dev/null"
+    RunShellCommand `
+        -Command "Set-Content -Path $File -Value '$JoinedLines'" `
+        -ErrorMessage "Failed to write file." `
+        -Server $Server
 }
 
 # Writes only the configured variables
@@ -165,7 +186,9 @@ function WriteConfiguredEnvFile
         [hashtable]$Config,
 
         [Parameter(Mandatory)]
-        [hashtable[]]$Settings
+        [hashtable[]]$Settings,
+
+        [string]$Server
     )
 
     $filtered = @{}
@@ -182,7 +205,8 @@ function WriteConfiguredEnvFile
 
     WriteEnvFile `
         -File $File `
-        -Config $filtered
+        -Config $filtered `
+        -Server $Server
 }
 
 # Writes a single variable while preserving existing variables
@@ -218,10 +242,22 @@ function ConfigureEnv
         [Parameter(Mandatory)]
         [string]$ConfigPath,
         [Parameter(Mandatory)]
-        [hashtable[]]$Settings
+        [hashtable[]]$Settings,
+        [string]$Server
     )
 
-    $Config = ReadEnvFile $ConfigPath
+    $Config = ReadEnvFile $ConfigPath $Server
+    foreach ($setting in $Settings)
+    {
+        if (
+            $setting.ContainsKey("Default") -and
+            -not $Config.ContainsKey($setting.Key)
+        )
+        {
+            $Config[$setting.Key] = $setting.Default
+        }
+    }
+
 
     LogHeader "Current Config"
     foreach ($setting in $Settings)
@@ -246,10 +282,11 @@ function ConfigureEnv
     WriteConfiguredEnvFile `
         -File $configPath `
         -Config $Config `
-        -Settings $Settings
+        -Settings $Settings `
+        -Server $Server
 
     LogHeader "Modified Config"
-    $Config = ReadEnvFile $configPath
+    $Config = ReadEnvFile $configPath $Server
     foreach ($setting in $Settings)
     {
         DisplayEnvValue `
@@ -258,4 +295,6 @@ function ConfigureEnv
             -Prompt $setting.Prompt `
             -Secret:$($setting.Secret)
     }
+
+    return $Config
 }

@@ -12,13 +12,21 @@ function BuildAPI
 
     . "$PSScriptRoot/../../common/lib/console-logger.ps1"
     . "$PSScriptRoot/../../common/lib/docker.ps1"
+    . "$PSScriptRoot/../../common/lib/env-editor.ps1"
+    
+    $RepoRoot = "$PSScriptRoot/../../.."
+
+    # First get the environments config
+    $EnvConfig = ReadEnvFile -File "$RepoRoot/docker/$Environment.env"
+
+    $ProjectRoot = Resolve-Path -Path "$PSScriptRoot/../../../"
 
     LogHeader -Title "Building Pulse API" -Environment $Environment
     
     $BuildResult = DockerBuildImage `
-        -Dockerfile "docker/api/Dockerfile" `
-        -Context "pulse.api" `
-        -Image "pulse-api:$Environment" `
+        -Dockerfile "$ProjectRoot/docker/api/Dockerfile" `
+        -Context "$ProjectRoot/pulse.api" `
+        -Image $($EnvConfig.API_IMAGE) `
 
     LogFooter -Title "Pulse API Built"
 

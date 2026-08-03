@@ -1,36 +1,9 @@
 {
-  "profiles": {
-    "http": {
-        "commandName": "Project",
-        "environmentVariables": {
-            "ASPNETCORE_ENVIRONMENT": "Development"
-        },
-        "dotnetRunMessages": true,
-        "applicationUrl": "http://0.0.0.0:5068"
-    },
-    "https": {
-        "commandName": "Project",
-        "environmentVariables": {
-            "ASPNETCORE_ENVIRONMENT": "Development"
-        },
-        "dotnetRunMessages": true,
-        "applicationUrl": "https://0.0.0.0:7295;http://0.0.0.0:5068"
-    },
-    "IIS Express": {
-      "commandName": "IISExpress",
-      "launchBrowser": true,
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      }
+    "profiles": {
+        "LocalHost": {
+            "commandName": "Executable",
+            "executablePath": "pwsh.exe",
+            "commandLineArgs": "-NoProfile -ExecutionPolicy Bypass -File \"$(SolutionDir)..\\scripts\\api\\build-and-deploy-api.ps1\" localhost"
+        }
     }
-  },
-  "$schema": "https://json.schemastore.org/launchsettings.json",
-  "iisSettings": {
-    "windowsAuthentication": false,
-    "anonymousAuthentication": true,
-    "iisExpress": {
-        "applicationUrl": "http://0.0.0.0:61750/",
-        "sslPort": 44385
-    }
-  }
 }

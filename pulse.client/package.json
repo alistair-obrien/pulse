@@ -3,21 +3,18 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "scripts": {    
+  "scripts": {
     ">>> VITE LIVE RELOAD <<<": "Starts Vite live reload server",
-    
     "< Live Reload Local Server >": "",
     "live:localhost:web": "vite --host --mode localhost --open",
     "live:localhost:android": "dotenv -e .env.localhost -- concurrently \"vite --host --mode localhost\" \"node scripts/live-android.js\"",
     "live:localhost:ios": "dotenv -e .env.localhost -- concurrently \"vite --host --mode localhost\" \"node scripts/live-ios.js\"",
     "live:localhost": "dotenv -e .env.localhost -- concurrently \"vite --host --mode localhost --open\" \"node scripts/live-android.js\" \"node scripts/live-ios.js\"",
-    
     "< Live Reload Development Server >": "",
     "live:development:web": "vite --host --mode development --open",
     "live:development:android": "dotenv -e .env.development -- concurrently \"vite --host --mode development\" \"node scripts/live-android.js\"",
     "live:development:ios": "dotenv -e .env.development -- concurrently \"vite --host --mode development\" \"node scripts/live-ios.js\"",
     "live:development": "dotenv -e .env.development -- concurrently \"vite --host --mode development --open\" \"node scripts/live-android.js\" \"node scripts/live-ios.js\"",
-    
     "< Live Reload Production Server >": "",
     "live:production:web": "vite --host --mode production --open",
     "live:production:android": "dotenv -e .env.production -- concurrently \"vite --host --mode production\" \"node scripts/live-android.js\"",
@@ -41,6 +38,7 @@
     "@capacitor/device": "^8.0.3",
     "@capacitor/toast": "^8.0.1",
     "@capgo/capacitor-social-login": "^8.3.39",
+    "@types/google.accounts": "^0.0.18",
     "remixicon": "^4.9.1"
   }
 }

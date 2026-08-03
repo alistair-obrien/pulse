@@ -66,13 +66,10 @@ export function login(request: LoginRequest): Promise<LoginResponse> {
     return post("/login", request, false);
 }
 
-export function googleLogin(request: GoogleLoginResponse): Promise<LoginResponse> {
-    if (request.responseType !== "online" || !request.idToken) {
-        throw new Error("Google login did not return an ID token.");
-    }
+export function googleLogin(idToken: string): Promise<LoginResponse> {
 
     return post("/api/auth/google", {
-        idToken: request.idToken
+        idToken: idToken
     }, false);
 }
 

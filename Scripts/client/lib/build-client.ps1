@@ -17,15 +17,21 @@ function BuildClient {
 
     LogHeader -Title "Building Pulse Client" -Environment $Environment
 
-    $BuildResult = DockerBuildImage `
-        -Dockerfile "$RepoRoot/docker/client/Dockerfile" `
-        -Context $RepoRoot/pulse.client `
-        -Image "pulse-client-builder" `
-        -BuildArgs @{
-            Environment   = $Environment
-            Platform      = $Platform
-            CleanInstall  = $CleanInstall.IsPresent
-        }
+    $RepoRoot = "$PSScriptRoot/../../../"
+
+    $WorkingRoot = "$RepoRoot/pulse.client"
+    
+    Write-Host $WorkingRoot
+
+    # $BuildResult = DockerBuildImage `
+    #     -Dockerfile "$RepoRoot/docker/client/Dockerfile" `
+    #     -Context $RepoRoot/pulse.client `
+    #     -Image "pulse-client-builder" `
+    #     -BuildArgs @{
+    #         Environment   = $Environment
+    #         Platform      = $Platform
+    #         CleanInstall  = $CleanInstall.IsPresent
+    #     }
 
     LogFooter -Title "Pulse Client Built"
 

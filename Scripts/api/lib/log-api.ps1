@@ -19,7 +19,10 @@ function LogAPI {
 
     LogHeader -Title "Connecting to Docker logs" -Environment $Environment
     
-    DockerLogContainer `
+    docker compose -p pulse-localhost logs -f api
+
+    RunShellCommand `
         -Server $Config.Server `
-        -Container "pulse-$Application-$Environment"
+        -Command "docker logs -f pulse-$Environment api" `
+        -ErrorMessage "Failed to stream docker logs."
 }

@@ -12,15 +12,17 @@ $ErrorActionPreference = "Stop"
 
 LogPipelineHeader -Title "Starting Live Session" -Environment $Environment -Platform $Platform
 
-$env:VITE_APP_SOURCE = "LiveReload"
-$BuiltPath = BuildClient -Environment $Environment -Platform $Platform
-
 # Move to the correct working folder
-$ProjectRoot = Resolve-Path "$PSScriptRoot/../../Frontend - Vanilla Web"
+$ProjectRoot = Resolve-Path "$PSScriptRoot/../../pulse.client"
+
+$env:VITE_APP_SOURCE = "LiveReload"
+
+# $BuiltPath = BuildClient -Environment $Environment -Platform $Platform
+
 Push-Location $ProjectRoot
 
 LogHeader -Title "Starting Vite Server" -Environment $Environment -Platform $Platform
-Start-Process npx.cmd -ArgumentList "vite", "--host", "--mode", $Environment
+Start-Process npx.cmd -ArgumentList "vite", "--host", "--mode", $Environment, "--open"
 if ($Platform -eq "web")
 {    
     Pop-Location

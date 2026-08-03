@@ -1,11 +1,9 @@
 param(
     [Parameter(Mandatory)]
-    [ValidateSet("development", "production")]
     [string]$Environment
 )
 
 . "$PSScriptRoot/../common/lib/console-logger.ps1"
-. "$PSScriptRoot/../common/lib/config.ps1"
 . "$PSScriptRoot/../common/lib/publish-package.ps1"
 . "$PSScriptRoot/../common/lib/activate-release.ps1"
 . "$PSScriptRoot/lib/build-api.ps1"
