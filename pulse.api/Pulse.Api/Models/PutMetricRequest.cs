@@ -1,9 +1,7 @@
 ﻿using Pulse.Domain.Models;
 using System.Text.Json;
 
-namespace Pulse.Api.Requests
+namespace Pulse.Api.Models
 {
     public record PutMetricRequest(object MetricData);
-    public record PutJourneyStepRequest(object MetricData);
-
 }

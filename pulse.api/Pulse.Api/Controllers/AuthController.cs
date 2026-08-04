@@ -1,6 +1,10 @@
 ﻿using Google.Apis.Auth;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using Pulse.Api.Models;
+using Pulse.Api.Options;
+using Pulse.Api.Services;
 using Pulse.Infrastructure;
 
 namespace Pulse.Api.Controllers;
@@ -9,40 +13,28 @@ namespace Pulse.Api.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
-    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly PulseAuthenticationService _authenticationService;
 
     public AuthController(
-        UserManager<ApplicationUser> userManager)
+        PulseAuthenticationService authenticationService)
     {
-        _userManager = userManager;
+        _authenticationService = authenticationService;
     }
 
     [HttpPost("google")]
     public async Task<IActionResult> Google(GoogleLoginRequest request)
     {
-        Console.WriteLine("GOOGLE LOGIN HIT");
+        return Ok(await _authenticationService.LoginWithGoogle(request));
+    }
 
-        var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken);
-
-        var user = await _userManager.FindByEmailAsync(payload.Email);
-
-        if (user == null)
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh(RefreshTokenRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Token)) 
         {
-            user = new ApplicationUser
-            {
-                UserName = payload.Email,
-                Email = payload.Email,
-                EmailConfirmed = payload.EmailVerified
-            };
-
-            var result = await _userManager.CreateAsync(user);
-
-            if (!result.Succeeded)
-                return BadRequest(result.Errors);
+            return BadRequest("Token can't be null or empty");
         }
 
-        return Ok();
+        return Ok(await _authenticationService.Refresh(request.Token));
     }
 }
-
-public record GoogleLoginRequest(string IdToken);

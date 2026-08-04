@@ -56,42 +56,17 @@ function renderLoggedOut(): HTMLElement {
 
     const status = document.createElement("pre");
 
-    register.onclick = async () => {
-        try {
-            await AuthController.register({
-                email: email.value,
-                password: password.value
-            });
+    register.onclick = async () => registerEmail(email.value, password.value);
 
-            status.textContent = "Registered!";
-        }
-        catch (e) {
-            status.textContent = String(e);
-        }
-    };
-
-    login.onclick = async () => {
-        try {
-            await AuthController.login({ 
-                email: email.value, 
-                password: password.value });
-            // Re-render app
-        }
-        catch (e) {
-            status.textContent = String(e);
-        }
-        finally {
-            rerender();
-        }
-    };
+    login.onclick = async () => loginEmail(email.value, password.value);
 
     const row = document.createElement("div");
     row.className = "row";
     row.append(
-        new ActionButton("Google", ICONS.GoogleLogin, () => AuthController.loginGoogle()).root,
-        new ActionButton("Facebook", ICONS.FacebookLogin, () => AuthController.loginFacebook()).root,
-        new ActionButton("Apple", ICONS.AppleLogin, () => AuthController.loginApple()).root,
-        new ActionButton("Twitter", ICONS.TwitterLogin, () => AuthController.loginTwitter()).root,
+        new ActionButton("Google", ICONS.GoogleLogin, loginGoogle).root,
+        // new ActionButton("Facebook", ICONS.FacebookLogin, () => AuthController.loginFacebook()).root,
+        // new ActionButton("Apple", ICONS.AppleLogin, () => AuthController.loginApple()).root,
+        // new ActionButton("Twitter", ICONS.TwitterLogin, () => AuthController.loginTwitter()).root,
     );
 
     card.append(
@@ -104,6 +79,48 @@ function renderLoggedOut(): HTMLElement {
     );
 
     return root;
+}
+
+async function registerEmail(email:string, password:string) {
+    try {
+        await AuthController.registerEmail({
+            email: email,
+            password: password
+        });
+
+        console.log("Registered!");
+    }
+    catch (e) {
+        console.error(e);
+    }
+}
+
+async function loginEmail(email:string, password:string) {
+    try {
+        await AuthController.loginEmail({ 
+            email: email, 
+            password: password });
+        console.log("Logged in Email!");
+    }
+    catch (e) {
+        console.error(e);
+    }
+    finally {
+        rerender();
+    }
+}
+
+async function loginGoogle() {
+    try {
+        await AuthController.loginGoogle()
+        console.log("LOGGED IN BITCH");
+    }
+    catch (e) {
+        console.log(e);    
+    }
+    finally {
+        rerender();
+    }
 }
 
 function renderLoggedIn(): HTMLElement {

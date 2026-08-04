@@ -1,10 +1,8 @@
-import type { GoogleLoginResponse } from "@capgo/capacitor-social-login";
+import type { GoogleCredential } from "../controllers/AuthController";
 import type { DateKey } from "../data-store/DateKey";
 import { JourneyStep } from "../models/JourneyStep";
 import type { MetricTypeId, MetricTypes } from "../models/MetricRegistry";
 import { get, post, put } from "./APIClient";
-
-
 
 // >>> METRICS <<<
 
@@ -43,47 +41,38 @@ export function setMetrics(
 }
 
 // >>> AUTH <<<
-export interface RegisterRequest {
+export interface EmailRegisterRequest {
     email: string;
     password: string;
 }
-export function register(request: RegisterRequest): Promise<void> {
+export function register(request: EmailRegisterRequest): Promise<void> {
     return post("/register", request, false);
 }
 
-
-export interface LoginRequest {
+export interface EmailLoginRequest {
     email: string;
     password: string;
 }
 export interface LoginResponse {
-    tokenType: "Bearer";
     accessToken: string;
-    expiresIn: number;
+    expiryInSeconds: number;
     refreshToken: string;
 }
-export function login(request: LoginRequest): Promise<LoginResponse> {
+
+export function login(request: EmailLoginRequest): Promise<LoginResponse> {
     return post("/login", request, false);
 }
 
-export function googleLogin(idToken: string): Promise<LoginResponse> {
-
-    return post("/api/auth/google", {
-        idToken: idToken
-    }, false);
+export function googleLogin(googleCredential: GoogleCredential): Promise<LoginResponse> {
+    return post("/api/auth/google", googleCredential, false);
 }
 
 export interface RefreshRequest {
     refreshToken: string;
 }
-export interface RefreshResponse {
-    tokenType: "Bearer";
-    accessToken: string;
-    expiresIn: number;
-    refreshToken: string;
-}
-export function refresh(request: RefreshRequest): Promise<RefreshResponse> {
-    return post("/refresh", request);
+
+export function refresh(request: RefreshRequest): Promise<LoginResponse> {
+    return post("api/auth/refresh", request);
 }
 
 // >>> JOURNEY <<<
@@ -93,8 +82,6 @@ export async function getJourneySteps(
     const result = await get<GetJourneyStepsResponse>(
         `/api/journeysteps/${page}`
     );
-
-    console.log(result);
 
     if (!result)
         return null;

@@ -1,11 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Pulse.Api.Requests;
-using Pulse.Api.Responses;
+using Pulse.Api.Models;
 using Pulse.Domain.Models;
 using Pulse.Infrastructure;
-using System.Security.Claims;
 using System.Text.Json;
 
 namespace Pulse.Api.Controllers

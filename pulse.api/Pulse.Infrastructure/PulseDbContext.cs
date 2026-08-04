@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Pulse.Domain.Models;
-using System.Reflection.Emit;
 namespace Pulse.Infrastructure;
 
 public class PulseDbContext : IdentityDbContext<ApplicationUser>
@@ -11,6 +10,8 @@ public class PulseDbContext : IdentityDbContext<ApplicationUser>
         base(options)
     {
     }
+
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     public DbSet<Metric> Metrics => Set<Metric>();
     public DbSet<JourneyStep> JourneySteps => Set<JourneyStep>();
@@ -56,5 +57,19 @@ public class PulseDbContext : IdentityDbContext<ApplicationUser>
                 m.LikedByUserId
             })
             .IsUnique();
+
+        builder.Entity<RefreshToken>(entity =>
+        {
+            entity.HasIndex(x => x.Token)
+                .IsUnique();
+
+            entity.Property(x => x.Token)
+                .HasMaxLength(43); // Base64Url-encoded 32 random bytes
+
+            entity.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
     }
 }

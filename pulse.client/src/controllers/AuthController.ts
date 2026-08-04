@@ -1,6 +1,8 @@
-import { SocialLogin } from "@capgo/capacitor-social-login";
 import * as API from "../api/API"
 import type { AppConfig, SocialLoginIds } from "../AppConfig";
+
+import * as GoogleAndroid from "./AuthProviders/GoogleAndroid"
+import * as GoogleWeb from "./AuthProviders/GoogleWeb"
 
 interface AuthState {
     accessToken: string; // Our JWT token
@@ -16,15 +18,17 @@ let userPlatform = '';
 
 let socialLoginIds:SocialLoginIds | null = null;
 
-loadSession();
-
 export async function initialize(appConfig:AppConfig) {
     userPlatform = appConfig.platform;
     STORAGE_KEY = `${appConfig.environment}:auth`;
     socialLoginIds = appConfig.socialLoginIds;
+    loadSession();
 }
 
 export function isLoggedIn(): boolean {
+
+    console.log(currentSession);
+
     return currentSession !== null && Date.now() < currentSession.expiresAtUtc;
 }
 
@@ -32,17 +36,17 @@ export function getCurrentUser(): AuthState | null {
     return currentSession;
 }
 
-export async function register(request: API.RegisterRequest): Promise<void> {
+export async function registerEmail(request: API.EmailRegisterRequest): Promise<void> {
     return await API.register(request);
 }
 
-export async function login(request: API.LoginRequest): Promise<void> {
+export async function loginEmail(request: API.EmailLoginRequest): Promise<void> {
     const response = await API.login(request);
 
     currentSession = {
         accessToken: response.accessToken,
         refreshToken: response.refreshToken,
-        expiresAtUtc: Date.now() + response.expiresIn * 1000
+        expiresAtUtc: Date.now() + response.expiryInSeconds * 1000
     };
 
     saveSession();
@@ -67,6 +71,8 @@ function saveSession(): void {
 
 function loadSession(): void {
     const json = localStorage.getItem(STORAGE_KEY);
+
+    console.log("loadSession", json)
 
     if (json === null)
         return;
@@ -114,7 +120,7 @@ async function refreshToken(): Promise<void> {
         currentSession = {
             accessToken: response.accessToken,
             refreshToken: response.refreshToken,
-            expiresAtUtc: Date.now() + response.expiresIn * 1000
+            expiresAtUtc: Date.now() + response.expiryInSeconds * 1000
         };
 
         saveSession();
@@ -130,110 +136,44 @@ async function refreshToken(): Promise<void> {
 
 
 // >>> GOOFLE <<<
+export interface GoogleCredential {
+    idToken?: string;
+    authorizationCode?: string;
+}
+
 export async function loginGoogle() {
+
+    let googleCredential:GoogleCredential = { }
+
+    const clientId = socialLoginIds?.googleWebClientId;
+
+    if (!clientId)
+        throw new Error("Google Web Client ID has not been configured.");
+
     switch (userPlatform) {
         case "android":
-            return loginGoogleAndroid();
-
+            googleCredential = await GoogleAndroid.login(clientId);
+            break;
         case "web":
-            return loginGoogleWeb();
-
+            googleCredential = await GoogleWeb.login(clientId);
+            break;
         default:
             throw new Error(`Google login not supported on ${userPlatform}`);
     }
+
+    await completeGoogleLogin(googleCredential);
 }
 
-async function completeGoogleLogin(idToken: string) {
-    const response = await API.googleLogin(idToken);
-    
+async function completeGoogleLogin(googleCredential: GoogleCredential) {
+    const response = await API.googleLogin(googleCredential);
+
+    console.log(response);
+
     currentSession = {
         accessToken: response.accessToken,
         refreshToken: response.refreshToken,
-        expiresAtUtc: Date.now() + response.expiresIn * 1000
+        expiresAtUtc: Date.now() + response.expiryInSeconds * 1000
     };
+
+    saveSession();
 }
-
-let capgoGoogleInitialized = false;
-async function loginGoogleAndroid() {
-    // Capgo
-    if (!capgoGoogleInitialized)
-    {
-        capgoGoogleInitialized = true;
-        await SocialLogin.initialize({
-            google: {
-                webClientId: socialLoginIds?.googleWebClientId, 
-            },
-        });
-    }
-    const res = await SocialLogin.login({
-        provider: 'google',
-        options: { },
-    });
-
-    if (res.result.responseType !== "online" || !res.result.idToken) {
-        throw new Error("Google login did not return an ID token.");
-    }
-
-    console.log(JSON.stringify(res));
-    return completeGoogleLogin(res.result.idToken);
-}
-
-async function loginGoogleWeb() {
-    // Google Identity Services
-    const token = await getGoogleIdToken();
-    await completeGoogleLogin(token);
-}
-
-// >>> Facebook <<<
-let capgoFacebookInitialized = false;
-export async function loginFacebook() 
-{
-    if (!capgoFacebookInitialized) {
-        capgoFacebookInitialized = true;
-        // Facebook
-        await SocialLogin.initialize({
-            facebook: {
-                appId: 'your-app-id',
-                clientToken: 'your-client-token',
-            },
-        });
-    }
-
-    const res = await SocialLogin.login({
-    provider: 'facebook',
-    options: {
-        permissions: ['email', 'public_profile'],
-    },
-    });
-    console.log(JSON.stringify(res));
-}
-
-// >>> APPLE <<<
-let capgoAppleInitialized = false;
-export async function loginApple() 
-{
-    if (!capgoAppleInitialized) {
-        capgoAppleInitialized = true;
-        await SocialLogin.initialize({
-        apple: {
-            clientId: 'your-client-id',
-            redirectUrl: 'your-redirect-url',
-        },
-        });
-    }
-
-    const res = await SocialLogin.login({
-    provider: 'apple',
-    options: {
-        scopes: ['email', 'name'],
-    },
-    });
-
-    console.log(JSON.stringify(res));
-}
-
-export function loginTwitter() 
-{
-
-}
-

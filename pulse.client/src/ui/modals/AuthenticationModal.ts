@@ -29,7 +29,7 @@ function renderLoggedOut(): HTMLElement {
 
     register.onclick = async () => {
         try {
-            await Auth.register({
+            await Auth.registerEmail({
                 email: email.value,
                 password: password.value
             });
@@ -43,7 +43,7 @@ function renderLoggedOut(): HTMLElement {
 
     login.onclick = async () => {
         try {
-            await Auth.login({ 
+            await Auth.loginEmail({ 
                 email: email.value, 
                 password: password.value });
             // Re-render app

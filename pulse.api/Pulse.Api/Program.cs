@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Pulse.Api.Options;
 using Pulse.Api.Services;
 using Pulse.Infrastructure;
 using System.Text;
@@ -34,7 +35,9 @@ builder.Services
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
 
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
+
+            ClockSkew = TimeSpan.Zero,
         };
     });
 
@@ -44,7 +47,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("Default", policy =>
     {
-        if (builder.Environment.IsEnvironment("Production")) 
+        if (builder.Environment.IsProduction()) 
         {
             policy
                 .WithOrigins(
@@ -53,8 +56,7 @@ builder.Services.AddCors(options =>
                 .AllowAnyHeader()
                 .AllowAnyMethod();
         }
-
-        if (builder.Environment.IsEnvironment("Development"))
+        else if (builder.Environment.IsDevelopment())
         {
             policy
                  .AllowAnyOrigin()
@@ -72,12 +74,13 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Hevy Provider
-builder.Services.Configure<AuthTokenService>(builder.Configuration.GetSection("Hevy"));
-//builder.Services.AddScoped<IWorkoutProvider, HevyWorkoutProvider>();
 
-// Daily Log Import Service
-//builder.Services.AddScoped<DailyLogImportService>();
+builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
+builder.Services.Configure<GoogleOptions>(builder.Configuration.GetSection("Google"));
+
+builder.Services.AddScoped<PulseAuthenticationService>();
+builder.Services.AddHttpClient();
+
 var app = builder.Build();
 
 // Migrations

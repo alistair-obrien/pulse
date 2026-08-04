@@ -246,8 +246,12 @@ $AspNetCoreEnvConfig = [ordered]@{
     ConnectionStrings__Pulse   = $ConnectionString
     Jwt__Audience              = "pulse"
     Jwt__Issuer                = "pulse"
-    Jwt__ExpiryInMinutes       = "10080"
+    Jwt__ExpiryInSeconds       = "10080"
+    Jwt_RefreshTokenExpiryInDays = "30"
     Jwt__Key                   = $JwtKey
+    Google__ClientId           = ""
+    Google__ClientSecret       = ""
+    Google__RedirectUri        = http://api.localhost    
     Logging__LogLevel__Default = "Information"
 }
 
