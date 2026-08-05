@@ -1,23 +1,50 @@
 import '../styles/action-button.css';
+import { Component, ComponentModel } from './Component';
 
-export class ActionButton {
-    readonly root:HTMLElement;
+export class ActionButtonModel extends ComponentModel<ActionButton> {
 
-    private readonly icon;
+    readonly component = ActionButton;
 
-    constructor(labelStr:string, iconClass:string, onClick: (this: GlobalEventHandlers, ev: PointerEvent) => any) {
-        this.root = document.createElement("button");
+    iconClass:string;
+    labelStr:string;
+    onClick: ((this: GlobalEventHandlers, ev: PointerEvent) => any) | null;
+
+    constructor(args: {
+        iconClass:string;
+        labelStr:string;
+        onClick: ((this: GlobalEventHandlers, ev: PointerEvent) => any) | null;
+    }) {
+        super();
+
+        this.iconClass = args.iconClass;
+        this.labelStr = args.labelStr;
+        this.onClick = args.onClick;
+    }
+}
+
+export class ActionButton extends Component<ActionButtonModel> {
+
+    private readonly label: HTMLSpanElement;
+    private readonly icon: HTMLElement;
+
+    //labelStr:string, iconClass:string, onClick: (this: GlobalEventHandlers, ev: PointerEvent) => any
+
+    constructor() {
+    
+        super("button");
         this.root.className = "action-button";
 
         this.icon = document.createElement("i");
-        this.icon.className = iconClass;
+        
+        this.label = document.createElement("span");
 
-        const label = document.createElement("span");
-        label.textContent = labelStr;
-
-        this.root.onclick = onClick;
-
-        this.root.append(this.icon, label);
+        this.root.append(this.icon, this.label);
+    }
+    
+    protected render(): void {
+        this.root.onclick = this.model.onClick;
+        this.icon.className = this.model.iconClass;
+        this.label.textContent = this.model.labelStr;
     }
 
     changeIcon(icon: string) {

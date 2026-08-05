@@ -1,73 +1,85 @@
-import { isSameDay } from "../controllers/DateTimeController";
-import type { WorkoutLogData, WorkoutType } from "../models/WorkoutLogData";
-import { ToDateKey } from "../data-store/DateKey";
-import { MetricTypeIds } from "../models/MetricRegistry";
-import { metricRepository } from "../controllers/MetricRepositoryController";
+import { isSameDay, toDateKey } from "../../utils/DateUtils";
+import type { WorkoutLogData, WorkoutType } from "../../models/WorkoutLogData";
+import { MetricTypeIds } from "../../models/MetricRegistry";
+import type { ExternalAPIMetricsSyncService } from "../ExternalAPIMetricsSyncService";
+import type { MetricsRepository } from "../../repositories/MetricsRepository";
 
 const HEVY_API_KEY = "hevy-api-key";
 
-export function getAPIKey(): string {
-    return localStorage.getItem(HEVY_API_KEY) ?? "";
-}
+export class HEVYAPIMetricsSyncService implements ExternalAPIMetricsSyncService {
 
-export function setAPIKey(value: string): void {
-    localStorage.setItem(HEVY_API_KEY, value);
-}
+    private readonly metricsRepository:MetricsRepository;
 
-export async function sync(date: Date): Promise<void> {
-
-    const since = date.toISOString();
-
-    let page = 1;
-    const workoutLogs: WorkoutLogData[] = [];
-
-    while (true) {
-
-        const response = await fetch(
-            `https://api.hevyapp.com/v1/workouts/events?page=${page}&pageSize=10&since=${encodeURIComponent(since)}`,
-            {
-                headers: {
-                    "api-key": getAPIKey()
-                }
-            }
-        );
-
-        if (!response.ok)
-            throw new Error("Failed to fetch Hevy workouts.");
-
-        const json = await response.json();
-
-        console.log(json);
-        if (json.events == null) {
-            break;
-        }
-
-        for (const event of json.events) {
-
-            // Ignore deleted workouts
-            if (event.type === "deleted")
-                continue;
-
-            const workout = event.workout;
-
-            // Only workouts that START on the requested day
-            if (!isSameDay(new Date(workout.start_time), date))
-                continue;
-
-            workoutLogs.push(...convertWorkout(workout));
-        }
-
-        if (page >= json.page_count)
-            break;
-
-        page++;
+    constructor(metricsRepository:MetricsRepository) {
+        this.metricsRepository = metricsRepository;
     }
 
-    metricRepository.setDeviceMetric(
-        ToDateKey(date),
-        MetricTypeIds.Workouts,
-        workoutLogs
-    );
+    isAvailable(): boolean {
+        return true; // TODO: Do a quick API availability check
+    }
+
+    getAPIKey(): string {
+        return localStorage.getItem(HEVY_API_KEY) ?? "";
+    }
+
+    setAPIKey(value: string): void {
+        localStorage.setItem(HEVY_API_KEY, value);
+    }
+    
+    async sync(date: Date): Promise<void> {
+
+        const since = date.toISOString();
+
+        let page = 1;
+        const workoutLogs: WorkoutLogData[] = [];
+
+        while (true) {
+
+            const response = await fetch(
+                `https://api.hevyapp.com/v1/workouts/events?page=${page}&pageSize=10&since=${encodeURIComponent(since)}`,
+                {
+                    headers: {
+                        "api-key": this.getAPIKey()
+                    }
+                }
+            );
+
+            if (!response.ok)
+                throw new Error("Failed to fetch Hevy workouts.");
+
+            const json = await response.json();
+
+            if (json.events == null) {
+                break;
+            }
+
+            for (const event of json.events) {
+
+                // Ignore deleted workouts
+                if (event.type === "deleted")
+                    continue;
+
+                const workout = event.workout;
+
+                // Only workouts that START on the requested day
+                if (!isSameDay(new Date(workout.start_time), date))
+                    continue;
+
+                workoutLogs.push(...convertWorkout(workout));
+            }
+
+            if (page >= json.page_count)
+                break;
+
+            page++;
+        }
+
+        this.metricsRepository.setDeviceMetric(
+            toDateKey(date),
+            MetricTypeIds.Workouts,
+            workoutLogs
+        );
+    }
 }
 
 function convertWorkout(workout: HevyWorkout): WorkoutLogData[] {

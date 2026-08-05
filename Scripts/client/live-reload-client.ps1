@@ -17,7 +17,11 @@ $ProjectRoot = Resolve-Path "$PSScriptRoot/../../pulse.client"
 
 $env:VITE_APP_SOURCE = "LiveReload"
 
-# $BuiltPath = BuildClient -Environment $Environment -Platform $Platform
+Write-Host $ProjectRoot
+
+Write-Host "BUILING"
+$BuiltPath = BuildClient -Environment $Environment -Platform $Platform
+Write-Host "BUILT"
 
 Push-Location $ProjectRoot
 

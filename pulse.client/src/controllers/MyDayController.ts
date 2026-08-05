@@ -1,0 +1,406 @@
+// The total height of the hero area (Partly occluded by content based on visible height)
+const HERO_AREA_TOTAL_HEIGHT = 400;
+// The total visible height of the hero area. Used to set the size of the header
+const HERO_AREA_VISIBLE_HEIGHT = 280;
+
+// At what scroll distance the date should start fading out
+const DATE_FADE_THRESHOLD = 180;
+// How much distance the fade takes to finish
+const DATE_FADE_DIST = 20;
+
+// // At what scroll distance the header should start fading out
+// const HEADER_FADE_THRESHOLD = 50;
+// // How much distance the fade takes to finish
+// const HEADER_FADE_DIST = 10;
+
+
+import { Toast } from "@capacitor/toast";
+import { Clipboard } from "@capacitor/clipboard";
+import { type MetricTypeId, type MetricTypes, MetricTypeIds } from "../models/MetricRegistry";
+
+// Repositories
+import type { MetricsRepository } from "../repositories/MetricsRepository";
+
+// Services
+import type { CloudMetricsSyncService } from "../services/CloudMetricsSyncService";
+import type { DeviceMetricsSyncService } from "../services/DeviceMetricsSyncService";
+import type { ExternalAPIMetricsSyncService } from "../services/ExternalAPIMetricsSyncService";
+import type { ImageService } from "../services/ImageService";
+
+// Components
+import { ActionButtonModel } from "../ui/components/ActionButton";
+import { CardModel } from "../ui/components/Card";
+import { CardHeaderModel } from "../ui/components/CardHeader";
+import { DivModel } from "../ui/components/Div";
+import { HeroAreaModel } from "../ui/components/HeroArea";
+import { ICONS } from "../ui/components/ICONS";
+import { MetricCardModel } from "../ui/components/MetricCard";
+import { MetricTextModel } from "../ui/components/MetricText";
+import { MyDayHeaderModel } from "../ui/components/MyDayHeader";
+import { TimeSpanModel } from "../ui/components/TimeSpan";
+import { MyDayScreen, MyDayScreenModel } from "../ui/screens/MyDay";
+
+// Controllers
+import type { JourneyController } from "./JourneyController";
+
+// Utils
+import { getHoursAndMinutesStrFromTime, toDateKey } from "../utils/DateUtils";
+import { MetricTextInputFieldModel } from "../ui/components/MetricTextInputField";
+
+export class MyDayController {
+    model:MyDayScreenModel;
+    screen:MyDayScreen;
+
+    // Controllers
+    private readonly metricsRepository: MetricsRepository;
+    private readonly journeyController: JourneyController;
+
+    // Services
+    private readonly cloudMetricsSyncService?: CloudMetricsSyncService;
+    private readonly deviceMetricsSyncService?: DeviceMetricsSyncService;
+    private readonly extAPIMetricsSyncServices: ExternalAPIMetricsSyncService[];
+    private readonly imageService: ImageService;
+
+    constructor(
+        args: {
+            metricsRepository: MetricsRepository,
+            
+            journeyController: JourneyController,
+            
+            cloudMetricsSyncService?: CloudMetricsSyncService,
+            deviceMetricsSyncService?: DeviceMetricsSyncService,
+            extAPIMetricsSyncServices: ExternalAPIMetricsSyncService[],
+
+            imageService: ImageService;
+        }
+    ) {
+        this.metricsRepository = args.metricsRepository;
+        this.journeyController = args.journeyController;
+
+        this.cloudMetricsSyncService = args.cloudMetricsSyncService;
+        this.deviceMetricsSyncService = args.deviceMetricsSyncService;
+        this.extAPIMetricsSyncServices = args.extAPIMetricsSyncServices;
+
+        this.imageService = args.imageService;
+
+        this.screen = new MyDayScreen();
+        this.model = this.buildDefaultModel();
+    }
+
+    setSelectedDayMetric<K extends MetricTypeId>(metricTypeId: K, value:MetricTypes[K]) {
+        this.metricsRepository.setUserEditMetric(this.model!.selectedDateKey, metricTypeId, value);         
+    }
+
+    getSelectedDayMetric<K extends MetricTypeId>(metricTypeId: K): MetricTypes[K] { 
+        return this.metricsRepository.resolveMetric(this.model!.selectedDateKey, metricTypeId); 
+    }
+
+    async loadToday() {
+        await this.loadDate(new Date()); // Loads today
+    }
+
+    async loadDate(date: Date) {
+
+        await Promise.allSettled([
+            this.syncFromCloud(),
+            this.syncFromDevice(),
+            this.syncFromExtAPI(),
+        ]);
+        
+        // >>> My Day Model Init <<<
+        const newDate = date;
+        const newDateKey = toDateKey(newDate);
+
+        const today = new Date();
+        const minDate = new Date(today.getDate() - 3);
+        const maxDate = today;
+
+        const image = this.imageService.getRandomImageUrl(newDate.getFullYear() + newDate.getMonth() + newDate.getDate());
+
+        this.model = new MyDayScreenModel({
+            heroAreaVisibleHeight: HERO_AREA_VISIBLE_HEIGHT,
+            heroAreaTotalHeight: HERO_AREA_TOTAL_HEIGHT,
+            selectedDate: newDate,
+            selectedDateKey: newDateKey,
+            headerModel: new MyDayHeaderModel({
+                date: newDate,
+                dateFadeThreshold: DATE_FADE_THRESHOLD,
+                dateFadeDistance: DATE_FADE_DIST,
+                heroAreaVisibleHeight: HERO_AREA_VISIBLE_HEIGHT,
+                dateRowModel: {
+                    date: newDate,
+                    minDate: minDate,
+                    maxDate: maxDate
+                }
+            }),
+            heroAreaModel: new HeroAreaModel({
+                imageUrl: image
+            }),
+            metricSectionCardModels: [],
+            myDayActionsModel: new CardModel ({
+                content: []
+            })
+        })
+
+        // >>> Reflection Card <<<
+        const reflectionsCard = new CardModel({
+            content: []
+        });
+        reflectionsCard.content.push(new CardHeaderModel({ title: "Reflections", iconClass: ICONS.Reflection }));
+        this.model.metricSectionCardModels.push(reflectionsCard);
+        
+        const textAreaModel = new MetricTextInputFieldModel(
+            {
+                placeholderText: "...what did you achieve today?",
+                getter: () => this.getSelectedDayMetric(MetricTypeIds.Reflection),
+                setter: (value: string) => this.setSelectedDayMetric(MetricTypeIds.Reflection, value)
+            }
+            
+
+        );
+        reflectionsCard.content.push(textAreaModel);
+
+        // >>> Recovery Card <<<
+        const recoveryCardModel = new CardModel({
+            content: []
+        });
+        recoveryCardModel.content.push(new CardHeaderModel({ title: "Recovery", iconClass: ICONS.Recovery }));
+
+        const recoveryRowModel = new DivModel({ className: "row" });
+        recoveryCardModel.content.push(recoveryRowModel);
+
+        // Sleep
+        const sleepRecords = this.metricsRepository.resolveMetric(this.model.selectedDateKey, MetricTypeIds.Sleep);
+        const totalSleepHours = sleepRecords.reduce( (total, sleep) => total + sleep.sleepHours, 0);
+        recoveryRowModel.content.push(new MetricCardModel({ name: "Total Sleep", iconClass: ICONS.Sleep, metricValue: new TimeSpanModel({ time: totalSleepHours }) }));
+        
+        // Steps
+        const steps = this.metricsRepository.resolveMetric(this.model.selectedDateKey, MetricTypeIds.Steps);
+        recoveryRowModel.content.push(new MetricCardModel({ name: "Total Steps", iconClass: ICONS.Steps, metricValue: new MetricTextModel({ value: steps.toString() }) }));
+        
+        // RHR
+        const rhr = this.metricsRepository.resolveMetric(this.model.selectedDateKey, MetricTypeIds.RestingHeartRate);
+        recoveryRowModel.content.push(new MetricCardModel({ name: "Resting HR", iconClass: ICONS.RestingHeartRate, metricValue: new MetricTextModel({ value: rhr.toString(), unit: "bpm" }) }));
+
+        this.model.metricSectionCardModels.push(recoveryCardModel);
+
+        // >>> Nutrition Card <<<
+        const nutritionCardModel = new CardModel({
+            content: []
+        });
+        nutritionCardModel.content.push(new CardHeaderModel({ title: "Nutrition", iconClass: ICONS.Nutrition }));
+        this.model.metricSectionCardModels.push(nutritionCardModel);
+        
+        const nutritionRowModel = new DivModel({ className: "row" });
+        nutritionCardModel.content.push(nutritionRowModel);
+
+        let calories = this.metricsRepository.resolveMetric(this.model.selectedDateKey, MetricTypeIds.Nutrition_Calories);
+        calories = Math.round(calories);
+        nutritionRowModel.content.push(new MetricCardModel({ 
+            name: "Calories", 
+            iconClass: ICONS.None, 
+            metricValue: new MetricTextModel({ 
+                value: calories.toString(), 
+                unit: "kcal" 
+            }) 
+        }));
+
+        let protein = this.metricsRepository.resolveMetric(this.model.selectedDateKey, MetricTypeIds.Nutrition_Protein);
+        protein = Math.round(protein);
+        nutritionRowModel.content.push(new MetricCardModel({ 
+            name: "Protein", 
+            iconClass: ICONS.None, 
+            metricValue: new MetricTextModel({ 
+                value: protein.toString(), 
+                unit: "g" 
+            }) 
+        }));
+
+        let carbs = this.metricsRepository.resolveMetric(this.model.selectedDateKey, MetricTypeIds.Nutrition_Carbs);
+        carbs = Math.round(carbs);
+        nutritionRowModel.content.push(new MetricCardModel({ 
+            name: "Carbs", 
+            iconClass: ICONS.None, 
+            metricValue: new MetricTextModel({ 
+                value: carbs.toString(), 
+                unit: "g" 
+            }) 
+        }));
+
+        let fat = this.metricsRepository.resolveMetric(this.model.selectedDateKey, MetricTypeIds.Nutrition_Fat);
+        fat = Math.round(fat);
+        nutritionRowModel.content.push(new MetricCardModel({ 
+            name: "Fat", 
+            iconClass: ICONS.None, 
+            metricValue: new MetricTextModel({ 
+                value: fat.toString(), 
+                unit: "g" 
+            }) 
+        }));
+
+        // >>> Activity Card <<<
+        const activityCard = new CardModel({
+            content: []
+        });
+        activityCard.content.push(new CardHeaderModel({ title: "Activity", iconClass: ICONS.Activity }));
+        this.model.metricSectionCardModels.push(activityCard);
+        
+        const actionsRowModel = new DivModel({ className: "row" });
+        this.model.myDayActionsModel.content.push(actionsRowModel);
+
+        actionsRowModel.content.push(
+            new ActionButtonModel({ 
+                iconClass: ICONS.CloudSync, 
+                labelStr: "Cloud Sync", 
+                onClick: () => this.syncFromCloud
+            })
+        );
+
+        actionsRowModel.content.push(
+            new ActionButtonModel({
+                iconClass: ICONS.DeviceSync,
+                labelStr: "Device Sync",
+                onClick: () => this.syncFromDevice()
+            })            
+        );
+
+        actionsRowModel.content.push(
+            new ActionButtonModel({
+                iconClass: ICONS.ExtAPISync,
+                labelStr: "Ext API Sync",
+                onClick: () => this.syncFromExtAPI()
+            })
+        );
+        
+        actionsRowModel.content.push(
+            new ActionButtonModel({
+                iconClass: ICONS.PublishToServer,
+                labelStr: "Publish",
+                onClick: () => this.publish()
+            })
+        );
+
+        actionsRowModel.content.push(
+            new ActionButtonModel({
+                iconClass: ICONS.CopyText,
+                labelStr: "Copy Text",
+                onClick: () => this.copyAsTextToClipboard()
+            })
+        );
+
+        this.screen?.update(this.model);
+    }
+
+    // let animating:boolean  = false
+    async transitionToDate(date: Date, direction: "left" | "right") {
+
+        void direction;
+        await this.loadDate(date);
+    }
+
+    async syncFromCloud() {
+        if (this.cloudMetricsSyncService?.isAvailable()) { 
+            await this.cloudMetricsSyncService.sync(this.model!.selectedDate); 
+            await Toast.show({ text: "Synced with Cloud!", duration: "short", position: "bottom" });
+        }
+    }
+
+    async syncFromDevice() {
+        if (this.deviceMetricsSyncService?.isAvailable()) { 
+            await this.deviceMetricsSyncService.sync(this.model!.selectedDate); 
+            await Toast.show({ text: "Synced with Device!", duration: "short", position: "bottom" }); }
+        
+    }
+
+    async syncFromExtAPI() {
+        let syncedAPICount = 0; 
+        this.extAPIMetricsSyncServices.forEach(async element => {
+            if (element.isAvailable()) { 
+                await element.sync(this.model!.selectedDate); 
+                syncedAPICount++; 
+            }
+        });
+        if (syncedAPICount > 0) {
+            await Toast.show({ text: "Synced with External APIs!", duration: "short", position: "bottom" });
+        }
+    }
+
+    async publish() {
+        await this.journeyController.publish(this.model!.selectedDate); 
+        await Toast.show({ text: "Published!", duration: "short", position: "bottom" });
+    }
+
+    async copyAsTextToClipboard() {
+
+        const sleepRecords = this.getSelectedDayMetric(MetricTypeIds.Sleep);
+        const totalSleepHours = sleepRecords.reduce(
+            (total, sleep) => total + sleep.sleepHours,
+            0
+        );
+        const sleepText = getHoursAndMinutesStrFromTime(totalSleepHours);
+
+        const calories = Math.round(this.getSelectedDayMetric(MetricTypeIds.Nutrition_Calories));
+        const protein = Math.round(this.getSelectedDayMetric(MetricTypeIds.Nutrition_Protein));
+        const carbs = Math.round(this.getSelectedDayMetric(MetricTypeIds.Nutrition_Carbs));
+        const fat = Math.round(this.getSelectedDayMetric(MetricTypeIds.Nutrition_Fat));
+        const nutritionNotes = this.getSelectedDayMetric(MetricTypeIds.Nutrition_Notes);
+
+        const reflectionNotes = this.getSelectedDayMetric(MetricTypeIds.Reflection);
+
+        let dailyJournaltext = [];
+
+        // https://hevy.com/workout/FNNqHdwBvc0
+        dailyJournaltext.push("😪 Sleep");
+        dailyJournaltext.push(sleepText);             // 7h 30m
+        dailyJournaltext.push(``);
+        dailyJournaltext.push(`🥩 Food`);
+        dailyJournaltext.push(`${calories} calories`) // 2584 calories
+        dailyJournaltext.push(`${protein}g protein`)  // 184g protein
+        dailyJournaltext.push(`${carbs}g carbs`)      // 289g carbs
+        dailyJournaltext.push(`${fat}g fat`)          // 77g fat
+        nutritionNotes && dailyJournaltext.push(nutritionNotes);
+        dailyJournaltext.push(``);
+        dailyJournaltext.push(`💪 Workout`);
+        reflectionNotes && dailyJournaltext.push(reflectionNotes);
+
+        await Clipboard.write({
+            string: dailyJournaltext.join('\n')
+        });
+    }
+    // // Maybe later a cooler animation
+    // async myDayPressed(this: GlobalEventHandlers) {
+    //     if (!isToday(selectedDate))
+    //         await transitionToDate(new Date(), "left")
+    // }
+
+    buildDefaultModel(): MyDayScreenModel {
+
+        const newDate = new Date();
+        const newDateKey = toDateKey(newDate);
+
+        return new MyDayScreenModel({
+            heroAreaVisibleHeight: HERO_AREA_VISIBLE_HEIGHT,
+            heroAreaTotalHeight: HERO_AREA_TOTAL_HEIGHT,
+            selectedDate: newDate,
+            selectedDateKey: newDateKey,
+            headerModel: new MyDayHeaderModel({
+                date: newDate,
+                dateFadeThreshold: DATE_FADE_THRESHOLD,
+                dateFadeDistance: DATE_FADE_DIST,
+                heroAreaVisibleHeight: HERO_AREA_VISIBLE_HEIGHT,
+                dateRowModel: {
+                    date: newDate,
+                    minDate: newDate,
+                    maxDate: newDate
+                }
+            }),
+            heroAreaModel: new HeroAreaModel({
+                imageUrl: ""
+            }),
+            metricSectionCardModels: [],
+            myDayActionsModel: new CardModel ({
+                content: []
+            })
+        })
+    }
+}

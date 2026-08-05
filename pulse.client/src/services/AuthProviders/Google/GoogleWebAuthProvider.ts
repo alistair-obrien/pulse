@@ -1,6 +1,6 @@
-import type { GoogleCredential } from "../AuthController";
+import type { GoogleCredential } from "./GoogleAuthCredential";
 
-let initialized = false;
+let GoogleWebAuth = false;
 
 let codeClient: google.accounts.oauth2.CodeClient;
 
@@ -19,7 +19,7 @@ export async function login(clientId: string): Promise<GoogleCredential> {
 }
 
 async function ensureInitialized(clientId: string): Promise<void> {
-    if (initialized)
+    if (GoogleWebAuth)
         return;
 
     await loadGoogleSdk();
@@ -31,7 +31,7 @@ async function ensureInitialized(clientId: string): Promise<void> {
         callback: handleCodeResponse,
     });
 
-    initialized = true;
+    GoogleWebAuth = true;
 }
 
 function handleCodeResponse(response: google.accounts.oauth2.CodeResponse) {

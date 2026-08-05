@@ -1,6 +1,6 @@
 import { MetricRecord } from "./MetricRecord";
-import { ToDateKey, type DateKey } from "./DateKey";
-import type { MetricTypeId, MetricTypes } from "../models/MetricRegistry";
+import type { MetricTypeId, MetricTypes } from "../../models/MetricRegistry";
+import { toDateKey, type DateKey } from "../../utils/DateUtils";
 
 
 export class MetricRecordStore {
@@ -34,7 +34,7 @@ export class MetricRecordStore {
             [start, end] = [end, start];
 
         for (const d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-            const key = ToDateKey(d);
+            const key = toDateKey(d);
             this.EnsureLoaded(key);
         }
     }

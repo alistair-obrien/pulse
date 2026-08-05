@@ -32,7 +32,7 @@ public class JourneyStepsController : PulseController
                 JourneyStepId = journeyStep.Id,
                 journeyStep.UserId,
                 UserName = user.UserName,
-                UserProfilePicture = "", // TODO
+                UserProfilePicture = user.ProfileImage,
                 Metric = metric
             })
             .ToListAsync();

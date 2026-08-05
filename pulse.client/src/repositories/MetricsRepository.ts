@@ -1,10 +1,10 @@
-import type { DateKey } from "../data-store/DateKey";
-import { MetricRecordStore } from "../data-store/MetricRecordStore";
+import { MetricRecordStore } from "./MetricsRepository/MetricRecordStore";
 import {
     metricsRegistry,
     type MetricTypeId,
     type MetricTypes
 } from "../models/MetricRegistry";
+import type { DateKey } from "../utils/DateUtils";
 
 const ENV = import.meta.env.VITE_ENVIRONMENT;
 
@@ -21,7 +21,7 @@ const storagePrefix = (() => {
     }
 })();
 
-class MetricRepositoryController {
+export class MetricsRepository {
     private readonly userEditsStore = new MetricRecordStore(`${storagePrefix}:user:`);
     private readonly deviceCacheStore = new MetricRecordStore(`${storagePrefix}:device:`);
     private readonly cloudCacheStore = new MetricRecordStore(`${storagePrefix}:cloud:`);
@@ -66,7 +66,7 @@ class MetricRepositoryController {
         return result;
     }
 
-    setMetric<K extends MetricTypeId>(
+    setUserEditMetric<K extends MetricTypeId>(
         date: DateKey,
         id: K,
         value: MetricTypes[K]
@@ -102,8 +102,6 @@ class MetricRepositoryController {
         this.userEditsStore.Clear(date);
     }
 }
-
-export const metricRepository = new MetricRepositoryController();
 
 function sanitizeMetric<T>(value: unknown, defaultValue: T): T {
     if (value == null)

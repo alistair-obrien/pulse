@@ -3,6 +3,10 @@ export const ICONS = {
 
     AppLogo: "ri-seedling-fill",
 
+    LoggedIn: "",
+    LoggedOut: "",
+    LogOut: "",
+
     GoogleLogin: "ri-google-fill",
     FacebookLogin: "ri-facebook-circle-fill",
     AppleLogin: "ri-apple-fill",

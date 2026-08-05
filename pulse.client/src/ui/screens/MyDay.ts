@@ -1,33 +1,146 @@
-// The total height of the hero area (Partly occluded by content based on visible height)
-const HERO_AREA_TOTAL_HEIGHT = 400;
-// The total visible height of the hero area. Used to set the size of the header
-const HERO_AREA_VISIBLE_HEIGHT = 280;
-
-// // At what scroll distance the header should start fading out
-// const HEADER_FADE_THRESHOLD = 50;
-// // How much distance the fade takes to finish
-// const HEADER_FADE_DIST = 10;
-
-// At what scroll distance the date should start fading out
-const DATE_FADE_THRESHOLD = 180;
-// How much distance the fade takes to finish
-const DATE_FADE_DIST = 20;
-
+// Styles
 import "../styles/main.css"
 import "remixicon/fonts/remixicon.css";
 
-// import * as api from "../api/API";
-import { ToDateKey } from "../../data-store/DateKey";
-import { ICONS } from "../components/ICONS";
-import { MetricTypeIds, type MetricTypeId, type MetricTypes } from "../../models/MetricRegistry";
+// Components
+import { Component, ComponentModel } from "../components/Component";
+import { Div} from "../components/Div";
+import { Card, CardModel } from "../components/Card";
+import { MyDayHeader, MyDayHeaderModel } from "../components/MyDayHeader";
+import { HeroArea, HeroAreaModel } from "../components/HeroArea";
 
-import * as MetricRepositoryController from "../../controllers/MetricRepositoryController";
-import * as RandomImageController from "../../controllers/RandomImageController";
-import * as DeviceSyncController from "../../controllers/DeviceMetricsSyncController";
-import * as CloudSyncController from "../../controllers/CloudSyncController"
-import * as ExternalAPISyncController from "../../controllers/ExternalAPISyncController"
-import * as JourneyController from "../../controllers/JourneyController"
+// Utils
+import * as DateUtils from "../../utils/DateUtils";
 
+export class MyDayScreenModel extends ComponentModel<MyDayScreen> {
+    readonly component = MyDayScreen;
+
+    heroAreaVisibleHeight:number;
+    heroAreaTotalHeight:number;
+    selectedDate:Date; // TODO: Lets make this obsolete and stick to date keys?
+    selectedDateKey:DateUtils.DateKey;
+    headerModel:MyDayHeaderModel;
+    heroAreaModel:HeroAreaModel;
+    metricSectionCardModels: CardModel[];
+    myDayActionsModel:CardModel;
+
+    constructor(args: {
+        heroAreaVisibleHeight:number;
+        heroAreaTotalHeight:number;
+        selectedDate:Date;
+        selectedDateKey:DateUtils.DateKey;
+        headerModel:MyDayHeaderModel;
+        heroAreaModel: HeroAreaModel;
+        metricSectionCardModels: CardModel[];
+        myDayActionsModel:CardModel;
+    }) {
+        super();
+
+        this.heroAreaVisibleHeight = args.heroAreaVisibleHeight;
+        this.heroAreaTotalHeight = args.heroAreaTotalHeight;
+        this.selectedDate = args.selectedDate;
+        this.selectedDateKey = args.selectedDateKey;
+        this.headerModel = args.headerModel;
+        this.heroAreaModel = args.heroAreaModel;
+        this.metricSectionCardModels = args.metricSectionCardModels;
+        this.myDayActionsModel  = args.myDayActionsModel;
+    }
+}
+
+export class MyDayScreen extends Component<MyDayScreenModel> {
+        
+    private readonly header: MyDayHeader;
+    
+    private readonly heroArea: HeroArea;
+    private readonly heroSpacer: Div;
+    
+    private readonly content: Div;
+    
+    private readonly metricSectionCardsContainer:Div;
+    private readonly metricSectionCards:Card[];
+
+    private readonly myDayActionsCard: Card;
+
+    constructor() {
+        super();
+
+        // The screen container that holds the whole composition
+        this.root.className = "screen-container";
+        
+        // The content inside the screen
+        this.content = new Div();
+        this.content.className = "content";
+        
+        // The header and hero area
+        this.header = new MyDayHeader();
+        this.header.setContentRoot(this.content);
+        
+        this.heroArea = new HeroArea();
+        this.heroArea.setContentRoot(this.content);
+        
+        this.heroSpacer = new Div();
+        this.heroSpacer.className = "hero-spacer";
+
+        this.metricSectionCards = [];
+
+        this.myDayActionsCard = new Card();
+
+        this.metricSectionCardsContainer = new Div();
+        this.metricSectionCardsContainer.className = "metric-cards-section";
+
+        this.content.append(
+            this.heroSpacer,
+            this.metricSectionCardsContainer,
+            this.myDayActionsCard
+        );
+
+        this.root.append(
+            this.header.root,
+            this.heroArea.root,
+            this.content.root,
+        );
+
+        // enableDaySwipe(container);
+        // startAutoSync();
+    }
+
+    protected render(): void {
+        this.root.style.setProperty('--hero-area-visible-height', `${this.model.heroAreaVisibleHeight}px`);
+        this.root.style.setProperty('--hero-area-total-height', `${this.model.heroAreaTotalHeight}px`);
+
+        this.header.update(this.model.headerModel);
+
+        this.heroArea.update(this.model.heroAreaModel);
+
+        // Create missing cards
+        while (this.metricSectionCards.length < this.model.metricSectionCardModels.length) {
+            const card = new Card();
+            this.metricSectionCards.push(card);
+            this.metricSectionCardsContainer.append(card);
+        }
+
+        // Remove extra cards
+        while (this.metricSectionCards.length > this.model.metricSectionCardModels.length) {
+            const card = this.metricSectionCards.pop()!;
+            card.root.remove();
+        }
+
+        // Update existing cards
+        this.metricSectionCards.forEach((card, i) => {
+            card.update(this.model.metricSectionCardModels[i]);
+        });
+
+        this.myDayActionsCard.update(this.model.myDayActionsModel);
+    }
+}
+
+
+
+
+
+
+
+// Le graveyard
 
 // import { App } from '@capacitor/app';
 
@@ -40,13 +153,7 @@ import * as JourneyController from "../../controllers/JourneyController"
 //     await CloudSync.cloudSync(selectedDate);
 // });
 
-// =====================================================
-// Helpers
-// =====================================================
-export interface UtcDateRange {
-    startUtc: string;
-    endUtc: string;
-}
+
 
 // let syncTimer: number | null = null;
 // let syncing = false;
@@ -113,645 +220,274 @@ export interface UtcDateRange {
 //     }, { passive: true });
 // }
 
-// =====================================================
-// State
-// =====================================================
 
-let selectedDate = new Date();
-let selectedDateKey = ToDateKey(selectedDate);
 
-let root!: HTMLElement;
 
-// =====================================================
-// Mounting
-// =====================================================
 
-export async function mount(container: HTMLElement) {
-    root = container;
+        // if (animating) { return; }
+        // animating = true;
 
-    root.style.setProperty('--hero-area-visible-height', `${HERO_AREA_VISIBLE_HEIGHT}px`);
-    root.style.setProperty('--hero-area-total-height', `${HERO_AREA_TOTAL_HEIGHT}px`);
+        // const oldPage = root.firstElementChild as HTMLElement | null;
 
-    await loadDate(new Date());
-    rerender();
+        // await loadDate(date);
 
-    // enableDaySwipe(container);
-    // startAutoSync();
-}
+        // const newPage = render();
 
-export function rerender() {
-    root.replaceChildren(render());
-}
+        // if (!oldPage) {
+        //     root.replaceChildren(newPage);
+        //     return;
+        // }
 
-async function loadDate(date: Date) {
-    selectedDate = date;
-    selectedDateKey = ToDateKey(selectedDate);
+        // root.insertBefore(newPage, root.firstChild);
 
-    if (DeviceSyncController.isAvailable()) { await DeviceSyncController.sync(date); }
-    if (CloudSyncController.isAvailable()) { await CloudSyncController.sync(date); } 
-    void ExternalAPISyncController.sync(date);
-}
+        // if (direction === "right") {
+        //     oldPage.classList.add("disappear");
+        //     newPage.classList.add("slide-in-right");
+        // } else {
+        //     oldPage.classList.add("disappear");
+        //     newPage.classList.add("slide-in-left");
+        // }
 
-// let animating:boolean  = false
-async function transitionToDate(date: Date, direction: "left" | "right") {
+        // await Promise.all([
+        //     waitForAnimation(oldPage),
+        //     waitForAnimation(newPage)
+        // ]);
 
-    void direction;
-    await loadDate(date);
-    rerender();
+        // oldPage.remove();
 
-    // if (animating) { return; }
-    // animating = true;
+        // newPage.classList.remove(
+        //     "disappear",
+        //     "appear",
+        //     "slide-in-left",
+        //     "slide-in-right"
+        // );
 
-    // const oldPage = root.firstElementChild as HTMLElement | null;
+        // animating = false;
 
-    // await loadDate(date);
-
-    // const newPage = render();
-
-    // if (!oldPage) {
-    //     root.replaceChildren(newPage);
-    //     return;
+        // function waitForAnimation(element: HTMLElement): Promise<void> {
+    //     return new Promise(resolve => {
+    //         element.addEventListener("animationend", () => resolve(), {
+    //             once: true
+    //         });
+    //     });
     // }
 
-    // root.insertBefore(newPage, root.firstChild);
-
-    // if (direction === "right") {
-    //     oldPage.classList.add("disappear");
-    //     newPage.classList.add("slide-in-right");
-    // } else {
-    //     oldPage.classList.add("disappear");
-    //     newPage.classList.add("slide-in-left");
+    // =====================================================
+    // Actions
+    // =====================================================
+    // async function onPublishClicked() {
+    //     await cloudSync(selectedDate);
+    //     await api.publish(selectedDateKey);
     // }
 
-    // await Promise.all([
-    //     waitForAnimation(oldPage),
-    //     waitForAnimation(newPage)
-    // ]);
+    // =====================================================
+    // Reflection
+    // =====================================================
 
-    // oldPage.remove();
+    // createReflectionCard(): HTMLElement {
 
-    // newPage.classList.remove(
-    //     "disappear",
-    //     "appear",
-    //     "slide-in-left",
-    //     "slide-in-right"
-    // );
+    //     const card = new Card(); 
+    //     const header = new CardHeader("Reflections", ICONS.Reflection);
 
-    // animating = false;
-}
+    //     const textArea = new MetricTextInputField(
+    //         "...what did you achieve today?", 
+    //         MetricTypeIds.Reflection,
+    //         this.model.selectedDateKey
+    //     );
 
-// function waitForAnimation(element: HTMLElement): Promise<void> {
-//     return new Promise(resolve => {
-//         element.addEventListener("animationend", () => resolve(), {
-//             once: true
-//         });
-//     });
-// }
 
-// =====================================================
-// Actions
-// =====================================================
-// async function onPublishClicked() {
-//     await cloudSync(selectedDate);
-//     await api.publish(selectedDateKey);
-// }
-import { Toast } from "@capacitor/toast";
+    //     card.append(
+    //         header.root,
+    //         textArea.root
+    //     );
 
-import { Clipboard } from "@capacitor/clipboard";
-import { ActionButton } from "../components/ActionButton";
-import { Card, CardHeader } from "../components/Card";
-import { isFuture, isToday } from "../../controllers/DateTimeController";
-import { MetricCard, MetricRow, MetricText, MetricTextInputField, TimeSpan } from "../components/JourneyStepCard";
-import { WORKOUT_ICONS } from "../components/WORKOUT_ICONS";
-async function onCopyTextClicked() {
+    //     return card.root;
+    // }
 
-    const sleepRecords = getSelectedDayMetric(MetricTypeIds.Sleep);
-    const totalSleepHours = sleepRecords.reduce(
-        (total, sleep) => total + sleep.sleepHours,
-        0
-    );
-    const sleepText = getHoursAndMinutesStrFromTime(totalSleepHours);
+    // =====================================================
+    // Nutrition
+    // =====================================================
 
-    const calories = Math.round(getSelectedDayMetric(MetricTypeIds.Nutrition_Calories));
-    const protein = Math.round(getSelectedDayMetric(MetricTypeIds.Nutrition_Protein));
-    const carbs = Math.round(getSelectedDayMetric(MetricTypeIds.Nutrition_Carbs));
-    const fat = Math.round(getSelectedDayMetric(MetricTypeIds.Nutrition_Fat));
-    const nutritionNotes = getSelectedDayMetric(MetricTypeIds.Nutrition_Notes);
+    // createNutritionCard(): HTMLElement {
 
-    const reflectionNotes = getSelectedDayMetric(MetricTypeIds.Reflection);
+    //     const card = new Card(); 
+    //     const header = new CardHeader("Nutrition", ICONS.Nutrition);
 
-    let dailyJournaltext = [];
+    //     const nutritionlist = document.createElement("div");
+    //     nutritionlist.className = "metric-list";
 
-    // https://hevy.com/workout/FNNqHdwBvc0
-    dailyJournaltext.push("😪 Sleep");
-    dailyJournaltext.push(sleepText);             // 7h 30m
-    dailyJournaltext.push(``);
-    dailyJournaltext.push(`🥩 Food`);
-    dailyJournaltext.push(`${calories} calories`) // 2584 calories
-    dailyJournaltext.push(`${protein}g protein`)  // 184g protein
-    dailyJournaltext.push(`${carbs}g carbs`)      // 289g carbs
-    dailyJournaltext.push(`${fat}g fat`)          // 77g fat
-    nutritionNotes && dailyJournaltext.push(nutritionNotes);
-    dailyJournaltext.push(``);
-    dailyJournaltext.push(`💪 Workout`);
-    reflectionNotes && dailyJournaltext.push(reflectionNotes);
+    //     const calories = Math.round(this.getSelectedDayMetric(MetricTypeIds.Nutrition_Calories));
+    //     const caloriesElement = new MetricText(calories.toString(), 'kcal');
+    //     const caloriesCard = new MetricRow("Calories", caloriesElement.root);
+        
+    //     const protein = Math.round(this.getSelectedDayMetric(MetricTypeIds.Nutrition_Protein));
+    //     const proteinElement = new MetricText(protein.toString(), 'g');
+    //     const proteinCard = new MetricRow("Protein", proteinElement.root);
+        
+    //     const carbs = Math.round(this.getSelectedDayMetric(MetricTypeIds.Nutrition_Carbs));
+    //     const carbsElement = new MetricText(carbs.toString(), 'g');
+    //     const carbsCard = new MetricRow("Carbs", carbsElement.root);
 
-    await Clipboard.write({
-        string: dailyJournaltext.join('\n')
-    });
-}
+    //     const fat = Math.round(this.getSelectedDayMetric(MetricTypeIds.Nutrition_Fat));
+    //     const fatElement = new MetricText(fat.toString(), 'g');
+    //     const fatCard = new MetricRow("Fat", fatElement.root);
 
-// =====================================================
-// Rendering
-// =====================================================
+    //     nutritionlist.append(
+    //         caloriesCard.root,
+    //         proteinCard.root,
+    //         carbsCard.root,
+    //         fatCard.root
+    //     );
 
-export function render(): HTMLElement {
+    //     const textArea = new MetricTextInputField(
+    //         "...how were your meals?",
+    //         MetricTypeIds.Nutrition_Notes,
+    //         this.model.selectedDateKey
+    //     );
 
-    const screenContainer = document.createElement("div");
-    screenContainer.className = "screen-container";
-    
-    const content = document.createElement("div");
-    content.className = "content";
-    
-    const header = createHeader(content);
+    //     card.append(
+    //         header.root,
+    //         nutritionlist,
+    //         textArea.root,
+    //     );
 
-    const heroArea = createHeroArea(content);
-    
-    const heroSpacer = document.createElement("div");
-    heroSpacer.className = "hero-spacer";
-    
-    content.append(
-        heroSpacer,
-        createReflectionCard(),
-        createRecoveryCard(),
-        createNutritionCard(),
-        createActivityCard(),
-        createReportActionButtons(),
-    );
+    //     return card.root;
+    // }
 
-    screenContainer.append(
-        header,
-        heroArea,
-        content,
-    );
+    // createActivityCard(): HTMLElement {
 
-    return screenContainer;
-}
+    //     const card = new Card(); 
+    //     const header = new CardHeader("Activity", ICONS.Activity);
 
-// =====================================================
-// Header
-// =====================================================
+    //     card.append(header.root);
 
-function createHeroArea(contentRoot: HTMLElement): HTMLElement {
-    const heroArea = document.createElement("div");
-    heroArea.className = "hero";
-    heroArea.id = "hero-area";
-    
-    const heroImage = document.createElement("img");
-    
-    heroImage.src = RandomImageController.getImageUrl(selectedDate.getDay());
-    heroImage.id = "hero-image"
+    //     const workoutRecords = this.getSelectedDayMetric(MetricTypeIds.Workouts);
 
-    heroArea.append(
-        heroImage,
-    );
-
-    contentRoot.addEventListener("scroll", () => {
-    const y = contentRoot.scrollTop;
-
-    heroArea.style.transform =
-        `translateY(${-y * 0.5}px)`;
-    });
-
-    return heroArea;
-}
-
-function createDateRow(): HTMLElement {
-    const dateRow = document.createElement("div");
-    dateRow.className = "date-row"
-    dateRow.id = "date-row";
-
-    const dateContainer = document.createElement("div");
-    dateContainer.className = "date-row-container";
-
-    const weekdayFormatted = new Intl.DateTimeFormat("en-GB", {
-        weekday: "long"
-    }).format(selectedDate);
-
-    const dateFormatted = new Intl.DateTimeFormat("en-GB", {
-        day: "numeric",
-        month: "long",
-        year: "numeric"
-    }).format(selectedDate);
-
-    const weekday = document.createElement("h1");
-    weekday.textContent = weekdayFormatted;
-
-    const dateText = document.createElement("h2");
-    dateText.textContent = dateFormatted;
-
-    dateContainer.append(weekday, dateText);
-
-    const prevButton = document.createElement("button");
-    prevButton.className = "icon-button";
-    prevButton.innerHTML = `
-    <svg 
-        xmlns="http://www.w3.org/2000/svg"  
-        viewBox="0 0 24 24" 
-        fill="none" 
-        stroke="currentColor" 
-        stroke-width="2" 
-        stroke-linecap="round" 
-        stroke-linejoin="round" 
-        class="lucide lucide-chevron-left-icon lucide-chevron-left">
-        <path d="m15 18-6-6 6-6"/>
-    </svg>`
-
-    prevButton.onclick = async () => {
-        const date = new Date(selectedDate);
-        date.setDate(date.getDate() - 1);
-        await transitionToDate(date, "right");
-    };
-
-    const nextButton = document.createElement("button");
-    nextButton.className = "icon-button";
-    nextButton.innerHTML = `
-        <svg 
-            xmlns="http://www.w3.org/2000/svg" 
-            viewBox="0 0 24 24" 
-            fill="none" 
-            stroke="currentColor" 
-            stroke-width="2" 
-            stroke-linecap="round" 
-            stroke-linejoin="round" 
-            class="lucide lucide-chevron-right-icon lucide-chevron-right">
-            <path d="m9 18 6-6-6-6"/>
-        </svg>`
-    nextButton.onclick = async () => {
-        const next = new Date(selectedDate);
-        next.setDate(next.getDate() + 1);
-
-        if (!isFuture(next)) {
-            await transitionToDate(next, "left");
-
-        }
-    };
-
-    nextButton.disabled = isToday(selectedDate);
-
-    // // TODO: Only if we are not on today
-    // const todayButton = document.createElement("button");
-    // todayButton.textContent = "Today";
-    // todayButton.onclick = () => {
-    //     const date = new Date();
-    //     date.setDate(date.getDate());
-    //     changeDate(date);
-    // };
-
-    dateRow.append(prevButton, dateContainer, nextButton);
-
-    return dateRow;
-}
-
-function createHeader(contentRoot:HTMLElement): HTMLElement {
-
-    const header = document.createElement("div");
-    header.className = "header";
-
-    const dateRow = createDateRow();
-    header.append(dateRow);
-
-    // If we need a top header again we can use this to smooth fade it out when scrolling
-    // contentRoot.addEventListener("scroll", () => {
-    //     const y = contentRoot.scrollTop;
-
-    //     const start = HEADER_FADE_THRESHOLD;
-    //     const end = HEADER_FADE_THRESHOLD + HEADER_FADE_DIST;
-
-    //     const opacity = 1 - ((y - start) / (end - start));
-    //     headerInner.style.opacity = `${opacity}`;
-    // });
-
-    contentRoot.addEventListener("scroll", () => {
-            const y = contentRoot.scrollTop;
+    //     if (workoutRecords.length === 0) {
+    //         const empty = document.createElement("div");
+    //         empty.textContent = "No activity logged for today";
             
-            const opacity = 1 - ((y - DATE_FADE_THRESHOLD) / (DATE_FADE_DIST));
-            dateRow.style.opacity = `${opacity}`;
-            header.style.height = `${HERO_AREA_VISIBLE_HEIGHT - y}px`;
-        }
-    );
+    //         const empty2 = document.createElement("div");
+    //         empty2.innerHTML = `
+    //             Log a workout, or enjoy your rest day <i class="ri-emotion-happy-fill"></i>
+    //         `;
+            
+    //         card.append(empty);
+    //         card.append(empty2);
+    //         return card.root;
+    //     }
 
-    return header;
-}
+    //     const row = document.createElement("div");
+    //     row.className = "metric-grid-3";
+    //     card.append(row);
+    //     for (const workout of workoutRecords) {
+    //         const icon = WORKOUT_ICONS[workout.workoutType] ?? ICONS.Activity;
+    //         const workoutDurationElement =  new TimeSpan(workout.workoutDuration / 60);
+    //         const workoutCard = new MetricCard({ 
+    //             name: workout.workoutType, 
+    //             metricValue: workoutDurationElement.root, 
+    //             iconClass: icon }); 
+    //         row.append(workoutCard.root);
 
-// =====================================================
-// Reflection
-// =====================================================
+    //         const notes = document.createElement("textarea");
+    //         notes.placeholder = "Any workout notes?";
+    //     }
 
-function createReflectionCard(): HTMLElement {
+    //     return card.root;
+    // }
 
-    const card = new Card(); 
-    const header = new CardHeader("Reflections", ICONS.Reflection);
-
-    const textArea = new MetricTextInputField(
-        "...what did you achieve today?", 
-        MetricTypeIds.Reflection,
-        selectedDateKey
-    );
+    // =====================================================
+    // Recovery
+    // =====================================================
 
 
-    card.append(
-        header.root,
-        textArea.root
-    );
+    // createRecoveryCard(): HTMLElement {
 
-    return card.root;
-}
+    //     const card = new Card(); 
+    //     const header = new CardHeader("Recovery", ICONS.Recovery) ;
 
-// =====================================================
-// Nutrition
-// =====================================================
+    //     const recoveryGrid = document.createElement("div");
+    //     recoveryGrid.className = "metric-grid-3";
 
-function createNutritionCard(): HTMLElement {
-
-    const card = new Card(); 
-    const header = new CardHeader("Nutrition", ICONS.Nutrition);
-
-    const nutritionlist = document.createElement("div");
-    nutritionlist.className = "metric-list";
-
-    const calories = Math.round(getSelectedDayMetric(MetricTypeIds.Nutrition_Calories));
-    const caloriesElement = new MetricText(calories.toString(), 'kcal');
-    const caloriesCard = new MetricRow("Calories", caloriesElement.root);
-    
-    const protein = Math.round(getSelectedDayMetric(MetricTypeIds.Nutrition_Protein));
-    const proteinElement = new MetricText(protein.toString(), 'g');
-    const proteinCard = new MetricRow("Protein", proteinElement.root);
-    
-    const carbs = Math.round(getSelectedDayMetric(MetricTypeIds.Nutrition_Carbs));
-    const carbsElement = new MetricText(carbs.toString(), 'g');
-    const carbsCard = new MetricRow("Carbs", carbsElement.root);
-
-    const fat = Math.round(getSelectedDayMetric(MetricTypeIds.Nutrition_Fat));
-    const fatElement = new MetricText(fat.toString(), 'g');
-    const fatCard = new MetricRow("Fat", fatElement.root);
-
-    nutritionlist.append(
-        caloriesCard.root,
-        proteinCard.root,
-        carbsCard.root,
-        fatCard.root
-    );
-
-    const textArea = new MetricTextInputField(
-        "...how were your meals?",
-        MetricTypeIds.Nutrition_Notes,
-        selectedDateKey
-    );
-
-    card.append(
-        header.root,
-        nutritionlist,
-        textArea.root,
-    );
-
-    return card.root;
-}
-
-function createActivityCard(): HTMLElement {
-
-    const card = new Card(); 
-    const header = new CardHeader("Activity", ICONS.Activity);
-
-    card.append(header.root);
-
-    const workoutRecords = getSelectedDayMetric(MetricTypeIds.Workouts);
-
-    if (workoutRecords.length === 0) {
-        const empty = document.createElement("div");
-        empty.textContent = "No activity logged for today";
+    //     // Sleep
+    //     const sleepRecords = this.getSelectedDayMetric(MetricTypeIds.Sleep);
+    //     const totalSleepHours = sleepRecords.reduce(
+    //         (total, sleep) => total + sleep.sleepHours,
+    //         0
+    //     );
         
-        const empty2 = document.createElement("div");
-        empty2.innerHTML = `
-            Log a workout, or enjoy your rest day <i class="ri-emotion-happy-fill"></i>
-        `;
+    //     const sleepText = new TimeSpan(totalSleepHours);
+    //     const sleepCard = new MetricCard({
+    //         name: "Total Sleep", 
+    //         metricValue: sleepText.root, 
+    //         iconClass: ICONS.Sleep}
+    //     );
         
-        card.append(empty);
-        card.append(empty2);
-        return card.root;
-    }
+    //     // RHR
+    //     const restingHeartRate = this.getSelectedDayMetric(MetricTypeIds.RestingHeartRate);
+    //     const restingHeartRateMetricElement = new MetricText(restingHeartRate.toString(), 'bpm');
+    //     const restingHeartRateCard = new MetricCard({
+    //         name: "Resting HR", 
+    //         metricValue: restingHeartRateMetricElement.root, 
+    //         iconClass: ICONS.RestingHeartRate}
+    //     );
+        
+    //     // Steps
+    //     const steps = this.getSelectedDayMetric(MetricTypeIds.Steps);
+    //     const stepsMetricElement = new MetricText(steps.toLocaleString());
+    //     const stepsCard = new MetricCard({
+    //         name: "Total Steps", 
+    //         metricValue: stepsMetricElement.root, 
+    //         iconClass: ICONS.Steps}
+    //     );
 
-    const row = document.createElement("div");
-    row.className = "metric-grid-3";
-    card.append(row);
-    for (const workout of workoutRecords) {
-        const icon = WORKOUT_ICONS[workout.workoutType] ?? ICONS.Activity;
-        const workoutDurationElement =  new TimeSpan(workout.workoutDuration / 60);
-        const workoutCard = new MetricCard(workout.workoutType, workoutDurationElement.root, icon); 
-        row.append(workoutCard.root);
+    //     recoveryGrid.append(
+    //         sleepCard.root,
+    //         stepsCard.root,
+    //         restingHeartRateCard.root,
+    //     );
 
-        const notes = document.createElement("textarea");
-        notes.placeholder = "Any workout notes?";
-    }
+    //     card.append(
+    //         header.root,
+    //         recoveryGrid
+    //     );
 
-    return card.root;
-}
+    //     return card.root;
+    // }
 
-function getSelectedDayMetric<K extends MetricTypeId>(
-    metricTypeId: K
-): MetricTypes[K] {
-    return MetricRepositoryController.metricRepository.resolveMetric(selectedDateKey, metricTypeId);
-}
+    // =====================================================
+    // Highlights
+    // =====================================================
 
-// =====================================================
-// Recovery
-// =====================================================
+    // function createHighlightsSection(): HTMLElement {
 
+    //     const section = document.createElement("div");
 
+    //     const title = document.createElement("h3");
+    //     title.textContent = "Highlights";
 
-//01:51:00
-//13.933333333333334
-// -> 3h 14m
-function getHoursAndMinutesStrFromTime(time: number | string): string {
+    //     // const highlight1 = document.createElement("div");
+    //     // highlight1.className = "card";
+    //     // highlight1.textContent = "⭐ One week until your 1-year lifting anniversary";
 
-    let hours: number;
-    let minutes: number;
+    //     // const highlight2 = document.createElement("div");
+    //     // highlight2.className = "card";
+    //     // highlight2.textContent = "🔥 4 workout streak";
 
-    if (typeof time === "number") {
-        hours = Math.floor(time);
-        minutes = Math.round((time - hours) * 60);
-    } else {
-        const [h, m] = time.split(":").map(Number);
-        hours = h;
-        minutes = m;
-    }
+    //     // const highlight3 = document.createElement("div");
+    //     // highlight3.className = "card";
+    //     // highlight3.textContent = "📉 Weight down 0.8kg this month";
 
-    return `${hours}h ${minutes}m`;
-}
+    //     // section.append(
+    //     //     title,
+    //     //     highlight1,
+    //     //     highlight2,
+    //     //     highlight3
+    //     // );
 
-function createRecoveryCard(): HTMLElement {
+    //     return section;
+    // }
 
-    const card = new Card(); 
-    const header = new CardHeader("Recovery", ICONS.Recovery) ;
-
-    const recoveryGrid = document.createElement("div");
-    recoveryGrid.className = "metric-grid-3";
-
-    // Sleep
-    const sleepRecords = getSelectedDayMetric(MetricTypeIds.Sleep);
-    const totalSleepHours = sleepRecords.reduce(
-        (total, sleep) => total + sleep.sleepHours,
-        0
-    );
-    
-    const sleepText = new TimeSpan(totalSleepHours);
-    const sleepCard = new MetricCard("Total Sleep", sleepText.root, ICONS.Sleep) 
-    
-    // RHR
-    const restingHeartRate = getSelectedDayMetric(MetricTypeIds.RestingHeartRate);
-    const restingHeartRateMetricElement = new MetricText(restingHeartRate.toString(), 'bpm');
-    const restingHeartRateCard = new MetricCard("Resting HR", restingHeartRateMetricElement.root, ICONS.RestingHeartRate);
-    
-    // Steps
-    const steps = getSelectedDayMetric(MetricTypeIds.Steps);
-    const stepsMetricElement = new MetricText(steps.toLocaleString());
-    const stepsCard = new MetricCard("Total Steps", stepsMetricElement.root, ICONS.Steps);
-
-    recoveryGrid.append(
-        sleepCard.root,
-        stepsCard.root,
-        restingHeartRateCard.root,
-    );
-
-    card.append(
-        header.root,
-        recoveryGrid
-    );
-
-    return card.root;
-}
-
-// =====================================================
-// Highlights
-// =====================================================
-
-// function createHighlightsSection(): HTMLElement {
-
-//     const section = document.createElement("div");
-
-//     const title = document.createElement("h3");
-//     title.textContent = "Highlights";
-
-//     // const highlight1 = document.createElement("div");
-//     // highlight1.className = "card";
-//     // highlight1.textContent = "⭐ One week until your 1-year lifting anniversary";
-
-//     // const highlight2 = document.createElement("div");
-//     // highlight2.className = "card";
-//     // highlight2.textContent = "🔥 4 workout streak";
-
-//     // const highlight3 = document.createElement("div");
-//     // highlight3.className = "card";
-//     // highlight3.textContent = "📉 Weight down 0.8kg this month";
-
-//     // section.append(
-//     //     title,
-//     //     highlight1,
-//     //     highlight2,
-//     //     highlight3
-//     // );
-
-//     return section;
-// }
-
-// =====================================================
-// Actions
-// =====================================================
-
-function createReportActionButtons(): HTMLElement {
-
-    const actionButtonsCard = new Card();
-
-    const actionButtonRow = document.createElement("div");
-    actionButtonRow.className = "action-buttons-row";
-    actionButtonsCard.append(actionButtonRow);
-
-    if (CloudSyncController.isAvailable()) {
-        const cloudSyncButton = new ActionButton(
-            "Cloud Sync", 
-            ICONS.CloudSync, 
-            async () => { 
-                await CloudSyncController.sync(selectedDate);
-                rerender();
-                await Toast.show({
-                    text: "Synced with Cloud!",
-                duration: "short",
-                position: "bottom",
-            });
-        }); 
-        actionButtonRow.append(cloudSyncButton.root);
-    }
-
-    if (DeviceSyncController.isAvailable()) {
-        const deviceSyncButton = new ActionButton(
-            "Device Sync", 
-            ICONS.DeviceSync,
-            async () => { 
-                await DeviceSyncController.sync(selectedDate); 
-                rerender(); 
-                await Toast.show({
-                    text: "Synced with Device!",
-                    duration: "short",
-                    position: "bottom",
-                });
-            });
-        actionButtonRow.append(deviceSyncButton.root);
-    }
-
-    const extApiSyncButton = new ActionButton(
-            "Ext API Sync", 
-            ICONS.ExtAPISync,
-            async () => { 
-                await ExternalAPISyncController.sync(selectedDate); 
-                rerender(); 
-                await Toast.show({
-                    text: "Synced with External APIs!",
-                    duration: "short",
-                    position: "bottom",
-                });
-            });
-        actionButtonRow.append(extApiSyncButton.root);
-    
-    const publishButton = new ActionButton(
-            "Share Journey Step", 
-            ICONS.PublishToServer,
-            async () => { 
-                await JourneyController.publish(selectedDate); 
-                rerender(); 
-                await Toast.show({
-                    text: "Synced with External APIs!",
-                    duration: "short",
-                    position: "bottom",
-                });
-            });
-        actionButtonRow.append(publishButton.root);
-
-    const copyTextButton = new ActionButton("Copy Text", ICONS.CopyText, onCopyTextClicked);
-    actionButtonRow.append(copyTextButton.root);
-    
-    return actionButtonsCard.root;
-}
-
-// TODO: A more explicit publish prompt
-
-// =====================================================
-// Helpers
-// =====================================================
-
-
-
-// Maybe later a cooler animation
-export async function myDayPressed(this: GlobalEventHandlers) {
-    if (!isToday(selectedDate))
-        await transitionToDate(new Date(), "left")
-}
+    // =====================================================
+    // Actions
+    // =====================================================

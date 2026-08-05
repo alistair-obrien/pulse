@@ -1,10 +1,13 @@
 import { registerPlugin } from "@capacitor/core";
-import { MetricTypeIds } from "../models/MetricRegistry";
-import type { SleepLogData } from "../models/SleepLogData";
-import { getLocalDayUtcRange } from "../controllers/DateTimeController";
-import { ToDateKey } from "../data-store/DateKey";
+import { MetricTypeIds } from "../../models/MetricRegistry";
+import type { SleepLogData } from "../../models/SleepLogData";
+import { getLocalDayUtcRange, toDateKey } from "../../utils/DateUtils";
 
-import * as MetricRepositoryController from "../controllers/MetricRepositoryController";
+// Services
+import type { DeviceMetricsSyncService } from "../DeviceMetricsSyncService";
+
+// Controllers
+import type { MetricsRepository } from "../../repositories/MetricsRepository";
 
 interface HealthConnectPlugin {
     isAvailable() : Promise<AvailabilityResult>;
@@ -97,36 +100,6 @@ interface ReadRestingHeartRateResult {
 // Java Plugin HealthConnectPlugin.java
 export const HealthConnect = registerPlugin<HealthConnectPlugin>("HealthConnect");
 
-let _isAvailable:boolean = false;
-
-export function isAvailable() {
-    return _isAvailable;
-}
-
-export async function initialize() {
-
-    const response = await HealthConnect.isAvailable()
-    
-    if (response.available) {
-        const hasPerms = await HealthConnect.hasHealthConnectPermissions();
-        console.log(JSON.stringify(hasPerms));
-
-        if (!hasPerms.has_permissions) {
-            console.log("Requesting permissions...");
-
-            const result = await HealthConnect.requestHealthConnectPermissions();
-
-            console.log(JSON.stringify(result));
-
-            const after = await HealthConnect.hasHealthConnectPermissions();
-
-            console.log(JSON.stringify(after));
-        }
-
-        _isAvailable = true;
-    }
-}
-
 type HealthConnectData = {
     steps: Awaited<ReturnType<typeof HealthConnect.readSteps>>;
     restingHeartRate: Awaited<ReturnType<typeof HealthConnect.readRestingHeartRate>>;
@@ -172,53 +145,104 @@ const IMPORTERS = [
     }
 ] as const;
 
-let syncing = false;
-export async function sync(date: Date) {
+export class HealthConnectSyncService implements DeviceMetricsSyncService {
+    
+    private initialized:boolean = false;
+    private _isAvailable:boolean = false;
+    private syncing = false;
+    
+    private metricsRepositoryController:MetricsRepository;
 
-    if (syncing) {
-        return;
+    constructor(metricsRepository: MetricsRepository) {
+        this.metricsRepositoryController = metricsRepository;
     }
 
-    if (!_isAvailable) {
-        console.log("Health Sync not available on this device.");
-        return;
+    async initialize() {
+
+        const response = await HealthConnect.isAvailable()
+        
+        if (response.available) {
+            const hasPerms = await HealthConnect.hasHealthConnectPermissions();
+            console.log(JSON.stringify(hasPerms));
+
+            if (!hasPerms.has_permissions) {
+                console.log("Requesting permissions...");
+
+                const result = await HealthConnect.requestHealthConnectPermissions();
+
+                console.log(JSON.stringify(result));
+
+                const after = await HealthConnect.hasHealthConnectPermissions();
+
+                console.log(JSON.stringify(after));
+            }
+
+            this._isAvailable = true;
+        }
+
+        this.initialized = true;
     }
+    
+    async isAvailable(): Promise<boolean> {
 
-    try {
-        const dateRange = getLocalDayUtcRange(date);
-        const dateKey = ToDateKey(date);
-
-        const [
-            steps,
-            restingHeartRate,
-            sleep,
-            nutrition
-        ] = await Promise.all([
-            HealthConnect.readSteps(dateRange),
-            HealthConnect.readRestingHeartRate(dateRange),
-            HealthConnect.readSleep(dateRange),
-            HealthConnect.readNutrition(dateRange)
-        ]);
-
-        const healthData: HealthConnectData = {
-            steps,
-            restingHeartRate,
-            sleep,
-            nutrition
-        };
-
-        for (const { metric, value } of IMPORTERS) {
-            MetricRepositoryController.metricRepository.setDeviceMetric(
-                dateKey,
-                metric,
-                value(healthData)
-            );
+        await this.ensureInitialized();
+        return this._isAvailable;
+    }
+    
+    async ensureInitialized() {
+        if (!this.initialized) {
+            this.initialize();            
         }
     }
-    catch(e) {
-        console.error("Device sync failed", e);
-    }
-    finally {
-        syncing = false;
+
+    async sync(date: Date) {
+
+        if (this.syncing) {
+            return;
+        }
+
+        if (!this._isAvailable) {
+            console.log("Health Sync not available on this device.");
+            return;
+        }
+
+        try {
+            const dateRange = getLocalDayUtcRange(date);
+            const dateKey = toDateKey(date);
+
+            const [
+                steps,
+                restingHeartRate,
+                sleep,
+                nutrition
+            ] = await Promise.all([
+                HealthConnect.readSteps(dateRange),
+                HealthConnect.readRestingHeartRate(dateRange),
+                HealthConnect.readSleep(dateRange),
+                HealthConnect.readNutrition(dateRange)
+            ]);
+
+            const healthData: HealthConnectData = {
+                steps,
+                restingHeartRate,
+                sleep,
+                nutrition
+            };
+
+            for (const { metric, value } of IMPORTERS) {
+                this.metricsRepositoryController.setDeviceMetric(
+                    dateKey,
+                    metric,
+                    value(healthData)
+                );
+            }
+        }
+        catch(e) {
+            console.error("Device sync failed", e);
+        }
+        finally {
+            this.syncing = false;
+        }
     }
 }
+

@@ -24,10 +24,13 @@ const imageIds = [
     443
 ]
 
-export function getImageUrl(seed:number):string {
+export class ImageService {
 
-    const index = seed % imageIds.length;
-    const imageId = imageIds[index];
+    getRandomImageUrl(seed:number):string {
 
-    return `https://picsum.photos/id/${imageId}/400/400.webp`
+        const index = seed % imageIds.length;
+        const imageId = imageIds[index];
+
+        return `https://picsum.photos/id/${imageId}/400/400.webp`
+    }
 }

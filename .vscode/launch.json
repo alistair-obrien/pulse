@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Live Reload (Web)",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "powershell -ExecutionPolicy Bypass -File scripts/client/live-reload-client.ps1 localhost web",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Live Reload (Android)",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "powershell -ExecutionPolicy Bypass -File scripts/client/live-reload-client.ps1 localhost android",
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

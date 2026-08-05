@@ -1,108 +1,118 @@
-import type { GoogleCredential } from "../controllers/AuthController";
-import type { DateKey } from "../data-store/DateKey";
 import { JourneyStep } from "../models/JourneyStep";
 import type { MetricTypeId, MetricTypes } from "../models/MetricRegistry";
-import { get, post, put } from "./APIClient";
+import type { GoogleCredential } from "../services/AuthProviders/Google/GoogleAuthCredential";
+import type { DateKey } from "../utils/DateUtils";
+import type { APIClient } from "./APIClient";
 
-// >>> METRICS <<<
+export class API {
+    
+    private apiClient!: APIClient;
 
-// Single metric
-export function getMetric<K extends MetricTypeId>(
-    dateKey: DateKey,
-    metricTypeId: K
-): Promise<MetricTypes[K] | null> {
-    return get(`/api/metrics/${dateKey}/${metricTypeId}`);
-}
+    attachClient(apiClient:APIClient) {
+        this.apiClient = apiClient;
+    }
 
-// Get all metrics for day
-export function getMetrics(
-    dateKey: DateKey
-): Promise<Partial<MetricTypes> | null> {
-    return get(`/api/metrics/${dateKey}`);
-}
+    // >>> METRICS <<<
+    // Single metric
+    async getMetric<K extends MetricTypeId>(
+        dateKey: DateKey,
+        metricTypeId: K
+    ): Promise<MetricTypes[K] | null> {
+        return this.apiClient.get(`/api/metrics/${dateKey}/${metricTypeId}`);
+    }
 
-// Set single metric
-export function setMetric<K extends MetricTypeId>(
-    dateKey: DateKey,
-    metricTypeId: K,
-    value: MetricTypes[K]
-): Promise<boolean> {
-    return put(`/api/metrics/${dateKey}/${metricTypeId}`, {
-        metricData: value
-    });
-}
+    // Get all metrics for day
+    async  getMetrics(
+        dateKey: DateKey
+    ): Promise<Partial<MetricTypes> | null> {
+        return this.apiClient.get(`/api/metrics/${dateKey}`);
+    }
 
-// Set all input metrics for day
-export function setMetrics(
-    dateKey: DateKey,
-    value: Partial<MetricTypes>
-): Promise<boolean> {
-    return put(`/api/metrics/${dateKey}/${value}`);
-}
+    // Set single metric
+    async setMetric<K extends MetricTypeId>(
+        dateKey: DateKey,
+        metricTypeId: K,
+        value: MetricTypes[K]
+    ): Promise<boolean> {
+        return this.apiClient.put(`/api/metrics/${dateKey}/${metricTypeId}`, {
+            metricData: value
+        });
+    }
 
-// >>> AUTH <<<
-export interface EmailRegisterRequest {
-    email: string;
-    password: string;
-}
-export function register(request: EmailRegisterRequest): Promise<void> {
-    return post("/register", request, false);
-}
+    // Set all input metrics for day
+    async setMetrics(
+        dateKey: DateKey,
+        value: Partial<MetricTypes>
+    ): Promise<boolean> {
+        return this.apiClient.put(`/api/metrics/${dateKey}/${value}`);
+    }
 
-export interface EmailLoginRequest {
-    email: string;
-    password: string;
-}
-export interface LoginResponse {
-    accessToken: string;
-    expiryInSeconds: number;
-    refreshToken: string;
-}
+    // >>> AUTH <<<
+    async register(request: EmailRegisterRequest): Promise<void> {
+        return this.apiClient.post("/register", request, false);
+    }
 
-export function login(request: EmailLoginRequest): Promise<LoginResponse> {
-    return post("/login", request, false);
-}
+    async emailLogin(request: EmailLoginRequest): Promise<LoginResponse> {
+        return this.apiClient.post("/login", request, false);
+    }
 
-export function googleLogin(googleCredential: GoogleCredential): Promise<LoginResponse> {
-    return post("/api/auth/google", googleCredential, false);
+    async googleLogin(googleCredential: GoogleCredential): Promise<LoginResponse> {
+        return this.apiClient.post("/api/auth/google", googleCredential, false);
+    }
+
+    async refresh(request: RefreshRequest): Promise<LoginResponse> {
+        return this.apiClient.post("api/auth/refresh", request);
+    }
+
+    // >>> JOURNEY <<<
+    async getJourneySteps(
+        page: number
+    ): Promise<GetJourneyStepsResponse | null> {
+        const result = await this.apiClient.get<GetJourneyStepsResponse>(
+            `/api/journeysteps/${page}`
+        );
+
+        if (!result)
+            return null;
+
+        return {
+            page: result.page,
+            pages: result.pages,
+            journeySteps: result.journeySteps.map(x => JourneyStep.fromJson(x))
+        };
+    }
+
+    async likeJourneyStep(dateKey:DateKey, userId: string): Promise<{ liked: boolean }> {
+        return this.apiClient.put(`/api/journeysteps/${dateKey}/${userId}/like`); 
+    }
+
+    async putJournalStep(dateKey: DateKey): Promise<boolean> {
+        return this.apiClient.put(`/api/journeysteps/${dateKey}`); 
+    }
 }
 
 export interface RefreshRequest {
     refreshToken: string;
 }
 
-export function refresh(request: RefreshRequest): Promise<LoginResponse> {
-    return post("api/auth/refresh", request);
-}
-
-// >>> JOURNEY <<<
-export async function getJourneySteps(
-    page: number
-): Promise<GetJourneyStepsResponse | null> {
-    const result = await get<GetJourneyStepsResponse>(
-        `/api/journeysteps/${page}`
-    );
-
-    if (!result)
-        return null;
-
-    return {
-        page: result.page,
-        pages: result.pages,
-        journeySteps: result.journeySteps.map(x => JourneyStep.fromJson(x))
-    };
-}
-
-export function likeJourneyStep(dateKey:DateKey, userId: string): Promise<{ liked: boolean }> {
-    return put(`/api/journeysteps/${dateKey}/${userId}/like`); 
-}
-
-export function putJournalStep(dateKey: DateKey): Promise<boolean> {
-    return put(`/api/journeysteps/${dateKey}`); 
-}
-
 export interface GetJourneyStepsResponse {
     page: number;
     pages: number;
     journeySteps: JourneyStep[];
+}
+
+export interface EmailRegisterRequest {
+    email: string;
+    password: string;
+}
+
+export interface EmailLoginRequest {
+    email: string;
+    password: string;
+}
+
+export interface LoginResponse {
+    accessToken: string;
+    expiryInSeconds: number;
+    refreshToken: string;
 }

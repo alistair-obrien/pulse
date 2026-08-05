@@ -1,5 +1,5 @@
-import * as Auth from "../../controllers/AuthController"
-import { Card } from "../components/Card";
+import * as Auth from "../../services/AuthService"
+// import { Card } from "../components/Card";
 
 export function render(): HTMLElement {
     return Auth.isLoggedIn()
@@ -10,8 +10,8 @@ export function render(): HTMLElement {
 function renderLoggedOut(): HTMLElement {
     const root = document.createElement("div");
 
-    const card = new Card("API Settings");
-    root.append(card.root);
+    // const card = new Card("API Settings");
+    // root.append(card.root);
 
     const email = document.createElement("input");
     email.type = "email";
@@ -53,13 +53,13 @@ function renderLoggedOut(): HTMLElement {
         }
     };
 
-    card.append(
-        email,
-        password,
-        register,
-        login,
-        status
-    );
+    // card.append(
+    //     email,
+    //     password,
+    //     register,
+    //     login,
+    //     status
+    // );
 
     return root;
 }

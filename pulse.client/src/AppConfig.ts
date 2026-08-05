@@ -1,7 +1,12 @@
 
+export type Platform =
+| "ios"
+| "android"
+| "web" 
+
 export interface AppConfig {
     readonly appSource: string;
-    readonly platform: string;
+    readonly platform: Platform;
     readonly environment: string;
     readonly apiBase: string;
     readonly versionNumber: string;

@@ -1,42 +1,43 @@
 import "../styles/card.css";
+import { Component, ComponentModel } from "./Component";
 
-export class Card {
-    readonly root: HTMLDivElement;
+// Can use unions in cases where we ant to constrain the allowed types
+// export type CardContent =
+//     | CardHeaderModel
+//     | MetricCardModel
+//     | ActionButtonModel;
 
-    constructor(...content: (Node | string)[]) {
-        this.root = document.createElement("div");
-        this.root.className = "card";
+export class CardModel extends ComponentModel<Card> {
+    readonly component = Card;
+    
+    content:ComponentModel<any>[]
 
-        if (content.length) {
-            this.root.append(...content);
-        }
-    }
+    constructor(args: {
+        content:ComponentModel<any>[];
+    }) {
+        super();
 
-    append(...content: (Node | string)[]): this {
-        this.root.append(...content);
-        return this;
+        this.content = args.content;
     }
 }
 
-export class CardHeader {
-    readonly root: HTMLHeadingElement;
+export class Card extends Component<CardModel> {
 
-    constructor(title: string, iconClass = "") {
-        this.root = document.createElement("h3");
+    constructor() {
+        super();
+        this.root.className = "card";
+    }
 
-        const row = document.createElement("span");
-        row.className = "card-header";
+    protected render(): void {
 
-        if (iconClass) {
-            const icon = document.createElement("i");
-            icon.className = iconClass;
-            row.append(icon);
-        }
+        const children: HTMLElement[] = [];
 
-        const text = document.createElement("span");
-        text.textContent = title;
-        row.append(text);
+        this.model.content.forEach(element => {
+            const comp = new element.component;
+            comp.update(element);
+            children.push(comp.root);
+        });
 
-        this.root.append(row);
+        this.root.replaceChildren(...children);
     }
 }

@@ -1,12 +1,12 @@
-import { SocialLogin } from "@capgo/capacitor-social-login";
-import type { GoogleCredential } from "../AuthController";
+import { SocialLogin as GoogleAndroidAuth } from "@capgo/capacitor-social-login";
+import type { GoogleCredential } from "./GoogleAuthCredential";
 
 let initialized = false;
 export async function login(googleWebClientId:string) : Promise<GoogleCredential> {
     // Capgo
     if (!initialized)
     {
-        await SocialLogin.initialize({
+        await GoogleAndroidAuth.initialize({
             google: {
                 webClientId: googleWebClientId, 
             },
@@ -14,7 +14,7 @@ export async function login(googleWebClientId:string) : Promise<GoogleCredential
         initialized = true;
     }
     
-    const res = await SocialLogin.login({
+    const res = await GoogleAndroidAuth.login({
         provider: 'google',
         options: { },
     });
