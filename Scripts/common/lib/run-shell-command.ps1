@@ -10,7 +10,7 @@ function RunShellCommand
 
     if ($Server)
     {
-        $Output = ssh $Server pwsh -NoProfile -Command $Command @ArgumentList
+        $Output = ssh $Server sudo pwsh -NoProfile -Command $Command @ArgumentList
     }
     else
     {

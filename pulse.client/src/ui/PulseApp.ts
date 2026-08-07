@@ -90,7 +90,7 @@ export class PulseApp {
 
             imageService: imageService
         });
-        this.meController = new MeController({ authService: authService });
+        this.meController = new MeController({ authService: authService, externalAPIServices: extAPIMetricsSyncServices });
 
         // >>> Build DOM
         const app = document.createElement("div");

@@ -8,6 +8,8 @@ const HEVY_API_KEY = "hevy-api-key";
 
 export class HEVYAPIMetricsSyncService implements ExternalAPIMetricsSyncService {
 
+    readonly name:string = "HEVY";
+
     private readonly metricsRepository:MetricsRepository;
 
     constructor(metricsRepository:MetricsRepository) {

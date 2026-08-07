@@ -1,10 +1,26 @@
 import { isSameDay } from "../../utils/DateUtils";
-import { Component } from "./Component";
+import { Component, ComponentModel } from "./Component";
 
-export interface DateRowModel {
-    date: Date;
-    minDate:Date;
-    maxDate:Date;
+export class DateRowModel extends ComponentModel<DateRow> {
+    readonly component = DateRow;
+    
+    readonly date: Date;
+    readonly minDate:Date;
+    readonly maxDate:Date;
+    onDateChangeRequest?: (date: Date) => void;
+
+    constructor(args: { 
+        date: Date;
+        minDate:Date;
+        maxDate:Date; 
+        onDateChangeRequest?: (date: Date) => void
+    }) {
+        super();
+        this.date = args.date;
+        this.minDate = args.minDate;
+        this.maxDate = args.maxDate;
+        this.onDateChangeRequest = args.onDateChangeRequest;    
+    }
 }
 
 // We can either make this generic, or very specialized
@@ -67,10 +83,6 @@ export class DateRow extends Component<DateRowModel> {
         this.root.append(this.prevButton, this.dateContainer, this.nextButton);
     }
 
-    onDateChangeRequest?: (
-        newDate: Date
-    ) => void;
-
     protected render(): void {
         const weekdayFormatted = new Intl.DateTimeFormat("en-GB", {
             weekday: "long"
@@ -90,15 +102,15 @@ export class DateRow extends Component<DateRowModel> {
     private handlePrevButtonPress() {
         const date = new Date(this.model.date);
         date.setDate(date.getDate() - 1);
-        
-        this.onDateChangeRequest?.(date);
+
+        this.model.onDateChangeRequest?.(date);
     }
 
     private handleNextButtonPress() {
         const date = new Date(this.model.date);
         date.setDate(date.getDate() + 1);
         
-        this.onDateChangeRequest?.(date);
+        this.model.onDateChangeRequest?.(date);
     }
 }
 

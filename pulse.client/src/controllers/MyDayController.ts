@@ -46,6 +46,7 @@ import type { JourneyController } from "./JourneyController";
 // Utils
 import { getHoursAndMinutesStrFromTime, toDateKey } from "../utils/DateUtils";
 import { MetricTextInputFieldModel } from "../ui/components/MetricTextInputField";
+import { DateRowModel } from "../ui/components/DateRow";
 
 export class MyDayController {
     model:MyDayScreenModel;
@@ -127,11 +128,17 @@ export class MyDayController {
                 dateFadeThreshold: DATE_FADE_THRESHOLD,
                 dateFadeDistance: DATE_FADE_DIST,
                 heroAreaVisibleHeight: HERO_AREA_VISIBLE_HEIGHT,
-                dateRowModel: {
+                dateRowModel: new DateRowModel({
                     date: newDate,
                     minDate: minDate,
-                    maxDate: maxDate
-                }
+                    maxDate: maxDate,
+                    onDateChangeRequest: (date) => {
+                        void this.transitionToDate(
+                            date,
+                            date < newDate ? "right" : "left"
+                        );
+                    }
+                })
             }),
             heroAreaModel: new HeroAreaModel({
                 imageUrl: image
@@ -149,12 +156,11 @@ export class MyDayController {
         reflectionsCard.content.push(new CardHeaderModel({ title: "Reflections", iconClass: ICONS.Reflection }));
         this.model.metricSectionCardModels.push(reflectionsCard);
         
-        const textAreaModel = new MetricTextInputFieldModel(
-            {
-                placeholderText: "...what did you achieve today?",
-                getter: () => this.getSelectedDayMetric(MetricTypeIds.Reflection),
-                setter: (value: string) => this.setSelectedDayMetric(MetricTypeIds.Reflection, value)
-            }
+        const textAreaModel = new MetricTextInputFieldModel({
+            placeholderText: "...what did you achieve today?",
+            getter: () => this.getSelectedDayMetric(MetricTypeIds.Reflection),
+            setter: (value: string) => this.setSelectedDayMetric(MetricTypeIds.Reflection, value)
+        }
             
 
         );
@@ -176,11 +182,11 @@ export class MyDayController {
         
         // Steps
         const steps = this.metricsRepository.resolveMetric(this.model.selectedDateKey, MetricTypeIds.Steps);
-        recoveryRowModel.content.push(new MetricCardModel({ name: "Total Steps", iconClass: ICONS.Steps, metricValue: new MetricTextModel({ value: steps.toString() }) }));
+        recoveryRowModel.content.push(new MetricCardModel({ name: "Total Steps", iconClass: ICONS.Steps, metricValue: new MetricTextModel({ value: steps.toLocaleString() }) }));
         
         // RHR
         const rhr = this.metricsRepository.resolveMetric(this.model.selectedDateKey, MetricTypeIds.RestingHeartRate);
-        recoveryRowModel.content.push(new MetricCardModel({ name: "Resting HR", iconClass: ICONS.RestingHeartRate, metricValue: new MetricTextModel({ value: rhr.toString(), unit: "bpm" }) }));
+        recoveryRowModel.content.push(new MetricCardModel({ name: "Resting HR", iconClass: ICONS.RestingHeartRate, metricValue: new MetricTextModel({ value: rhr.toLocaleString(), unit: "bpm" }) }));
 
         this.model.metricSectionCardModels.push(recoveryCardModel);
 
@@ -200,7 +206,7 @@ export class MyDayController {
             name: "Calories", 
             iconClass: ICONS.None, 
             metricValue: new MetricTextModel({ 
-                value: calories.toString(), 
+                value: calories.toLocaleString(), 
                 unit: "kcal" 
             }) 
         }));
@@ -211,7 +217,7 @@ export class MyDayController {
             name: "Protein", 
             iconClass: ICONS.None, 
             metricValue: new MetricTextModel({ 
-                value: protein.toString(), 
+                value: protein.toLocaleString(), 
                 unit: "g" 
             }) 
         }));
@@ -222,7 +228,7 @@ export class MyDayController {
             name: "Carbs", 
             iconClass: ICONS.None, 
             metricValue: new MetricTextModel({ 
-                value: carbs.toString(), 
+                value: carbs.toLocaleString(), 
                 unit: "g" 
             }) 
         }));
@@ -233,18 +239,36 @@ export class MyDayController {
             name: "Fat", 
             iconClass: ICONS.None, 
             metricValue: new MetricTextModel({ 
-                value: fat.toString(), 
+                value: fat.toLocaleString(), 
                 unit: "g" 
             }) 
         }));
 
         // >>> Activity Card <<<
-        const activityCard = new CardModel({
+        const activityCardModel = new CardModel({
             content: []
         });
-        activityCard.content.push(new CardHeaderModel({ title: "Activity", iconClass: ICONS.Activity }));
-        this.model.metricSectionCardModels.push(activityCard);
+        activityCardModel.content.push(new CardHeaderModel({ title: "Activity", iconClass: ICONS.Activity }));
+        this.model.metricSectionCardModels.push(activityCardModel);
         
+        const activitiesRowModel = new DivModel({ className: "row" });
+        activityCardModel.content.push(activitiesRowModel);
+
+        const workouts = this.metricsRepository.resolveMetric(this.model.selectedDateKey, MetricTypeIds.Workouts);
+
+        workouts.forEach(element => {
+            activitiesRowModel.content.push(new MetricCardModel({ 
+                name: element.workoutType, 
+                iconClass: ICONS.Strength,
+                metricValue: new TimeSpanModel({  
+                    time: element.workoutDuration
+                }) 
+            }));
+        });
+
+
+
+        // >>> Actions <<<
         const actionsRowModel = new DivModel({ className: "row" });
         this.model.myDayActionsModel.content.push(actionsRowModel);
 
@@ -301,14 +325,15 @@ export class MyDayController {
     async syncFromCloud() {
         if (this.cloudMetricsSyncService?.isAvailable()) { 
             await this.cloudMetricsSyncService.sync(this.model!.selectedDate); 
-            await Toast.show({ text: "Synced with Cloud!", duration: "short", position: "bottom" });
+            // await Toast.show({ text: "Synced with Cloud!", duration: "short", position: "bottom" });
         }
     }
 
     async syncFromDevice() {
         if (this.deviceMetricsSyncService?.isAvailable()) { 
             await this.deviceMetricsSyncService.sync(this.model!.selectedDate); 
-            await Toast.show({ text: "Synced with Device!", duration: "short", position: "bottom" }); }
+            // await Toast.show({ text: "Synced with Device!", duration: "short", position: "bottom" }); 
+        }
         
     }
 
@@ -321,13 +346,13 @@ export class MyDayController {
             }
         });
         if (syncedAPICount > 0) {
-            await Toast.show({ text: "Synced with External APIs!", duration: "short", position: "bottom" });
+            // await Toast.show({ text: "Synced with External APIs!", duration: "short", position: "bottom" });
         }
     }
 
     async publish() {
         await this.journeyController.publish(this.model!.selectedDate); 
-        await Toast.show({ text: "Published!", duration: "short", position: "bottom" });
+        // await Toast.show({ text: "Published!", duration: "short", position: "bottom" });
     }
 
     async copyAsTextToClipboard() {
@@ -388,11 +413,12 @@ export class MyDayController {
                 dateFadeThreshold: DATE_FADE_THRESHOLD,
                 dateFadeDistance: DATE_FADE_DIST,
                 heroAreaVisibleHeight: HERO_AREA_VISIBLE_HEIGHT,
-                dateRowModel: {
+                dateRowModel: new DateRowModel({
                     date: newDate,
                     minDate: newDate,
-                    maxDate: newDate
-                }
+                    maxDate: newDate,
+                    onDateChangeRequest: () => null
+                })
             }),
             heroAreaModel: new HeroAreaModel({
                 imageUrl: ""

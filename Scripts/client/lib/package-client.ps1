@@ -28,7 +28,7 @@ function PackageClient
 
     LogHeader -Title "Packaging Pulse Client" -Environment $Environment -Platform $Platform
 
-    $ProjectRoot = Resolve-Path "$PSScriptRoot/../../../Frontend - Vanilla Web"
+    $ProjectRoot = Resolve-Path "$PSScriptRoot/../../../pulse.client"
 
     $env:PULSE_APP_NAME = "Pulse"
     try 

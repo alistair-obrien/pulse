@@ -12,7 +12,8 @@ function Get-PlayStoreVersionCode
     . "$PSScriptRoot/../../common/lib/env-editor.ps1"
 
     $ConfigPath = Get-PlayStoreVersionFilePath -Environment $Environment
-    $version = ReadSingleVariable -ConfigPath $ConfigPath -Key $PLAYSTORE_VERSION_CODE -DefaultValue "0"
+    # HACK force ssh pulse for now
+    $version = ReadSingleVariable -ConfigPath $ConfigPath -Key $PLAYSTORE_VERSION_CODE -DefaultValue "0" -Server 'pulse'
 
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to read Play Store version code."
@@ -37,7 +38,8 @@ function Set-PlayStoreVersionCode
 
 
     $ConfigPath = Get-PlayStoreVersionFilePath -Environment $Environment
-    WriteSingleVariable -ConfigPath $ConfigPath -Key $PLAYSTORE_VERSION_CODE -Value $VersionCode
+    # HACK force ssh pulse for now
+    WriteSingleVariable -ConfigPath $ConfigPath -Key $PLAYSTORE_VERSION_CODE -Value $VersionCode -Server 'pulse'
 
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to write Play Store version code."
@@ -53,7 +55,7 @@ function Get-PlayStoreVersionFilePath
         [string]$Environment
     ) 
 
-    "/etc/pulse/config/client/android/$Environment.env"
+    "/etc/pulse/client/android/$Environment.env"
 
     return 
 }

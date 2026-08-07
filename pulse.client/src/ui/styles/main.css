@@ -331,19 +331,16 @@ h3 {
 }
 
 .content {
-    padding: 5px;
-    display: flex;
+    /* display: flex; */
     flex-direction: column;
-    gap: 5px;
     background: none;
     will-change: transform, opacity;
     overflow-y: auto;
 }
 
 .metric-cards-section {
-    display: flex;
+    /* display: flex; */
     flex-direction: column;
-    gap: 5px;
 }
 
 /* Current page leaves */

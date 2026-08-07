@@ -1,6 +1,8 @@
 param(
     [Parameter(Mandatory)]
-    [string]$Environment
+    [string]$Environment,
+    [Parameter(Mandatory)]
+    [string]$Server
 )
 $ErrorActionPreference = "Stop"
 
@@ -64,7 +66,7 @@ $Settings = @(
 $ConfigPath = (Resolve-Path (Join-Path $PSScriptRoot "../../docker/$Environment.env")).Path
 #  | Resolve-Path
 
-$Config = ConfigureEnv -ConfigPath $ConfigPath -Settings $Settings
+$Config = ConfigureEnv -ConfigPath $ConfigPath -Settings $Settings -Server $Server
 
 LogHeader "Building Persistent Directory"
 
@@ -77,27 +79,33 @@ $NginxHome = $Config.NGINX_HOME
 
 RunShellCommand `
     -Command "if (Test-Path '$NginxHome') { Remove-Item '$NginxHome' -Recurse -Force }" `
-    -ErrorMessage "Failed to remove existing NGINX directory."
+    -ErrorMessage "Failed to remove existing NGINX directory." `
+    -Server $Server
 
 RunShellCommand `
     -Command "New-Item -ItemType Directory -Path '$NginxHome' | Out-Null" `
-    -ErrorMessage "Failed to create NGINX directory."
+    -ErrorMessage "Failed to create NGINX directory." `
+    -Server $Server
 
 RunShellCommand `
     -Command "if (Test-Path '$RegistryHome') { Remove-Item '$RegistryHome' -Recurse -Force }" `
-    -ErrorMessage "Failed to remove existing Registry directory."
+    -ErrorMessage "Failed to remove existing Registry directory." `
+    -Server $Server
 
 RunShellCommand `
     -Command "New-Item -ItemType Directory -Path '$RegistryHome' | Out-Null" `
-    -ErrorMessage "Failed to create Registry directory."
+    -ErrorMessage "Failed to create Registry directory." `
+    -Server $Server
 
 RunShellCommand `
     -Command "if (Test-Path '$PulseHome') { Remove-Item '$PulseHome' -Recurse -Force }" `
-    -ErrorMessage "Failed to remove existing Pulse directory."
+    -ErrorMessage "Failed to remove existing Pulse directory." `
+    -Server $Server
 
 RunShellCommand `
     -Command "New-Item -ItemType Directory -Path '$PulseHome' | Out-Null" `
-    -ErrorMessage "Failed to create Pulse directory."
+    -ErrorMessage "Failed to create Pulse directory." `
+    -Server $Server
 
 $Directories = @(
     # Registry   
@@ -139,14 +147,16 @@ foreach ($directory in $Directories)
 {
     RunShellCommand `
         -Command "New-Item -ItemType Directory -Path '$directory' -Force | Out-Null" `
-        -ErrorMessage "Failed to create directory '$directory'."
+        -ErrorMessage "Failed to create directory '$directory'." `
+        -Server $Server
 }
 
 foreach ($file in $Files)
 {
     RunShellCommand `
         -Command "if (-not (Test-Path '$file')) { New-Item -ItemType File -Path '$file' | Out-Null }" `
-        -ErrorMessage "Failed to create file '$file'."
+        -ErrorMessage "Failed to create file '$file'." `
+        -Server $Server
 }
 
 # >>> NETWORKS <<<
@@ -167,14 +177,15 @@ foreach ($Network in $Networks)
         RunShellCommand `
             -Command { docker network create $Network } `
             -ArgumentList $Network `
-            -ErrorMessage "Failed to create Docker network '$Network'."
+            -ErrorMessage "Failed to create Docker network '$Network'." `
+            -Server $Server
     }
 }
 
 # >>> REGISTRY <<<
 LogHeader "Creating Registry"
 . "$PSScriptRoot../../registry/lib/registry.ps1"
-RegistryInitialize -PulseHome $RegistryHome -RegistryHost $Config.REGISTRY_HOST
+RegistryInitialize -PulseHome $RegistryHome -RegistryHost $Config.REGISTRY_HOST -Server $Server
 
 # >>> POSTGRES <<<
 LogHeader "Configure PostgreSQL"
@@ -199,7 +210,8 @@ $PostgresSettings = @(
 # Configures the Postgres Env
 $PostgresConfig = ConfigureEnv `
     -ConfigPath "$PulseHome/config/postgres/postgres.env" `
-    -Settings $PostgresSettings
+    -Settings $PostgresSettings `
+    -Server $Server
 
 LogHeader "Starting PostgreSQL"
 
@@ -258,7 +270,7 @@ $AspNetCoreEnvConfig = [ordered]@{
 WriteEnvFile `
     -File "$PulseHome/config/api/api.env" `
     -Config $AspNetCoreEnvConfig `
-    -Server $Server `
+    -Server $Server
 
 
 
@@ -278,7 +290,8 @@ RunShellCommand `
             -subj "/CN=localhost"
     } `
     -ArgumentList $KeyPath, $CertPath `
-    -ErrorMessage "Failed to create self signed certificate."
+    -ErrorMessage "Failed to create self signed certificate." `
+    -Server $Server
 
 #
 # >>> NGINX <<<

@@ -5,6 +5,8 @@
     padding: 12px;
     gap: 8px;
 
+    margin: 5px;
+
     background: var(--surface-gradient);
 
     border-radius: 8px;

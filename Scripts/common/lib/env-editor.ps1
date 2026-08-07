@@ -132,10 +132,12 @@ function ReadSingleVariable
         [Parameter(Mandatory)]
         [string]$Key,
 
-        [string]$DefaultValue = ""
+        [string]$DefaultValue = "",
+
+        [string]$Server
     )
 
-    $Config = ReadEnvFile $ConfigPath
+    $Config = ReadEnvFile -File $ConfigPath -Server $Server
 
     if ($Config.ContainsKey($Key))
     {
@@ -220,10 +222,12 @@ function WriteSingleVariable
         [string]$Key,
 
         [Parameter(Mandatory)]
-        [string]$Value
+        [string]$Value,
+
+        [string]$Server
     )
 
-    $Config = ReadEnvFile $ConfigPath
+    $Config = ReadEnvFile -File $ConfigPath -Server $Server
 
     SetConfigValue `
         -Config $Config `
@@ -232,7 +236,8 @@ function WriteSingleVariable
 
     WriteEnvFile `
         -File $ConfigPath `
-        -Config $Config
+        -Config $Config `
+        -Server $Server
 }
 
 # Configures via prompts

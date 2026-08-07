@@ -19,7 +19,7 @@ function PublishGooglePlay
 
     LogHeader -Title "Publishing Pulse Client v.$VersionCode to Google Playstore" -Environment $Environment -Platform "android"
     
-    $AndroidProjectPath = Resolve-Path "$PSScriptRoot/../../../Frontend - Vanilla Web/android"
+    $AndroidProjectPath = Resolve-Path "$PSScriptRoot/../../../pulse.client/android"
 
     Push-Location $AndroidProjectPath
 
