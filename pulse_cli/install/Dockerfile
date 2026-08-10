@@ -12,9 +12,9 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-COPY scripts_python/requirements.txt .
+COPY pulse_cli/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY scripts_python ./scripts_python
+COPY pulse_cli ./pulse_cli
 
-ENTRYPOINT ["python", "-m", "scripts_python.pulse"]
+ENTRYPOINT ["python", "-m", "pulse_cli.pulse"]

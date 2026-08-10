@@ -1,3 +1,4 @@
 colorama
 typer
 prompt_toolkit
+PyYAML

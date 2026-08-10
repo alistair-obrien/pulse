@@ -1,9 +1,38 @@
-from abc import ABC, abstractmethod
-from pathlib import Path
+from abc import ABC
+from dataclasses import dataclass
+from typing import ClassVar
+
+from pulse_cli.common import docker
+from pulse_cli.common.files import (
+    install_directory_tree,
+    uninstall_directory_tree,
+)
+from pulse_cli.common.log import (
+    fmt_cmp,
+    fmt_env,
+    fmt_svc,
+    log_error,
+    log_info,
+    log_warning,
+)
+
+from pulse_cli.composition.compose_definition import ComposeDefinition
 
 from .base_config import BaseConfig
 
-import typer
+
+# ============================================================================
+# Service Status
+# ============================================================================
+
+@dataclass
+class ServiceStatus:
+
+    installed: bool
+    running: bool
+    healthy: bool
+    issues: list[str]
+
 
 # ============================================================================
 # Base Service
@@ -11,235 +40,187 @@ import typer
 
 class BaseService(ABC):
 
+    service_type: ClassVar[str]
+
     config: BaseConfig
-
-    @property
-    def service_name(self) -> str:
-        return self.config.service_name
-
-    @property
-    def environment(self) -> str:
-        return self.config.environment
-
-    @property
-    def compose_file(self) -> Path:
-        return self.config.compose_file
-
-    @property
-    def service_home(self) -> Path:
-        return self.config.service_home
-
-    @property
-    def config_home(self) -> Path:
-        return self.config.service_home / "config"
-
-    @property
-    def data_home(self) -> Path:
-        return self.config.service_home / "data"
-
-    @property
-    def logs_home(self) -> Path:
-        return self.config.service_home / "logs"
-
-    @property
-    def backups_home(self) -> Path:
-        return self.config.service_home / "backups"
-
-    def compose_env(self) -> dict[str, str]:
-        return self.config.compose_env()
-
-    # ------------------------------------------------------------------------
-
-    def install(self) -> None:
-
-        install_directory_tree(self.config.service_home)
-        install_directory_tree(self.config.config_home)
-        install_directory_tree(self.config.data_home)
-        install_directory_tree(self.config.logs_home)
-        install_directory_tree(self.config.backup_home)
-
-    def uninstall(self) -> None:
-
-        unintall_directory_tree(self.config.service_home)
-
-    # ------------------------------------------------------------------------
-
-    def start(self) -> None:
-
-        docker.compose_up(
-            self.environment,
-            self.compose_file,
-            **self.compose_env(),
-        )
-
-        log_info(
-            f"Started '{self.service_name}' for '{self.environment}'."
-        )
-
-    def stop(self) -> None:
-
-        docker.compose_down(
-            self.environment,
-            self.compose_file,
-            **self.compose_env(),
-        )
-
-        log_info(
-            f"Stopped '{self.service_name}' for '{self.environment}'."
-        )
-
-    # ------------------------------------------------------------------------
-
-    def status(self) -> str:
-
-        if not self.service_home.exists():
-            return "Not installed"
-
-        running = docker.compose_running(
-            self.environment,
-            self.compose_file,
-            self.service_name,
-            **self.compose_env(),
-        )
-
-        state = "Running" if running else "Stopped"
-
-        return f"Local ({state})"
-
-    def logs(self) -> None:
-
-        docker.compose_logs(
-            self.environment,
-            self.compose_file,
-            **self.compose_env(),
-        )
-
-
-# ============================================================================
-# Environment
-# ============================================================================
-
-class Environment:
 
     def __init__(self, name: str):
 
         self.name = name
-        self.services: list[BaseService] = []
 
     @property
-    def root(self) -> Path:
-        return context.PULSE_HOME / self.name
+    def service_name(self):
+        return f"{self.service_type}.{self.config.name}"
 
-    # ------------------------------------------------------------------------
+    @property
+    def service_name_formatted(self) -> str:
+        return fmt_svc(self.service_name)
+
+    @property
+    def container_name(self) -> str:
+        return (
+            f"{self.config.environment}-"
+            f"{self.config.composition}-"
+            f"{self.service_name}"
+        )
+
+    @property
+    def container_name_formatted(self) -> str:
+        return (
+            f"{fmt_env(self.config.environment)}-"
+            f"{fmt_cmp(self.config.composition)}-"
+            f"{self.service_name_formatted}"
+        )
+
+    # ========================================================================
+    # Lifecycle
+    # ========================================================================
 
     def install(self) -> None:
 
-        if self.root.exists():
-            typer.echo(
-                f"Environment '{self.name}' is already installed."
-            )
-            raise typer.Exit(1)
+        install_directory_tree(
+            self.config.service_home
+        )
 
-        self.root.mkdir(parents=True)
+        install_directory_tree(
+            self.config.config_home
+        )
 
-        docker.create_network(f"{self.name}_network")
+        install_directory_tree(
+            self.config.data_home
+        )
 
-        log_info(f"Created environment '{self.name}'.")
+        install_directory_tree(
+            self.config.logs_home
+        )
+
+        install_directory_tree(
+            self.config.backups_home
+        )
+
+        log_info(
+            f"Installed "
+            f"'{self.service_type}' "
+            f"for '{self.config.environment}'."
+        )
 
     def uninstall(self) -> None:
-        pass
 
-    # ------------------------------------------------------------------------
+        uninstall_directory_tree(
+            self.config.service_home
+        )
 
-    def register(self, service: BaseService) -> None:
-        self.services.append(service)
+        log_info(
+            f"Uninstalled "
+            f"'{self.name}' "
+            f"from '{self.config.environment}'."
+        )
 
-    # ------------------------------------------------------------------------
+    # ========================================================================
+    # Runtime
+    # ========================================================================
 
-    def start(self) -> None:
 
-        for service in self.services:
-            service.start()
+    def log_context(self) -> None:
+        log_info("Service Context?")
 
-    def stop(self) -> None:
+        
+    def log_help(self) -> None:
+        log_info("c          Configure Service")
 
-        for service in reversed(self.services):
-            service.stop()
+        log_info("s          Show Container Status")
 
-    # ------------------------------------------------------------------------
+        log_info("l          Show Container Logs")
 
-    def status(self) -> None:
+        log_info("i          Inspect Container")
 
-        for service in self.services:
-            typer.echo(
-                f"{service.service_name}: {service.status()}"
+    def execute(
+        self,
+        argv: list[str],
+    ) -> None:
+
+        if not argv:
+            return
+
+        command = argv[0]
+        args = argv[1:]
+
+        # --------------------------------------------------------------
+        # Service context
+        # --------------------------------------------------------------
+
+        match command:
+
+            case "c":
+                self.configure()
+
+            case "s":
+                self.print_status()
+
+            case "l":
+                self.logs()
+
+            case "i":
+                self.inspect()
+
+            case _:
+
+                log_error(
+                    f"Unknown Command: {command}"
+                )
+
+    # ==================================================================
+    # Context
+    # ==================================================================
+    def get_context(self) -> list[str]:
+        context = []
+
+        context.append(self.service_name_formatted)
+
+        return context 
+
+    # ========================================================================
+    # Status
+    # ========================================================================
+
+    def status_string(self) -> str:
+
+        status = docker.container_status(
+            self.container_name,
+        )
+
+        if not status.exists:
+            return "Not Created"
+
+        if status.health:
+            return (
+                f"{status.status} "
+                f"({status.health})"
             )
+
+        return status.status
+
+    def print_status(self) -> None:
+        log_info(self.status_string())
+
+
+    # ========================================================================
+    # Logs
+    # ========================================================================
 
     def logs(self) -> None:
 
-        for service in self.services:
-            service.logs()
+        docker.container_logs(
+            container_name=self.container_name,
+            follow=True,
+            tail=100
+        )
 
+    def inspect(self) -> None:
 
-class HealthIssue:
-    pass
+        docker.container_inspect(
+            container_name=self.container_name
+        )
 
-class Dependency(ABC):
-
-    @abstractmethod
-    def check(self) -> HealthIssue | None:
-        ...
-
-class ServiceDependency(Dependency):
-
-    def __init__(type:Database):
-        pass
-
-    def check(self) -> HealthIssue | None:
-        return super().check()
-
-class DockerImageDependency(Dependency):
-
-    def __init__(service:type):
-        pass
-
-    def check(self) -> HealthIssue | None:
-        return super().check()
-
-class FileDependency(Dependency):
-    def __init__(file:Path):
-        pass
-
-    def check(self) -> HealthIssue | None:
-        return super().check()
-
-class CertificateDependency(Dependency):
-    def __init__(certificate:str):
-        pass
-
-    def check(self) -> HealthIssue | None:
-        return super().check()
-
-class PortDependency(Dependency):
-    def __init__(port:int):
-        pass
-
-    def check(self) -> HealthIssue | None:
-        return super().check()
-
-class NetworkDependency(Dependency):
-    def __init__(network:str):
-        pass
-
-    def check(self) -> HealthIssue | None:
-        return super().check()
-
-
-
-
-# ServiceDependency(Database)
-# DockerImageDependency("pulse-api")
-# FileDependency("/etc/pulse/config")
-# CertificateDependency("pulse-flow")
-# PortDependency(443)
-# NetworkDependency("development_network")
+    def get_compose_definition(self) -> ComposeDefinition:
+        raise NotImplementedError

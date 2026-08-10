@@ -1,10 +1,9 @@
 from dataclasses import dataclass, field
 from pathlib import Path
-from scripts_python.common import context
 
 from enum import Enum
 
-from scripts_python.services.base_config import BaseConfig
+from pulse_cli.services.base_config import BaseConfig
 
 class TlsMode(Enum):
     HTTP = "http"
@@ -35,9 +34,9 @@ class NginxSite:
 
 @dataclass
 class Config(BaseConfig):
-    environment: str
 
-    service_name: str = field(default="nginx", init=False)
+    name:str = "default"
+    service_type = "nginx"
 
     @property
     def directories(self) -> list[Path]:

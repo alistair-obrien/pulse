@@ -1,41 +1,42 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from scripts_python.services.base_config import BaseConfig
-from scripts_python.new_services.nginx.config import NginxCertificate, NginxLocation, NginxSite, TlsMode
+from pulse_cli.services.base_config import BaseConfig
+from pulse_cli.services.nginx.config import NginxCertificate, NginxLocation, NginxSite, TlsMode
 
 @dataclass
 class Config(BaseConfig):
 
-    service_name: str = field(default="registry", init=False)
+    name:str = "default"
+    service_type = "registry"
 
     registry_hostname: str = "dev-registry.pulse-flow.app"
 
-    host_port: int = 5100
+    # host_port: int = 5100
     container_port: int = 5000
 
     @property
-    def auth_dir(self) -> Path:
-        return self.config_dir / "auth"
+    def auth_home(self) -> Path:
+        return self.config_home / "auth"
 
     @property
-    def certs_dir(self) -> Path:
-        return self.config_dir / "certs"
+    def certs_home(self) -> Path:
+        return self.config_home / "certs"
 
     @property
     def htpasswd(self) -> Path:
-        return self.auth_dir / "htpasswd"
+        return self.auth_home / "htpasswd"
 
     @property
     def config_file(self) -> Path:
-        return self.config_dir / "config.yml"
+        return self.config_home / "config.yml"
 
     def compose_env(self) -> dict[str, str]:
         return {
-            "REGISTRY_CONFIG_DIR": self.config_dir,
-            "REGISTRY_DATA_DIR": self.data_dir,
-            "HOST_PORT": self.host_port,
-            "CONTAINER_PORT": self.container_port,
+            "REGISTRY_CONFIG_DIR": self.config_home.as_posix(),
+            "REGISTRY_DATA_DIR": self.data_home.as_posix(),
+            # "HOST_PORT": str(self.host_port),
+            "CONTAINER_PORT": str(self.container_port),
         }
 
     def nginx_sites(self) -> list[NginxSite]:

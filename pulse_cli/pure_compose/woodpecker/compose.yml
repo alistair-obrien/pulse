@@ -1,0 +1,14 @@
+services:
+  default:
+    image: woodpeckerci/woodpecker-server:next-e8907931a0
+    environment:
+      WOODPECKER_HOST: https://dev-build.pulse-flow.app/
+      WOODPECKER_GITHUB: 'true'
+      WOODPECKER_GITHUB_CLIENT: Ov23li3GZujP4ajQzfMy
+      WOODPECKER_GITHUB_SECRET: d94a9f03744089bac7c3dd1e8c4594833e081cb1
+      WOODPECKER_AGENT_SECRET: TODO
+    volumes:
+    - /var/lib/pulse/dev/build_service/services/woodpecker/default/data:/var/lib/woodpecker
+    restart: unless-stopped
+    user: root
+    container_name: dev-build_service-woodpecker.default

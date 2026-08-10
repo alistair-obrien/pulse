@@ -3,11 +3,11 @@ from dataclasses import dataclass, field, fields
 from getpass import getpass
 from pathlib import Path
 
-from scripts_python.services.base_config import BaseConfig
+from pulse_cli.services.base_config import BaseConfig
 
-from scripts_python.new_services.nginx.config import NginxCertificate, NginxLocation, NginxSite, TlsMode
+from pulse_cli.services.nginx.config import NginxCertificate, NginxLocation, NginxSite, TlsMode
 
-from scripts_python.common.files import (
+from pulse_cli.common.files import (
     read_text_from_file,
     write_text_to_file,
 )
@@ -15,8 +15,6 @@ from scripts_python.common.files import (
 @dataclass
 class Config(BaseConfig):
     
-    service_name: str = field(default="api", init=False)
-
     registry_image_name: str = field(
         default="api:latest",
         metadata={

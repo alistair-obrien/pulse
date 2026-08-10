@@ -1,21 +1,20 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from scripts_python.services.base_config import BaseConfig
+from pulse_cli.services.base_config import BaseConfig
 
 @dataclass
 class Config(BaseConfig):
 
-    service_name: str = field(default="database", init=False)
-
     remote: bool = False
+    service_type = "postgres"
 
     @property
     def env_vars(self) -> dict[str,str]:
         return {
-            "POSTGRES_DB": self.config.postgres_db_name,
-            "POSTGRES_USER": self.config.postgres_user,
-            "POSTGRES_PASSWORD": self.config.postgres_password,
+            "POSTGRES_DB": self.postgres_db_name,
+            "POSTGRES_USER": self.postgres_user,
+            "POSTGRES_PASSWORD": self.postgres_password,
         }
 
     @property
@@ -32,12 +31,12 @@ class Config(BaseConfig):
 
     @property
     def postgres_env_file(self) -> Path:
-        return self.config_dir / "postgres.env"
+        return self.config_home / "postgres.env"
 
     def compose_env(self) -> dict[str, str]:
         config = Config(self.environment)
 
         return {
-            "POSTGRES_DATA_DIR": str(config.data_dir),
+            "POSTGRES_DATA_DIR": str(config.data_home),
             "POSTGRES_ENV_FILE": str(config.postgres_env_file),
         }
