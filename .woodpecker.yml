@@ -1,7 +1,6 @@
 steps:
-  hello:
-    image: alpine:latest
+  docker:
+    image: docker:cli
     commands:
-      - echo "Hello from Woodpecker!"
-      - echo "Repository=$CI_REPO"
-      - echo "Commit=$CI_COMMIT_SHA"
+      - docker version
+      - docker info
