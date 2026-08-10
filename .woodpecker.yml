@@ -3,5 +3,5 @@ steps:
     image: alpine:latest
     commands:
       - echo "Hello from Woodpecker!"
-      - echo "Repository: $CI_REPO"
-      - echo "Commit: $CI_COMMIT_SHA"
+      - echo "Repository=$CI_REPO"
+      - echo "Commit=$CI_COMMIT_SHA"
