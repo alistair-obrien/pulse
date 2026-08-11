@@ -92,9 +92,18 @@ export class VersionTag {
             // TODO: Should show the version of the server too
         );
 
-        this.root.append(
-            apiRow
-        )
+        this.root.append(apiRow)
+
+        const googleAuthRow = document.createElement("div")
+        googleAuthRow.className = "row";
+        googleAuthRow.classList.add("api");
+        googleAuthRow.append(
+            this.createItem(
+                versionData.socialLoginIds.googleWebClientId,
+            ),
+        );
+
+        this.root.append(googleAuthRow)
     }
 
     private createSeparator(): HTMLElement {

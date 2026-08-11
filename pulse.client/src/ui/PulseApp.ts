@@ -76,7 +76,7 @@ export class PulseApp {
         extAPIMetricsSyncServices.push(new HEVYAPIMetricsSyncService(metricsRepository));
 
         const imageService:ImageService = new ImageService();
-
+        
         // Controllers
         this.journeyController = new JourneyController(metricsRepository);
         this.myDayController = new MyDayController({
