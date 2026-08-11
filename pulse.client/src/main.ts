@@ -40,7 +40,7 @@ const appConfig:AppConfig = {
     apiBase: apiBase,
     versionNumber: version,
     splashEnabled: import.meta.env.VITE_SPLASH_ENABLED === "true",
-    showDebugVersionAnnotation: import.meta.env.VERSION_TEXT_ENABLED === "true",
+    showDebugVersionAnnotation: import.meta.env.VITE_VERSION_TEXT_ENABLED === "true",
     socialLoginIds: {
         googleWebClientId: import.meta.env.VITE_GOOGLE_LOGIN_WEBCLIENT_ID
     }
