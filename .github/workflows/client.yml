@@ -135,4 +135,9 @@ jobs:
         run: |
           ssh "${{ vars.SERVER_USER }}@${{ vars.SERVER_HOST }}" \
             "echo '$ANDROID_PLAYSTORE_VERSION' | sudo tee /opt/pulse/versions/${{ github.ref_name }}-android > /dev/null"
-            
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pulse-android-aab
+          path: pulse.client/android/app/build/outputs/bundle/productionRelease/*.aab
