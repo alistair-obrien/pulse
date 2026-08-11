@@ -12,5 +12,15 @@ steps:
     commands:
       - dotnet restore pulse.api/Pulse.Api/Pulse.Api.csproj
       - dotnet build pulse.api/Pulse.Api/Pulse.Api.csproj -c Release --no-restore
-
-      
+  
+  docker:
+    image: woodpeckerci/plugin-docker-buildx
+    settings:
+      repo: dev-registry.pulse-flow.app/pulse-api
+      registry: dev-registry.pulse-flow.app
+      username:
+        from_secret: registry_username
+      password:
+        from_secret: registry_password
+      tags:
+        - latest
