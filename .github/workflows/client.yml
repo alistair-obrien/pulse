@@ -9,6 +9,7 @@ on:
       - 'pulse.client/**'
 
 permissions:
+  contents: read
   actions: write
 
 concurrency:
