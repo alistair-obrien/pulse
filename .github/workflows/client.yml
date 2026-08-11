@@ -59,17 +59,17 @@ jobs:
           grep -R "development_android" dist || true
           grep -R "$VITE_API_URL" dist || true
 
-      - name: Verify signing keystore
+      - name: Check GitHub signing key
         env:
-          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
           echo "=== GitHub signing key ==="
 
           keytool -list -v \
             -keystore "$RUNNER_TEMP/pulse-release.jks" \
-            -storepass "$KEYSTORE_PASSWORD" \
-            -alias "$KEY_ALIAS" |
+            -storepass "$ANDROID_KEYSTORE_PASSWORD" \
+            -alias "$ANDROID_KEY_ALIAS" |
             grep -E "Alias name:|SHA1:|SHA256:"
           
 
