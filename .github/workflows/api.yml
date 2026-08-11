@@ -14,6 +14,7 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     environment: ${{ github.ref_name }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,7 +22,7 @@ jobs:
       - name: Login to registry
         uses: docker/login-action@v3
         with:
-          registry: dev-registry.pulse-flow.app
+          registry: ${{ vars.REGISTRY_HOST }}
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
 
@@ -31,19 +32,19 @@ jobs:
           context: pulse.api
           file: pulse.api/Dockerfile
           push: true
-          tags: dev-registry.pulse-flow.app/pulse-api:latest
+          tags: ${{ vars.REGISTRY_IMAGE }}:latest
           build-args: |
             PULSE_VERSION=${{ github.run_number }}
             PULSE_COMMIT_SHA=${{ github.sha }}
             PULSE_BUILD_DATE=${{ github.run_started_at }}
-            
+
       - name: Deploy API
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
 
-          ssh-keyscan 129.225.184.172 >> ~/.ssh/known_hosts
+          ssh-keyscan "${{ vars.SERVER_HOST }}" >> ~/.ssh/known_hosts
 
-          ssh ubuntu@129.225.184.172 \
+          ssh "${{ vars.SERVER_USER }}@${{ vars.SERVER_HOST }}" \
             'cd /opt/pulse/api && sudo docker compose pull api && sudo docker compose up -d api'
