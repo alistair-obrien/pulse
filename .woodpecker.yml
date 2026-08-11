@@ -1,3 +1,11 @@
+# Example: Limiting concurrent executions to avoid race conditions
+when:
+  event: push
+
+concurrency:
+  limit: 1                    # Only 1 instance of this workflow can run at a time
+  action: queue               # Holds subsequent triggers in the queue safely
+
 steps:
   build:
     image: mcr.microsoft.com/dotnet/sdk:10.0
