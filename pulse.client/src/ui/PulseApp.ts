@@ -134,9 +134,9 @@ export class PulseApp {
 
         app.append(footer.root);
 
-        // this.version_tag = new VersionTag(appConfig);
-        // app.append(this.version_tag.root);
-        // this.setVersionVisibility(this.showDebugVersionAnnotation);
+        this.version_tag = new VersionTag(appConfig);
+        app.append(this.version_tag.root);
+        this.setVersionVisibility(this.showDebugVersionAnnotation);
     }
 
     async start() {
