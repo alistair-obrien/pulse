@@ -5,13 +5,15 @@ when:
 concurrency:
   limit: 1                    # Only 1 instance of this workflow can run at a time
 
+build_args:
+  - COMMIT_SHA=${CI_COMMIT_SHA}
+  - BUILD_DATE=${CI_COMMIT_STARTED}
+  - VERSION=${CI_BUILD_NUMBER}
+
 steps:  
   api_build:
     image: woodpeckerci/plugin-docker-buildx
-    build_args:
-      - COMMIT_SHA=${CI_COMMIT_SHA}
-      - BUILD_DATE=${CI_COMMIT_STARTED}
-      - VERSION=${CI_BUILD_NUMBER}
+
     settings:
       repo: dev-registry.pulse-flow.app/pulse-api
       registry: dev-registry.pulse-flow.app
@@ -23,17 +25,17 @@ steps:
       dockerfile: pulse.api/Dockerfile
       tags:
         - latest
-    api_deploy:
-      image: alpine:latest
-      commands:
-        - apk add --no-cache openssh-client
-        - mkdir -p ~/.ssh
-        - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-        - chmod 600 ~/.ssh/id_rsa
-        - ssh-keyscan 129.225.184.172 >> ~/.ssh/known_hosts
-        - ssh ubuntu@129.225.184.172 'cd /opt/pulse/api && sudo docker compose pull api && sudo docker compose up -d api'
-      secrets:
-        - SSH_PRIVATE_KEY
+  api_deploy:
+    image: alpine:latest
+    commands:
+      - apk add --no-cache openssh-client
+      - mkdir -p ~/.ssh
+      - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+      - chmod 600 ~/.ssh/id_rsa
+      - ssh-keyscan 129.225.184.172 >> ~/.ssh/known_hosts
+      - ssh ubuntu@129.225.184.172 'cd /opt/pulse/api && sudo docker compose pull api && sudo docker compose up -d api'
+    secrets:
+      - SSH_PRIVATE_KEY
 
     # client_build:
     #   image: woodpeckerci/plugin-docker-buildx
