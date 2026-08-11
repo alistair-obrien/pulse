@@ -48,6 +48,15 @@ jobs:
           VITE_GOOGLE_LOGIN_WEBCLIENT_ID: ${{ secrets.GOOGLE_LOGIN_WEBCLIENT_ID }}
         run: npx vite build --mode ${{ github.ref_name }}
 
+      - name: Inspect built client
+        working-directory: pulse.client
+        run: |
+          echo "=== dist ==="
+          find dist -maxdepth 2 -type f | sort
+
+          echo "=== index.html ==="
+          cat dist/index.html
+
       - name: Sync Capacitor
         working-directory: pulse.client
         run: npx cap sync android
