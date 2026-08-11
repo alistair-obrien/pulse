@@ -25,15 +25,23 @@ if (!apiBase) {
     throw new Error("VITE_API_URL is not configured");
 }
 
-try {
-    const url = new URL(apiBase);
+let apiUrl: URL;
 
-    if (platform !== "web" && url.hostname === "api.localhost") {
-        url.hostname = window.location.hostname;
-        apiBase = url.toString();
-    }
+try {
+    apiUrl = new URL(apiBase);
 } catch {
     throw new Error(`VITE_API_URL is not a valid URL: "${apiBase}"`);
+}
+
+if (!["http:", "https:"].includes(apiUrl.protocol)) {
+    throw new Error(
+        `VITE_API_URL must use HTTP or HTTPS: "${apiBase}"`
+    );
+}
+
+if (platform !== "web" && apiUrl.hostname === "api.localhost") {
+    apiUrl.hostname = window.location.hostname;
+    apiBase = apiUrl.toString();
 }
 
 console.log("API URL resolved:", JSON.stringify(apiBase));
