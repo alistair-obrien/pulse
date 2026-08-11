@@ -36,6 +36,7 @@ jobs:
             PULSE_VERSION=${{ github.run_number }}
             PULSE_COMMIT_SHA=${{ github.sha }}
             PULSE_BUILD_DATE=${{ github.run_started_at }}
+            
 
       - name: Deploy API
         run: |
