@@ -19,18 +19,24 @@ if (platform != "web")
 
 let apiBase = import.meta.env.VITE_API_URL;
 
-console.log(JSON.stringify(apiBase));
+console.log("API URL:", apiBase);
 
-if (platform !== "web") {
+if (!apiBase) {
+    throw new Error("VITE_API_URL is not configured");
+}
+
+try {
     const url = new URL(apiBase);
 
-    if (url.hostname === "api.localhost") {
+    if (platform !== "web" && url.hostname === "api.localhost") {
         url.hostname = window.location.hostname;
         apiBase = url.toString();
     }
+} catch {
+    throw new Error(`VITE_API_URL is not a valid URL: "${apiBase}"`);
 }
 
-console.log(JSON.stringify(apiBase));
+console.log("API URL resolved:", JSON.stringify(apiBase));
 
 declare const __APP_SOURCE__: string;
 const appConfig:AppConfig = {
