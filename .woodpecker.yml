@@ -15,8 +15,20 @@ steps:
         from_secret: registry_username
       password:
         from_secret: registry_password
-      dockerfile: pulse.api/Dockerfile
-      context: .
+      context: pulse.api
+      dockerfile: Dockerfile
       tags:
         - latest
     # client_build:
+    #   image: woodpeckerci/plugin-docker-buildx
+    #   settings:
+    #     repo: dev-registry.pulse-flow.app/pulse-client
+    #     registry: dev-registry.pulse-flow.app
+    #     username:
+    #       from_secret: registry_username
+    #     password:
+    #       from_secret: registry_password
+    #     context: pulse.client
+    #     dockerfile: Dockerfile
+    #     tags:
+    #       - latest
