@@ -37,20 +37,15 @@ const PlatformIcons: Record<string, string> = {
 };
 
 // Env
-const EnvNames: Record<string, string> = {
-    LocalHost: "Local Host",
-    Development: "Development",
-    Production: "Production",
-};
 const EnvIcons: Record<string, string> = {
-    LocalHost: "ri-terminal-box-line",
-    Development: "ri-code-line",
-    Production: "ri-sparkling-2-fill"
+    localhost: "ri-terminal-box-line",
+    development: "ri-code-line",
+    production: "ri-sparkling-2-fill"
 };
 const EnvHostIcons: Record<string, string> = {
-    LocalHost: "ri-computer-line",
-    Development: "ri-server-fill",
-    Production: "ri-server-fill"
+    localHost: "ri-computer-line",
+    development: "ri-server-fill",
+    production: "ri-server-fill"
 };
 
 export class VersionTag {
@@ -87,7 +82,7 @@ export class VersionTag {
         apiRow.classList.add("api");
         apiRow.append(
             this.createItem(
-                EnvNames[versionData.environment] ?? versionData.environment,
+                versionData.environment,
                 EnvIcons[versionData.environment] ?? "ri-question-line"
             ),
             this.createSeparator(),

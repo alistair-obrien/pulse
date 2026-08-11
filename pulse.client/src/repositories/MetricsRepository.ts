@@ -9,16 +9,7 @@ import type { DateKey } from "../utils/DateUtils";
 const ENV = import.meta.env.VITE_ENVIRONMENT;
 
 const storagePrefix = (() => {
-    switch (ENV) {
-        case "Development":
-            return "pulse_dev";
-        case "Production":
-            return "pulse";
-        case "LocalHost":
-            return "pulse_local";
-        default:
-            throw new Error(`Unknown environment: ${ENV}`);
-    }
+    return `pulse_${ENV}`
 })();
 
 export class MetricsRepository {
