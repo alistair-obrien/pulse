@@ -5,14 +5,8 @@ when:
 concurrency:
   limit: 1                    # Only 1 instance of this workflow can run at a time
 
-steps:
-  build:
-    image: mcr.microsoft.com/dotnet/sdk:10.0
-    commands:
-      - dotnet restore pulse.api/Pulse.Api/Pulse.Api.csproj
-      - dotnet build pulse.api/Pulse.Api/Pulse.Api.csproj -c Release --no-restore
-  
-  docker:
+steps:  
+  api_build:
     image: woodpeckerci/plugin-docker-buildx
     settings:
       repo: dev-registry.pulse-flow.app/pulse-api
@@ -21,7 +15,8 @@ steps:
         from_secret: registry_username
       password:
         from_secret: registry_password
+      dockerfile: pulse.api/Dockerfile
+      context: .
       tags:
         - latest
-
-  
+    # client_build:
