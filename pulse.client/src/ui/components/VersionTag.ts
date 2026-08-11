@@ -89,7 +89,7 @@ export class VersionTag {
                 versionData.apiBase,
                 EnvHostIcons[versionData.environment]
             )
-            // TODO: Should show the version of the server
+            // TODO: Should show the version of the server too
         );
 
         this.root.append(

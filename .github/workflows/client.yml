@@ -10,7 +10,6 @@ on:
 
 permissions:
   contents: read
-  actions: write
 
 concurrency:
   group: client-deployment-${{ github.ref_name }}
@@ -73,11 +72,20 @@ jobs:
           echo "ANDROID_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
           echo "ANDROID_KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
 
-      - name: Increment Android version
+      - name: Configure SSH
         env:
-          GH_TOKEN: ${{ github.token }}
-          CURRENT_VERSION: ${{ vars.ANDROID_PLAYSTORE_VERSION }}
+          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
         run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan "${{ vars.SERVER_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Get Android version
+        run: |
+          CURRENT_VERSION=$(ssh "${{ vars.SERVER_USER }}@${{ vars.SERVER_HOST }}" \
+            'cat /opt/pulse/versions/${{ github.ref_name }}-android 2>/dev/null || echo 0')
+
           NEXT_VERSION=$((CURRENT_VERSION + 1))
 
           echo "ANDROID_PLAYSTORE_VERSION=$NEXT_VERSION" >> "$GITHUB_ENV"
@@ -87,16 +95,13 @@ jobs:
       - name: Build and publish Android
         working-directory: pulse.client/android
         env:
-          ANDROID_PUBLISHER_CREDENTIALS: ${{ secrets.ANDROID_PUBLISHER_CREDENTIALS }}  
+          ANDROID_PUBLISHER_CREDENTIALS: ${{ secrets.ANDROID_PUBLISHER_CREDENTIALS }}
         run: |
           ./gradlew publishProductionReleaseBundle \
             --track=internal \
             -PversionCode="$ANDROID_PLAYSTORE_VERSION"
 
       - name: Save Android version
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          gh variable set ANDROID_PLAYSTORE_VERSION \
-            --env "${{ github.ref_name }}" \
-            --body "$ANDROID_PLAYSTORE_VERSION"
+          ssh "${{ vars.SERVER_USER }}@${{ vars.SERVER_HOST }}" \
+            "echo '$ANDROID_PLAYSTORE_VERSION' | sudo tee /opt/pulse/versions/${{ github.ref_name }}-android > /dev/null"
