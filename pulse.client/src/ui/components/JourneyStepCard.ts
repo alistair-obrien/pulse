@@ -1,62 +1,28 @@
 import "../styles/shared-journey-entry.css";
-import type { JourneyStep } from "../../models/JourneyStep";
-import { MetricTypeIds } from "../../models/MetricRegistry";
-// import { ActionButton } from './ActionButton';
-import { Card } from './Card';
-// import { ICONS } from './ICONS';
+import { Card, CardModel } from './Card';
 import { ProfileThumbnail } from './ProfileThumbnail';
-// import { WORKOUT_ICONS } from "./WORKOUT_ICONS";
 
-// import * as AuthController from "../../controllers/AuthController"
-// import * as JourneyController from "../../controllers/JourneyController"
-// import { MetricCard } from "./MetricCard";
-// import { TimeSpan } from "./TimeSpan";
-// import { MetricRow } from "./MetricRow";
-// import { MetricText } from "./MetricText";
-import { TextBlock } from "./TextBlock";
-import { ComponentModel } from "./Component";
+import { Component, ComponentModel } from "./Component";
 
-export class JourneyStepCard {
+// export class JourneyStepGroup extends Component<JourneyStepGroupModel> {
+
+// }
+
+export class JourneyStepCard extends Component<JourneyStepCardModel> {
+
     readonly root: HTMLElement;
+    readonly logCard: Card;
+
 
     // TODO: Pass Journey entry template and data
-    constructor(journeyStep:JourneyStep) {
+    constructor() {
+        super()
         this.root = document.createElement("div");
         this.root.className = "shared-journey-entry";
     
-        const logCard = new Card();
-        this.root.append(logCard.root);    
+        this.logCard = new Card();
+        this.root.append(this.logCard.root);
 
-        // >>> HEADER <<<
-        const topRow = document.createElement("div");
-        logCard.append(
-            topRow
-        );
-
-        topRow.className = "header-row";
-        const profileCircle = new ProfileThumbnail(journeyStep.userProfilePicture, () => { });
-        topRow.append(profileCircle.root);
-
-        const userName = document.createElement("h1");
-        userName.textContent = journeyStep.userName;
-        topRow.append(userName);
-
-
-        // >>> CONTENT <<<
-        // Reflection
-        logCard.append(new TextBlock(journeyStep.getMetric(MetricTypeIds.Reflection)).root);
-        // Recovery
-
-        // Sleep
-        // const sleepRecords = journeyStep.getMetric(MetricTypeIds.Sleep);
-        // const totalSleepHours = sleepRecords.reduce(
-        //     (total, sleep) => total + sleep.sleepHours,
-        //     0
-        // );
-        
-        const row = document.createElement("div");
-        row.className = "metric-grid-3";
-        logCard.append(row);
 
         // // Recovery
         // const sleepText = new TimeSpan(totalSleepHours);
@@ -129,4 +95,15 @@ export class JourneyStepCard {
         //     actionRow
         // );
     }
+
+    protected render(): void {
+
+        this.logCard.update(this.model.card);
+    }
+}
+
+export class JourneyStepCardModel extends ComponentModel<JourneyStepCard> {
+    readonly component = JourneyStepCard;
+    
+    card:CardModel = new CardModel({ content: [] })
 }

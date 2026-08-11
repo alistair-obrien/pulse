@@ -1,9 +1,11 @@
 import { Card, type CardModel } from "../components/Card"
 import { Component, ComponentModel } from "../components/Component";
 import { Div } from "../components/Div";
+import { JourneyStepCard, JourneyStepCardModel } from "../components/JourneyStepCard";
 
 export class JourneyScreen extends Component<JourneyScreenModel> {
-    private readonly journeySteps: Card[] = [];
+
+    private readonly journeySteps: JourneyStepCard[] = [];
     private readonly journeyStepsContainer:Div = new Div();
 
 
@@ -20,7 +22,7 @@ export class JourneyScreen extends Component<JourneyScreenModel> {
 
     protected render(): void {
         while (this.journeySteps.length < this.model.journeySteps.length) {
-            const card = new Card();
+            const card = new JourneyStepCard();
             this.journeySteps.push(card);
             this.journeyStepsContainer.append(card);
         }
@@ -32,16 +34,15 @@ export class JourneyScreen extends Component<JourneyScreenModel> {
         this.journeySteps.forEach((card, i) =>
             card.update(this.model.journeySteps[i]));
     }
-
 }
 
 export class JourneyScreenModel extends ComponentModel<JourneyScreen> {
         readonly component =  JourneyScreen;
 
-        readonly journeySteps: CardModel[];
+        readonly journeySteps: JourneyStepCardModel[];
 
         constructor(args: {
-            journeySteps: CardModel[];
+            journeySteps: JourneyStepCardModel[];
         }) {
             super();
             this.journeySteps = args.journeySteps

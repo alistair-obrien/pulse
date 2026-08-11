@@ -58,13 +58,21 @@ public class JourneyStepsController : PulseController
                     value: JsonSerializer.Deserialize<JsonElement>(x.Metric.JsonValue)))
                 .ToArray();
 
+            var likes = await _db.JourneyLikes
+                .Where(x =>
+                    x.JourneyUserId == first.UserId &&
+                    x.JourneyDate == first.Metric.Date)
+                .ToListAsync();
+
+            var liked = likes.Any(x => x.LikedByUserId == UserId);
+
             journeySteps.Add(new JourneyStepRecord(
                 userId: first.UserId,
                 date: first.Metric.Date,
                 userName: first.UserName ?? "",
                 userProfilePicture: first.UserProfilePicture,
-                liked: false,
-                likesCount: 0,
+                liked: liked,
+                likesCount: likes.Count,
                 comments: [],
                 metricData: metricData));
         }

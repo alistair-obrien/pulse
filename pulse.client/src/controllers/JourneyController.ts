@@ -5,14 +5,14 @@ import { AuthService } from "../services/AuthService";
 import { toDateKey } from "../utils/DateUtils";
 import type { MetricsRepository } from "../repositories/MetricsRepository";
 import { JourneyScreen, JourneyScreenModel } from "../ui/screens/Journey";
-import { CardModel } from "../ui/components/Card";
-import { CardHeaderModel } from "../ui/components/CardHeader";
-import { ProfileThumbnail, ProfileThumbnailModel } from "../ui/components/ProfileThumbnail";
 import { DivModel } from "../ui/components/Div";
 import { ICONS } from "../ui/components/ICONS";
 import { MetricTextModel } from "../ui/components/MetricText";
 import { MetricCardModel } from "../ui/components/MetricCard";
-import { MetricTextInputFieldModel } from "../ui/components/MetricTextInputField";
+import { JourneyStepCardModel } from "../ui/components/JourneyStepCard";
+import { ProfileThumbnailModel } from "../ui/components/ProfileThumbnail";
+import { CardIdHeaderModel } from "../ui/components/CardIdHeader";
+import { ActionButtonModel } from "../ui/components/ActionButton";
 
 const DEFAULT_JOURNEY_STEP_METRICS  = [
     MetricTypeIds.Reflection,
@@ -59,30 +59,30 @@ export class JourneyController {
     async refresh() {
         const journeySteps = await this.getAllJourneySteps(new Date());
 
-        let model = this.buildDefaultModel();
+        this.model = new JourneyScreenModel(
+            {
+                journeySteps: []
+            }
+        )
 
         journeySteps.forEach(element => {
 
-            let journeyStepsCard = 
-                new CardModel(
-                    {
-                        content: []
-                    }
-                )
+            let journeyStepsCard = new JourneyStepCardModel()
 
-            // new CardHeaderModel({ title: element.userName, iconClass: "" }),
-            const topHeader = new DivModel({className: ""}); // TODO
-            journeyStepsCard.content.push(topHeader);
-
-            const profileThumb = new ProfileThumbnailModel({ imageUrl: element.userProfilePicture });            
-            topHeader.content.push(profileThumb);
+            const idHeader = new CardIdHeaderModel({ 
+                userName: element.userName, 
+                userImage: new ProfileThumbnailModel({ 
+                    imageUrl: element.userProfilePicture 
+                })  
+            });
+            journeyStepsCard.card.content.push(idHeader);
 
             const reflections = this.metricsRepository.resolveMetric(element.date, MetricTypeIds.Reflection);
             const reflectionTextModel = new MetricTextModel({value: reflections})
-            journeyStepsCard.content.push(reflectionTextModel);
+            journeyStepsCard.card.content.push(reflectionTextModel);
 
             const nutritionRowModel = new DivModel({ className: "row" });
-            journeyStepsCard.content.push(nutritionRowModel);
+            journeyStepsCard.card.content.push(nutritionRowModel);
 
             let calories = this.metricsRepository.resolveMetric(element.date, MetricTypeIds.Nutrition_Calories);
             calories = Math.round(calories);
@@ -128,10 +128,32 @@ export class JourneyController {
                 }) 
             }));
 
-            model.journeySteps.push(journeyStepsCard);
+            // >>> FOOTER <<<
+            const actionRowModel = new DivModel({ className: "footer-action-buttons-row" });
+            journeyStepsCard.card.content.push(actionRowModel);
+
+            actionRowModel.content.push(new ActionButtonModel({
+                iconClass: ICONS.Comment,
+                labelStr: element.comments.length.toLocaleString(),
+                onClick: () => console.log("Comment") // TODO
+            }));
+
+            console.log(element.liked);
+
+            actionRowModel.content.push(new ActionButtonModel({
+                iconClass: element.liked ? ICONS.LikeFilled : ICONS.Like,
+                labelStr: element.likesCount.toLocaleString(),
+                
+                onClick: async () => { 
+                    await this.likeJourneyStep(element); 
+                    await this.refresh(); 
+                }
+            }));
+
+            this.model.journeySteps.push(journeyStepsCard);
         });
 
-        this.screen.update(model);
+        this.screen.update(this.model);
     }
 
     async publish(date: Date) {
@@ -184,7 +206,7 @@ export class JourneyController {
     }
 
     async likeJourneyStep(journeyStep: JourneyStep) : Promise<{ liked: boolean }> {
-        // Need just the journey id
+        // Need just the journey id maybe. Though date and user are consistent
         return await this.api.likeJourneyStep(journeyStep.date, journeyStep.userId);
     }
 }
