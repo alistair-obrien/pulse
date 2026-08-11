@@ -21,7 +21,7 @@ const AppSourceNames: Record<string, string> = {
     development_ios: "App Store - Testflight",
     production_ios: "App Store",
     development_web: "https://dev.pulse-flow.app/", // TODO: Should use appsettings instead I think
-    production_web: "https://pulse-flow.app/" //
+    production_web: "https://pulse-flow.app/" // 
 };
 
 // Platform
