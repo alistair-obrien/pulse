@@ -1,13 +1,5 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 
-ARG COMMIT_SHA
-ARG BUILD_DATE
-ARG VERSION
-
-ENV PULSE_COMMIT_SHA=$COMMIT_SHA
-ENV PULSE_BUILD_DATE=$BUILD_DATE
-ENV PULSE_VERSION=$VERSION
-
 WORKDIR /src
 
 COPY . .
@@ -21,6 +13,14 @@ RUN dotnet publish \
     --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
+
+ARG COMMIT_SHA
+ARG BUILD_DATE
+ARG VERSION
+
+ENV PULSE_COMMIT_SHA=$COMMIT_SHA
+ENV PULSE_BUILD_DATE=$BUILD_DATE
+ENV PULSE_VERSION=$VERSION
 
 RUN apt-get update \
     && apt-get install -y curl \
