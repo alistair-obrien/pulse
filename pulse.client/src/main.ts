@@ -46,6 +46,7 @@ if (platform !== "web" && apiUrl.hostname === "api.localhost") {
 
 console.log("API URL resolved:", JSON.stringify(apiBase));
 
+
 declare const __APP_SOURCE__: string;
 const appConfig:AppConfig = {
     appSource: __APP_SOURCE__,
