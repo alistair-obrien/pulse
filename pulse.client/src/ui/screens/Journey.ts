@@ -1,30 +1,54 @@
-import "../styles/main.css"
-// import { Card } from "../components/Card";
-// import { CardHeader } from "../components/CardHeader";
-// import { JourneyStepCard } from '../components/JourneyStepCard';
-// import * as JourneyController from "../../controllers/JourneyController"
+import { Card, type CardModel } from "../components/Card"
+import { Component, ComponentModel } from "../components/Component";
+import { Div } from "../components/Div";
+
+export class JourneyScreen extends Component<JourneyScreenModel> {
+    private readonly journeySteps: Card[] = [];
+    private readonly journeyStepsContainer:Div = new Div();
+
+
+    constructor() {
+        super();
+
+        this.root.className = "screen-container";
+
+        // The content inside the screen
+        this.journeyStepsContainer.className = "content";
+
+        this.root.append(this.journeyStepsContainer.root)
+    }
+
+    protected render(): void {
+        while (this.journeySteps.length < this.model.journeySteps.length) {
+            const card = new Card();
+            this.journeySteps.push(card);
+            this.journeyStepsContainer.append(card);
+        }
+
+        while (this.journeySteps.length > this.model.journeySteps.length) {
+            this.journeySteps.pop()!.root.remove();
+        }
+
+        this.journeySteps.forEach((card, i) =>
+            card.update(this.model.journeySteps[i]));
+    }
+
+}
+
+export class JourneyScreenModel extends ComponentModel<JourneyScreen> {
+        readonly component =  JourneyScreen;
+
+        readonly journeySteps: CardModel[];
+
+        constructor(args: {
+            journeySteps: CardModel[];
+        }) {
+            super();
+            this.journeySteps = args.journeySteps
+        }
+}
 
 // const feedList:HTMLElement = document.createElement("div");
-
-export function render(): HTMLElement {
-        const screenContainer = document.createElement("div");
-        screenContainer.className = "screen-container";
-
-        // const dateCard = new Card();
-        // const header = new CardHeader("Journey")
-        // dateCard.append(header.root);
-
-        // feedList.className = "content";
-    
-        // screenContainer.append(
-        //     dateCard.root,
-        //     feedList
-        // );
-
-        // refreshFeed();
-
-        return screenContainer;
-}
 
 // async function refreshFeed() {
 //     const journeySteps = await JourneyController.getAllJourneySteps(new Date());

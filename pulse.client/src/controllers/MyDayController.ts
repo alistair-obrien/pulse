@@ -154,7 +154,6 @@ export class MyDayController {
             getter: () => this.getSelectedDayMetric(MetricTypeIds.Reflection),
             setter: (value: string) => this.setSelectedDayMetric(MetricTypeIds.Reflection, value)
         }
-            
 
         );
         reflectionsCard.content.push(textAreaModel);

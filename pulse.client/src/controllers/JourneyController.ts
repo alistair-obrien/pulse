@@ -4,6 +4,15 @@ import { JourneyStep } from "../models/JourneyStep";
 import { AuthService } from "../services/AuthService";
 import { toDateKey } from "../utils/DateUtils";
 import type { MetricsRepository } from "../repositories/MetricsRepository";
+import { JourneyScreen, JourneyScreenModel } from "../ui/screens/Journey";
+import { CardModel } from "../ui/components/Card";
+import { CardHeaderModel } from "../ui/components/CardHeader";
+import { ProfileThumbnail, ProfileThumbnailModel } from "../ui/components/ProfileThumbnail";
+import { DivModel } from "../ui/components/Div";
+import { ICONS } from "../ui/components/ICONS";
+import { MetricTextModel } from "../ui/components/MetricText";
+import { MetricCardModel } from "../ui/components/MetricCard";
+import { MetricTextInputFieldModel } from "../ui/components/MetricTextInputField";
 
 const DEFAULT_JOURNEY_STEP_METRICS  = [
     MetricTypeIds.Reflection,
@@ -18,9 +27,9 @@ const DEFAULT_JOURNEY_STEP_METRICS  = [
 
 export class JourneyController {
 
-    // // TODO
-    // model:JourneyScreenModel;
-    // screen:JourneyScreen;
+    // TODO
+    model:JourneyScreenModel;
+    screen:JourneyScreen;
 
     private readonly metricsRepository:MetricsRepository;
     private readonly authService:AuthService;
@@ -30,9 +39,99 @@ export class JourneyController {
         metricsRepository: MetricsRepository, 
         authService: AuthService,
         api:API) {
+
         this.metricsRepository = metricsRepository;
         this.authService = authService;
         this.api = api;
+
+        this.screen = new JourneyScreen();
+        this.model = this.buildDefaultModel();
+    }
+
+    buildDefaultModel() : JourneyScreenModel {
+        return new JourneyScreenModel(
+            {
+                journeySteps: []
+            }
+        )
+    }
+
+    async refresh() {
+        const journeySteps = await this.getAllJourneySteps(new Date());
+
+        let model = this.buildDefaultModel();
+
+        journeySteps.forEach(element => {
+
+            let journeyStepsCard = 
+                new CardModel(
+                    {
+                        content: []
+                    }
+                )
+
+            // new CardHeaderModel({ title: element.userName, iconClass: "" }),
+            const topHeader = new DivModel({className: ""}); // TODO
+            journeyStepsCard.content.push(topHeader);
+
+            const profileThumb = new ProfileThumbnailModel({ imageUrl: element.userProfilePicture });            
+            topHeader.content.push(profileThumb);
+
+            const reflections = this.metricsRepository.resolveMetric(element.date, MetricTypeIds.Reflection);
+            const reflectionTextModel = new MetricTextModel({value: reflections})
+            journeyStepsCard.content.push(reflectionTextModel);
+
+            const nutritionRowModel = new DivModel({ className: "row" });
+            journeyStepsCard.content.push(nutritionRowModel);
+
+            let calories = this.metricsRepository.resolveMetric(element.date, MetricTypeIds.Nutrition_Calories);
+            calories = Math.round(calories);
+            nutritionRowModel.content.push(new MetricCardModel({ 
+                name: "Calories", 
+                iconClass: ICONS.None, 
+                metricValue: new MetricTextModel({ 
+                    value: calories.toLocaleString(), 
+                    unit: "kcal" 
+                }) 
+            }));
+
+            let protein = this.metricsRepository.resolveMetric(element.date, MetricTypeIds.Nutrition_Protein);
+            protein = Math.round(protein);
+            nutritionRowModel.content.push(new MetricCardModel({ 
+                name: "Protein", 
+                iconClass: ICONS.None, 
+                metricValue: new MetricTextModel({ 
+                    value: protein.toLocaleString(), 
+                    unit: "g" 
+                }) 
+            }));
+
+            let carbs = this.metricsRepository.resolveMetric(element.date, MetricTypeIds.Nutrition_Carbs);
+            carbs = Math.round(carbs);
+            nutritionRowModel.content.push(new MetricCardModel({ 
+                name: "Carbs", 
+                iconClass: ICONS.None, 
+                metricValue: new MetricTextModel({ 
+                    value: carbs.toLocaleString(), 
+                    unit: "g" 
+                }) 
+            }));
+
+            let fat = this.metricsRepository.resolveMetric(element.date, MetricTypeIds.Nutrition_Fat);
+            fat = Math.round(fat);
+            nutritionRowModel.content.push(new MetricCardModel({ 
+                name: "Fat", 
+                iconClass: ICONS.None, 
+                metricValue: new MetricTextModel({ 
+                    value: fat.toLocaleString(), 
+                    unit: "g" 
+                }) 
+            }));
+
+            model.journeySteps.push(journeyStepsCard);
+        });
+
+        this.screen.update(model);
     }
 
     async publish(date: Date) {
@@ -42,7 +141,7 @@ export class JourneyController {
         await this.api.putJournalStep(dateKey);
     }
 
-    async getAllJourneySteps(date: Date) : Promise<JourneyStep[] | null> {
+    async getAllJourneySteps(date: Date) : Promise<JourneyStep[]> {
         let dateKey = toDateKey(date);
         void dateKey;
 

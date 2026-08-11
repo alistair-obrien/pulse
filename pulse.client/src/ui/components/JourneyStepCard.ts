@@ -14,6 +14,7 @@ import { ProfileThumbnail } from './ProfileThumbnail';
 // import { MetricRow } from "./MetricRow";
 // import { MetricText } from "./MetricText";
 import { TextBlock } from "./TextBlock";
+import { ComponentModel } from "./Component";
 
 export class JourneyStepCard {
     readonly root: HTMLElement;
@@ -129,4 +130,3 @@ export class JourneyStepCard {
         // );
     }
 }
-
