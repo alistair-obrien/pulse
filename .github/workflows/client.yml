@@ -58,9 +58,6 @@ jobs:
           grep -R "development_android" dist || true
           grep -R "$VITE_API_URL" dist || true
 
-      - name: Debug Vite environment
-        run: 
-
       - name: Inspect built client
         working-directory: pulse.client
         run: |
