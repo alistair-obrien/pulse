@@ -64,9 +64,30 @@ jobs:
           echo "ANDROID_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
           echo "ANDROID_KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
 
+      - name: Increment Android version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CURRENT_VERSION: ${{ vars.ANDROID_VERSION }}
+        run: |
+          NEXT_VERSION=$((CURRENT_VERSION + 1))
+
+          echo "ANDROID_VERSION=$NEXT_VERSION" >> "$GITHUB_ENV"
+
+          echo "Android version: $CURRENT_VERSION -> $NEXT_VERSION"
+
       - name: Build and publish Android
         working-directory: pulse.client/android
         env:
           ANDROID_PUBLISHER_CREDENTIALS: ${{ secrets.ANDROID_PUBLISHER_CREDENTIALS }}
-        run: ./gradlew publishProductionReleaseBundle --track=internal
-        
+        run: |
+          ./gradlew publishProductionReleaseBundle \
+            --track=internal \
+            -PversionCode="$ANDROID_VERSION"
+
+      - name: Save Android version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh variable set ANDROID_VERSION \
+            --env "${{ github.ref_name }}" \
+            --body "$ANDROID_VERSION"
