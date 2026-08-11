@@ -1,6 +1,6 @@
 steps:
-  docker:
-    image: docker:cli
+  build:
+    image: mcr.microsoft.com/dotnet/sdk:10.0
     commands:
-      - docker version
-      - docker info
+      - dotnet restore pulse.Api/pulse.Api.csproj
+      - dotnet build pulse.Api/pulse.Api.csproj -c Release --no-restore
