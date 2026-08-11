@@ -48,6 +48,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("Default", policy =>
     {
         Console.Write($"Environment: {builder.Environment.EnvironmentName}");
+
         if (builder.Environment.IsProduction()) 
         {
             policy
