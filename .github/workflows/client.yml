@@ -7,6 +7,7 @@ on:
       - development
     paths:
       - 'pulse.client/**'
+      - '.github/workflows/client.yml'
 
 permissions:
   contents: read
