@@ -61,5 +61,15 @@ const appConfig:AppConfig = {
     }
 }
 
+const googleClientId =
+    import.meta.env.VITE_GOOGLE_LOGIN_WEBCLIENT_ID;
+
+console.log(
+    "Google Web Client ID:",
+    googleClientId
+        ? googleClientId
+        : "MISSING"
+);
+
  const pulseApp = new PulseApp(appConfig);
  await pulseApp.start();
