@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latestgit br
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
