@@ -57,9 +57,11 @@ const appConfig:AppConfig = {
     splashEnabled: import.meta.env.VITE_SPLASH_ENABLED === "true",
     showDebugVersionAnnotation: import.meta.env.VITE_VERSION_TEXT_ENABLED === "true",
     socialLoginIds: {
-        googleWebClientId: import.meta.env.VITE_GOOGLE_LOGIN_WEBCLIENT_ID
+        googleWebClientId: "945193684598-alu18k11ei67297aj839cejoekpb6flb.apps.googleusercontent.com"
     }
 }
+
+// import.meta.env.VITE_GOOGLE_LOGIN_WEBCLIENT_ID
 
 const googleClientId =
     import.meta.env.VITE_GOOGLE_LOGIN_WEBCLIENT_ID;
