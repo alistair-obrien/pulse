@@ -39,7 +39,7 @@ const PlatformIcons: Record<string, string> = {
 // Env
 const EnvNames: Record<string, string> = {
     LocalHost: "Local Host",
-    Development: "Development",
+    Development: "Developmenty",
     Production: "Production",
 };
 const EnvIcons: Record<string, string> = {
