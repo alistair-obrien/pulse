@@ -8,6 +8,10 @@ concurrency:
 steps:  
   api_build:
     image: woodpeckerci/plugin-docker-buildx
+    build_args:
+      - COMMIT_SHA=${CI_COMMIT_SHA}
+      - BUILD_DATE=${CI_COMMIT_STARTED}
+      - VERSION=${CI_BUILD_NUMBER}
     settings:
       repo: dev-registry.pulse-flow.app/pulse-api
       registry: dev-registry.pulse-flow.app
@@ -26,8 +30,8 @@ steps:
         - mkdir -p ~/.ssh
         - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
         - chmod 600 ~/.ssh/id_rsa
-        - ssh-keyscan dev-api.pulse-flow.app >> ~/.ssh/known_hosts
-        - ssh ubuntu@dev-api.pulse-flow.app 'cd /opt/pulse/api && sudo docker compose pull api && sudo docker compose up -d api'
+        - ssh-keyscan 129.225.184.172 >> ~/.ssh/known_hosts
+        - ssh ubuntu@129.225.184.172 'cd /opt/pulse/api && sudo docker compose pull api && sudo docker compose up -d api'
       secrets:
         - SSH_PRIVATE_KEY
 
