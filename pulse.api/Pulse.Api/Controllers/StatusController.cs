@@ -12,7 +12,7 @@ public class StatusController : ControllerBase
         return Ok(new
         {
             success = true,
-            msg = "all is good",
+            msg = "all is good here",
             version = Environment.GetEnvironmentVariable("PULSE_VERSION"),
             commit = Environment.GetEnvironmentVariable("PULSE_COMMIT_SHA"),
             date = Environment.GetEnvironmentVariable("PULSE_BUILD_DATE")
