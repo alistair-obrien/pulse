@@ -67,12 +67,12 @@ export class VersionTag {
         clientRow.classList.add("client");
         clientRow.append(
             this.createItem(
-                PlatformNames[versionData.platform] ?? "???",
+                PlatformNames[versionData.platform] ?? versionData.platform,
                 PlatformIcons[versionData.platform] ?? "ri-question-line"
             ),
             this.createSeparator(),
             this.createItem(
-                AppSourceNames[versionData.appSource] ?? "???",
+                AppSourceNames[versionData.appSource] ?? versionData.appSource,
                 AppSourceIcons[versionData.appSource] ?? "ri-question-line"
             ),
             this.createSeparator(),
@@ -87,7 +87,7 @@ export class VersionTag {
         apiRow.classList.add("api");
         apiRow.append(
             this.createItem(
-                EnvNames[versionData.environment] ?? "???",
+                EnvNames[versionData.environment] ?? versionData.environment,
                 EnvIcons[versionData.environment] ?? "ri-question-line"
             ),
             this.createSeparator(),
