@@ -72,7 +72,6 @@ export class VersionTag {
             ),
             this.createSeparator(),
             this.createItem(`v.${versionData.versionNumber}`),
-
         );
 
         this.root.append(clientRow);
