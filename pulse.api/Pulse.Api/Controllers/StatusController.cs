@@ -6,6 +6,13 @@ namespace Pulse.Api.Controllers;
 [Route("api/[controller]")]
 public class StatusController : ControllerBase
 {
+    private readonly IWebHostEnvironment _environment;
+
+    public StatusController(IWebHostEnvironment environment)
+    {
+        _environment = environment;
+    }
+
     [HttpGet]
     public IActionResult Check()
     {
@@ -15,7 +22,8 @@ public class StatusController : ControllerBase
             msg = "all is good",
             version = Environment.GetEnvironmentVariable("PULSE_VERSION"),
             commit = Environment.GetEnvironmentVariable("PULSE_COMMIT_SHA"),
-            date = Environment.GetEnvironmentVariable("PULSE_BUILD_DATE")
+            date = Environment.GetEnvironmentVariable("PULSE_BUILD_DATE"),
+            environment = _environment.EnvironmentName
         });
     }
 }
