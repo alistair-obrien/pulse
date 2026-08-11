@@ -19,6 +19,18 @@ steps:
       dockerfile: pulse.api/Dockerfile
       tags:
         - latest
+    api_deploy:
+      image: alpine:latest
+      commands:
+        - apk add --no-cache openssh-client
+        - mkdir -p ~/.ssh
+        - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+        - chmod 600 ~/.ssh/id_rsa
+        - ssh-keyscan dev-api.pulse-flow.app >> ~/.ssh/known_hosts
+        - ssh ubuntu@dev-api.pulse-flow.app 'cd /opt/pulse/api && sudo docker compose pull api && sudo docker compose up -d api'
+      secrets:
+        - SSH_PRIVATE_KEY
+
     # client_build:
     #   image: woodpeckerci/plugin-docker-buildx
     #   settings:
