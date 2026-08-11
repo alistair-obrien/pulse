@@ -4,7 +4,6 @@ when:
 
 concurrency:
   limit: 1                    # Only 1 instance of this workflow can run at a time
-  action: queue               # Holds subsequent triggers in the queue safely
 
 steps:
   build:
@@ -24,5 +23,5 @@ steps:
         from_secret: registry_password
       tags:
         - latest
-        
+
   
