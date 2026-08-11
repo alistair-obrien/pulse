@@ -99,14 +99,8 @@ export class MyDayController {
         await this.loadDate(new Date()); // Loads today
     }
 
-    async loadDate(date: Date) {
+    async buildModel(date: Date) {
 
-        await Promise.allSettled([
-            this.syncFromCloud(),
-            this.syncFromDevice(),
-            this.syncFromExtAPI(),
-        ]);
-        
         // >>> My Day Model Init <<<
         const newDate = date;
         const newDateKey = toDateKey(newDate);
@@ -314,26 +308,43 @@ export class MyDayController {
             })
         );
 
-        this.screen?.update(this.model);
+    }
+
+    async loadDate(date:Date) {
+        await Promise.allSettled([
+            this.syncFromCloud(),
+            this.syncFromDevice(),
+            this.syncFromExtAPI(),
+        ]);
+        await this.buildModel(date)
+        await this.screen?.update(this.model);
     }
 
     // let animating:boolean  = false
     async transitionToDate(date: Date, direction: "left" | "right") {
 
         void direction;
+        
         await this.loadDate(date);
+    }
+
+    async refresh() {
+        await this.buildModel(this.model.selectedDate)
+        await this.screen?.update(this.model);
     }
 
     async syncFromCloud() {
         if (this.cloudMetricsSyncService?.isAvailable()) { 
-            await this.cloudMetricsSyncService.sync(this.model!.selectedDate); 
+            await this.cloudMetricsSyncService.sync(this.model!.selectedDate);
+            await this.refresh();
             // await Toast.show({ text: "Synced with Cloud!", duration: "short", position: "bottom" });
         }
     }
 
     async syncFromDevice() {
         if (this.deviceMetricsSyncService?.isAvailable()) { 
-            await this.deviceMetricsSyncService.sync(this.model!.selectedDate); 
+            await this.deviceMetricsSyncService.sync(this.model!.selectedDate);
+            await this.refresh();
             // await Toast.show({ text: "Synced with Device!", duration: "short", position: "bottom" }); 
         }
         
@@ -349,6 +360,7 @@ export class MyDayController {
         });
         if (syncedAPICount > 0) {
             // await Toast.show({ text: "Synced with External APIs!", duration: "short", position: "bottom" });
+            await this.refresh();
         }
     }
 

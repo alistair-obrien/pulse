@@ -106,14 +106,14 @@ export class PulseApp {
         // Should make this a component
         const footer = new Footer();
 
-        const journeyButton = new ActionButton();
-        journeyButton.update(
-            new ActionButtonModel({
-                labelStr: "Journey", 
-                iconClass: ICONS.Journey, 
-                onClick: () => this.changeScreen(this.journeyController.screen)
-        }));
-        footer.appendButton(journeyButton);
+        // const journeyButton = new ActionButton();
+        // journeyButton.update(
+        //     new ActionButtonModel({
+        //         labelStr: "Journey", 
+        //         iconClass: ICONS.Journey, 
+        //         onClick: () => this.changeScreen(this.journeyController.screen)
+        // }));
+        // footer.appendButton(journeyButton);
 
         const myDayButton = new ActionButton();
         myDayButton.update(
