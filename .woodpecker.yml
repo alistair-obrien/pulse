@@ -3,7 +3,6 @@ when:
 
 concurrency:
   limit: 1
-  action: queue
 
 steps:
 
