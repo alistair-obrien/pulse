@@ -135,3 +135,4 @@ jobs:
         run: |
           ssh "${{ vars.SERVER_USER }}@${{ vars.SERVER_HOST }}" \
             "echo '$ANDROID_PLAYSTORE_VERSION' | sudo tee /opt/pulse/versions/${{ github.ref_name }}-android > /dev/null"
+            
