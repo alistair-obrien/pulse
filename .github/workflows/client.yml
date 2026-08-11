@@ -67,11 +67,11 @@ jobs:
       - name: Increment Android version
         env:
           GH_TOKEN: ${{ github.token }}
-          CURRENT_VERSION: ${{ vars.ANDROID_VERSION }}
+          CURRENT_VERSION: ${{ vars.ANDROID_PLAYSTORE_VERSION }}
         run: |
           NEXT_VERSION=$((CURRENT_VERSION + 1))
 
-          echo "ANDROID_VERSION=$NEXT_VERSION" >> "$GITHUB_ENV"
+          echo "ANDROID_PLAYSTORE_VERSION=$NEXT_VERSION" >> "$GITHUB_ENV"
 
           echo "Android version: $CURRENT_VERSION -> $NEXT_VERSION"
 
@@ -82,12 +82,12 @@ jobs:
         run: |
           ./gradlew publishProductionReleaseBundle \
             --track=internal \
-            -PversionCode="$ANDROID_VERSION"
+            -PversionCode="$ANDROID_PLAYSTORE_VERSION"
 
       - name: Save Android version
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh variable set ANDROID_VERSION \
+          gh variable set ANDROID_PLAYSTORE_VERSION \
             --env "${{ github.ref_name }}" \
-            --body "$ANDROID_VERSION"
+            --body "$ANDROID_PLAYSTORE_VERSION"
