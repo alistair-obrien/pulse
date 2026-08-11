@@ -38,7 +38,7 @@ jobs:
 
       - name: Build client
         working-directory: pulse.client
-        run: npm run build
+        run: npx vite build --mode ${{ github.ref_name }}
 
       - name: Sync Capacitor
         working-directory: pulse.client
@@ -52,4 +52,4 @@ jobs:
 
       - name: Build and publish Android
         working-directory: pulse.client/android
-        run: ./gradlew publishReleaseBundle
+        run: ./gradlew publishProductionReleaseBundle --track=internal
