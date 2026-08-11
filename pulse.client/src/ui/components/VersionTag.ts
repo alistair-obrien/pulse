@@ -94,16 +94,16 @@ export class VersionTag {
 
         this.root.append(apiRow)
 
-        const googleAuthRow = document.createElement("div")
-        googleAuthRow.className = "row";
-        googleAuthRow.classList.add("api");
-        googleAuthRow.append(
-            this.createItem(
-                versionData.socialLoginIds.googleWebClientId,
-            ),
-        );
+        // const googleAuthRow = document.createElement("div")
+        // googleAuthRow.className = "row";
+        // googleAuthRow.classList.add("api");
+        // googleAuthRow.append(
+        //     this.createItem(
+        //         versionData.socialLoginIds.googleWebClientId,
+        //     ),
+        // );
 
-        this.root.append(googleAuthRow)
+        // this.root.append(googleAuthRow)
     }
 
     private createSeparator(): HTMLElement {
