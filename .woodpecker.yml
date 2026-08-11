@@ -16,7 +16,7 @@ steps:
       password:
         from_secret: registry_password
       context: pulse.api
-      dockerfile: Dockerfile
+      dockerfile: pulse.api/Dockerfile
       tags:
         - latest
     # client_build:
@@ -29,6 +29,6 @@ steps:
     #     password:
     #       from_secret: registry_password
     #     context: pulse.client
-    #     dockerfile: Dockerfile
+    #     dockerfile: pulse.client/Dockerfile
     #     tags:
     #       - latest
