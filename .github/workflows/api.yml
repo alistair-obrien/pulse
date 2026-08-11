@@ -16,6 +16,10 @@ jobs:
     environment: ${{ github.ref_name }}
 
     steps:
+      - name: Set build metadata
+        run: |
+          echo "PULSE_BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> "$GITHUB_ENV"
+        
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -36,7 +40,7 @@ jobs:
           build-args: |
             PULSE_VERSION=${{ github.run_number }}
             PULSE_COMMIT_SHA=${{ github.sha }}
-            PULSE_BUILD_DATE=${{ github.run_started_at }}
+            PULSE_BUILD_DATE=${{ env.PULSE_BUILD_DATE }}
 
       - name: Deploy API
         run: |
