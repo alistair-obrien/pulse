@@ -24,3 +24,4 @@ steps:
         from_secret: registry_password
       tags:
         - latest
+  
