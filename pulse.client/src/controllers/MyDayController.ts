@@ -279,13 +279,16 @@ export class MyDayController {
             })
         );
 
-        actionsRowModel.content.push(
-            new ActionButtonModel({
-                iconClass: ICONS.DeviceSync,
-                labelStr: "Device Sync",
-                onClick: () => this.syncFromDevice()
-            })            
-        );
+        if (this.deviceMetricsSyncService?.isAvailable()) {
+            actionsRowModel.content.push(
+                new ActionButtonModel({
+                    iconClass: ICONS.DeviceSync,
+                    labelStr: "Device Sync",
+                    onClick: () => this.syncFromDevice()
+                })            
+            );
+        }
+
 
         actionsRowModel.content.push(
             new ActionButtonModel({

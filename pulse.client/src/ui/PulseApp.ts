@@ -71,6 +71,7 @@ export class PulseApp {
         else if (appConfig.platform == 'ios') {
             deviceMetricsSyncService = new HealthKitSyncService(metricsRepository);
         }
+        deviceMetricsSyncService?.initialize()
 
         const extAPIMetricsSyncServices:ExternalAPIMetricsSyncService[] = [];
         extAPIMetricsSyncServices.push(new HEVYAPIMetricsSyncService(metricsRepository));
@@ -78,7 +79,7 @@ export class PulseApp {
         const imageService:ImageService = new ImageService();
         
         // Controllers
-        this.journeyController = new JourneyController(metricsRepository);
+        this.journeyController = new JourneyController(metricsRepository, authService, api);
         this.myDayController = new MyDayController({
             metricsRepository: metricsRepository,
 
