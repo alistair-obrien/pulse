@@ -1,7 +1,7 @@
-import * as api from "../api/API";
+import { API } from "../api/API";
 import { MetricTypeIds, type MetricTypes } from "../models/MetricRegistry";
 import { JourneyStep } from "../models/JourneyStep";
-import * as Auth from "../services/AuthService"
+import { AuthService } from "../services/AuthService";
 import { toDateKey } from "../utils/DateUtils";
 import type { MetricsRepository } from "../repositories/MetricsRepository";
 
@@ -18,21 +18,28 @@ const DEFAULT_JOURNEY_STEP_METRICS  = [
 
 export class JourneyController {
 
-    // TODO
-    model:JourneyScreenModel;
-    screen:JourneyScreen;
+    // // TODO
+    // model:JourneyScreenModel;
+    // screen:JourneyScreen;
 
     private readonly metricsRepository:MetricsRepository;
+    private readonly authService:AuthService;
+    private readonly api:API;
 
-    constructor(metricsRepository: MetricsRepository) {
+    constructor(
+        metricsRepository: MetricsRepository, 
+        authService: AuthService,
+        api:API) {
         this.metricsRepository = metricsRepository;
+        this.authService = authService;
+        this.api = api;
     }
 
     async publish(date: Date) {
         let dateKey = toDateKey(date);
         void dateKey;
 
-        await api.putJournalStep(dateKey);
+        await this.api.putJournalStep(dateKey);
     }
 
     async getAllJourneySteps(date: Date) : Promise<JourneyStep[] | null> {
@@ -44,8 +51,8 @@ export class JourneyController {
         let journeySteps:JourneyStep[];
 
         // Remote Construction since we need other users specifically exposed metrics
-        if (Auth.isLoggedIn()) {
-            const journeyStepsResponse = await api.getJourneySteps(0);
+        if (this.authService.isLoggedIn()) {
+            const journeyStepsResponse = await this.api.getJourneySteps(0);
             journeySteps = journeyStepsResponse?.journeySteps ?? [];
         // Local Construction
         } else {
@@ -79,6 +86,6 @@ export class JourneyController {
 
     async likeJourneyStep(journeyStep: JourneyStep) : Promise<{ liked: boolean }> {
         // Need just the journey id
-        return await api.likeJourneyStep(journeyStep.date, journeyStep.userId);
+        return await this.api.likeJourneyStep(journeyStep.date, journeyStep.userId);
     }
 }

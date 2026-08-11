@@ -14,7 +14,6 @@ const DATE_FADE_DIST = 20;
 // const HEADER_FADE_DIST = 10;
 
 
-import { Toast } from "@capacitor/toast";
 import { Clipboard } from "@capacitor/clipboard";
 import { type MetricTypeId, type MetricTypes, MetricTypeIds } from "../models/MetricRegistry";
 

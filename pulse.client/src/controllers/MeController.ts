@@ -1,7 +1,7 @@
 import type { AuthService } from "../services/AuthService";
 import type { ExternalAPIMetricsSyncService } from "../services/ExternalAPIMetricsSyncService";
 import { ActionButtonModel } from "../ui/components/ActionButton";
-import { Card, CardModel } from "../ui/components/Card";
+import { CardModel } from "../ui/components/Card";
 import { CardHeaderModel } from "../ui/components/CardHeader";
 import { ICONS } from "../ui/components/ICONS";
 import { MetricTextInputFieldModel } from "../ui/components/MetricTextInputField";
