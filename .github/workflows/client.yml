@@ -50,13 +50,15 @@ jobs:
           echo "APP_SOURCE=$VITE_APP_SOURCE"
           echo "ENVIRONMENT=$VITE_ENVIRONMENT"
           echo "API_URL=$VITE_API_URL"
-          echo "GOOGLE_LOGIN_WEBCLIENT_ID=${VITE_GOOGLE_LOGIN_WEBCLIENT_ID:+SET}"
+          echo "GOOGLE_LOGIN_WEBCLIENT_ID=$VITE_GOOGLE_LOGIN_WEBCLIENT_ID"
 
           npx vite build --mode ${{ github.ref_name }}
 
           echo "=== Checking bundle ==="
           grep -R "development_android" dist || true
           grep -R "$VITE_API_URL" dist || true
+
+          
 
       - name: Inspect built client
         working-directory: pulse.client
