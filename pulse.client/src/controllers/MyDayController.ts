@@ -276,7 +276,7 @@ export class MyDayController {
             new ActionButtonModel({ 
                 iconClass: ICONS.CloudSync, 
                 labelStr: "Cloud Sync", 
-                onClick: () => this.syncFromCloud
+                onClick: () => this.syncFromCloud()
             })
         );
 
