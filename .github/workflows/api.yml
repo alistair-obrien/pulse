@@ -7,7 +7,7 @@ on:
       - develop
 
 concurrency:
-  group: api-deployment
+  group: api-deployment-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
