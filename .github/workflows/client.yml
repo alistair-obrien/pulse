@@ -66,4 +66,6 @@ jobs:
 
       - name: Build and publish Android
         working-directory: pulse.client/android
+        env:
+          ANDROID_PUBLISHER_CREDENTIALS: ${{ secrets.ANDROID_PUBLISHER_CREDENTIALS }}
         run: ./gradlew publishProductionReleaseBundle --track=internal
