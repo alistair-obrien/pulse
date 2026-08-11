@@ -57,18 +57,7 @@ jobs:
 
           echo "=== Checking bundle ==="
           grep -R "development_android" dist || true
-          grep -R "$VITE_API_URL" dist || true
-      
-      - name: Check GitHub signing key
-        run: |
-          echo "=== GitHub signing key ==="
-
-          keytool -list -v \
-            -keystore "$ANDROID_KEYSTORE_FILE" \
-            -storepass "$ANDROID_KEYSTORE_PASSWORD" \
-            -alias "$ANDROID_KEY_ALIAS" |
-            grep -E "Alias name:|SHA1:|SHA256:"
-          
+          grep -R "$VITE_API_URL" dist || true          
 
       - name: Inspect built client
         working-directory: pulse.client
@@ -102,6 +91,16 @@ jobs:
           echo "ANDROID_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
           echo "ANDROID_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
           echo "ANDROID_KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
+
+      - name: Check GitHub signing key
+        run: |
+          echo "=== GitHub signing key ==="
+
+          keytool -list -v \
+            -keystore "$ANDROID_KEYSTORE_FILE" \
+            -storepass "$ANDROID_KEYSTORE_PASSWORD" \
+            -alias "$ANDROID_KEY_ALIAS" |
+            grep -E "Alias name:|SHA1:|SHA256:"
 
       - name: Configure SSH
         env:
