@@ -5,6 +5,8 @@ on:
     branches:
       - production
       - development
+    paths:
+      - 'pulse.client/**'
 
 concurrency:
   group: client-deployment-${{ github.ref_name }}
@@ -28,14 +30,18 @@ jobs:
         with:
           node-version: 24
           cache: npm
+          cache-dependency-path: pulse.client/package-lock.json
 
       - name: Install dependencies
+        working-directory: pulse.client
         run: npm ci
 
       - name: Build client
+        working-directory: pulse.client
         run: npm run build
 
       - name: Sync Capacitor
+        working-directory: pulse.client
         run: npx cap sync android
 
       - name: Setup Java
@@ -45,5 +51,5 @@ jobs:
           java-version: '21'
 
       - name: Build and publish Android
-        working-directory: android
+        working-directory: pulse.client/android
         run: ./gradlew publishReleaseBundle

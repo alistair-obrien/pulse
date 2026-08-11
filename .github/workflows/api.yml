@@ -5,6 +5,8 @@ on:
     branches:
       - production
       - development
+    paths:
+      - 'pulse.api/**'
 
 concurrency:
   group: api-deployment-${{ github.ref_name }}
