@@ -4,8 +4,8 @@ plugins {
     id 'com.github.triplet.play' version '4.0.0'
 }
 
-def androidStoreFilePath = System.getenv("ANDROID_STORE_FILE")
-def androidStorePassword = System.getenv("ANDROID_STORE_PASSWORD")
+def androidStoreFilePath = System.getenv("ANDROID_KEYSTORE_FILE")
+def androidStorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
 def androidKeyAlias = System.getenv("ANDROID_KEY_ALIAS")
 def androidKeyPassword = System.getenv("ANDROID_KEY_PASSWORD")
 def defaultVersionCode = 1;
