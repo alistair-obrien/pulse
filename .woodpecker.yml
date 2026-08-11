@@ -12,4 +12,3 @@ steps:
     commands:
       - dotnet restore pulse.api/Pulse.Api/Pulse.Api.csproj
       - dotnet build pulse.api/Pulse.Api/Pulse.Api.csproj -c Release --no-restore
-
