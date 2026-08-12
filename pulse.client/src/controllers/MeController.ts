@@ -8,6 +8,7 @@ import { ICONS } from "../ui/components/ICONS";
 import { MetricTextInputFieldModel } from "../ui/components/MetricTextInputField";
 import { MeScreen, MeScreenModel } from "../ui/screens/Me";
 import type { CloudUserDataSyncService } from "../services/CloudUserDataSyncService";
+import { ProfileThumbnailModel } from "../ui/components/ProfileThumbnail";
 
 const loginProvidernNames: Record<string, string> = {
     google: "Google",
@@ -109,6 +110,14 @@ export class MeController {
         );
 
         profileCard.content.push(
+            new ProfileThumbnailModel(
+                {
+                    imageUrl: this.userDataRepository.getUserData().profileImage?? ""
+                }
+            )
+        )
+
+        profileCard.content.push(
             new ActionButtonModel({
                 iconClass: ICONS.None,
                 labelStr: "Change Profile Image",
@@ -119,6 +128,7 @@ export class MeController {
                         return;
 
                     this.userDataRepository.setProfileImage(image);
+                    await this.refresh();
                 }
             })
         );
@@ -132,6 +142,11 @@ export class MeController {
         );
 
         this.model.cards.push(profileCard);
+    }
+
+    async refresh() {
+        await this.buildModel();
+        await this.screen.update(this.model);
     }
 
     async logout() {
@@ -173,7 +188,7 @@ export class MeController {
         }
     }
 
-    private selectProfileImage(): Promise<string | null> {
+    private async selectProfileImage(): Promise<string | null> {
         return new Promise(resolve => {
             const input = document.createElement("input");
 
@@ -188,20 +203,57 @@ export class MeController {
                     return;
                 }
 
-                const reader = new FileReader();
+                try {
+                    const image = await this.loadImage(file);
 
-                reader.onload = () => {
-                    resolve(reader.result as string);
-                };
+                    const size = 512;
+                    const scale = Math.min(
+                        size / image.width,
+                        size / image.height,
+                        1
+                    );
 
-                reader.onerror = () => {
+                    const canvas = document.createElement("canvas");
+
+                    canvas.width = image.width * scale;
+                    canvas.height = image.height * scale;
+
+                    const context = canvas.getContext("2d");
+
+                    if (!context) {
+                        resolve(null);
+                        return;
+                    }
+
+                    context.drawImage(
+                        image,
+                        0,
+                        0,
+                        canvas.width,
+                        canvas.height
+                    );
+
+                    resolve(
+                        canvas.toDataURL("image/jpeg", 0.85)
+                    );
+                }
+                catch {
                     resolve(null);
-                };
-
-                reader.readAsDataURL(file);
+                }
             };
 
             input.click();
+        });
+    }
+
+    private loadImage(file: File): Promise<HTMLImageElement> {
+        return new Promise((resolve, reject) => {
+            const image = new Image();
+
+            image.onload = () => resolve(image);
+            image.onerror = reject;
+
+            image.src = URL.createObjectURL(file);
         });
     }
 }
