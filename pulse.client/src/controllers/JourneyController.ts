@@ -147,15 +147,30 @@ export class JourneyController {
             const actionRowModel = new DivModel({ className: "footer-action-buttons-row" });
             journeyStepsCard.card.content.push(actionRowModel);
 
-            actionRowModel.content.push(new ActionButtonModel({
+            const leftGroup = new DivModel({
+                className: "row left-group"
+            })
+            actionRowModel.content.push(leftGroup);
+            const editActBtn = new ActionButtonModel({
+                iconClass: ICONS.EditTextField,
+                labelStr: "",
+                onClick: () => console.log("Edit") // TODO
+            })
+            leftGroup.content.push(editActBtn);
+
+            const rightGroup = new DivModel({
+                className: "row right-group"
+            })
+            actionRowModel.content.push(rightGroup);
+
+            const commentActBtn = new ActionButtonModel({
                 iconClass: ICONS.Comment,
                 labelStr: element.comments.length.toLocaleString(),
                 onClick: () => console.log("Comment") // TODO
-            }));
+            })
+            rightGroup.content.push(commentActBtn);
 
-            console.log(element.liked);
-
-            actionRowModel.content.push(new ActionButtonModel({
+            const likeActBtn = new ActionButtonModel({
                 iconClass: element.liked ? ICONS.LikeFilled : ICONS.Like,
                 labelStr: element.likesCount.toLocaleString(),
                 
@@ -163,7 +178,8 @@ export class JourneyController {
                     await this.likeJourneyStep(element); 
                     await this.refresh(); 
                 }
-            }));
+            });
+            rightGroup.content.push(likeActBtn);
 
             journeyStepGroup.journeyStepCards.push(journeyStepsCard);
         });

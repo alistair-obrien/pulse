@@ -343,6 +343,14 @@ h3 {
     flex-direction: column;
 }
 
+.right-group {
+    margin-left: auto;
+}
+
+.left-group {
+    margin-right: auto;
+}
+
 /* Current page leaves */
 
 .slide-out-left {
