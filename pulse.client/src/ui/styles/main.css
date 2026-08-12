@@ -31,6 +31,10 @@ body {
     min-height: 0;
 }
 
+.screen > :not(.active) {
+    display: none;
+}
+
 .screen-container {
     display: flex;
     flex-direction: column;

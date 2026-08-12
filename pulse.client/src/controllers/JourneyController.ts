@@ -14,6 +14,7 @@ import { ProfileThumbnailModel } from "../ui/components/ProfileThumbnail";
 import { CardIdHeaderModel } from "../ui/components/CardIdHeader";
 import { ActionButtonModel } from "../ui/components/ActionButton";
 import { JourneyStepGroupModel } from "../ui/components/JourneyStepGroup";
+import type { PulseApp } from "../ui/PulseApp";
 
 const DEFAULT_JOURNEY_STEP_METRICS  = [
     MetricTypeIds.Reflection,
@@ -35,15 +36,21 @@ export class JourneyController {
     private readonly metricsRepository:MetricsRepository;
     private readonly authService:AuthService;
     private readonly api:API;
+    private readonly pulseApp:PulseApp;
 
-    constructor(
+
+    constructor(args: {
         metricsRepository: MetricsRepository, 
         authService: AuthService,
-        api:API) {
+        api:API,
+        pulseApp:PulseApp
+    }
+    ) {
 
-        this.metricsRepository = metricsRepository;
-        this.authService = authService;
-        this.api = api;
+        this.metricsRepository = args.metricsRepository;
+        this.authService = args.authService;
+        this.api = args.api;
+        this.pulseApp = args.pulseApp;
 
         this.screen = new JourneyScreen();
         this.model = this.buildDefaultModel();
@@ -154,7 +161,9 @@ export class JourneyController {
             const editActBtn = new ActionButtonModel({
                 iconClass: ICONS.EditTextField,
                 labelStr: "",
-                onClick: () => console.log("Edit") // TODO
+                onClick: () => {
+                    this.pulseApp.openMyDayAtDate(element.date)
+                }
             })
             leftGroup.content.push(editActBtn);
 

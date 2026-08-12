@@ -13,6 +13,12 @@ export function toDateKey(date: Date): DateKey {
     return `${year}-${month}-${day}`;
 }
 
+export function fromDateKey(dateKey: DateKey): Date {
+    const [year, month, day] = dateKey.split("-").map(Number);
+
+    return new Date(year, month - 1, day);
+}
+
 // Returns the UTC range covering exactly one local calendar day.
 export function getLocalDayUtcRange(date = new Date()): UtcDateRange {
     const start = new Date(date);

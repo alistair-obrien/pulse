@@ -36,6 +36,7 @@ import { AuthService } from '../services/AuthService';
 import { GoogleAuthProvider } from '../services/AuthProviders/GoogleAuthProvider';
 import { API } from '../api/API';
 import { APIClient } from '../api/APIClient';
+import { fromDateKey } from '../utils/DateUtils';
 export class PulseApp {
 
     private readonly version_tag:VersionTag;
@@ -79,8 +80,14 @@ export class PulseApp {
         const imageService:ImageService = new ImageService();
         
         // Controllers
-        this.journeyController = new JourneyController(metricsRepository, authService, api);
-        this.myDayController = new MyDayController({
+        this.journeyController = new JourneyController({
+            metricsRepository: metricsRepository, 
+            authService: authService, 
+            api: api,
+            pulseApp: this
+        });
+        
+            this.myDayController = new MyDayController({
             metricsRepository: metricsRepository,
 
             journeyController: this.journeyController,
@@ -103,6 +110,13 @@ export class PulseApp {
         this.screenContainer.className = "screen";
         app.append(this.screenContainer);
 
+        // Mount all screens
+        this.screenContainer.append(
+            this.myDayController.screen.root,
+            this.journeyController.screen.root,
+            this.meController.screen.root
+        );
+
         // Should make this a component
         const footer = new Footer();
 
@@ -111,7 +125,7 @@ export class PulseApp {
             new ActionButtonModel({
                 labelStr: "Journey", 
                 iconClass: ICONS.Journey, 
-                onClick: () => { this.changeScreen(this.journeyController.screen); this.journeyController.refresh()}
+                onClick: () => { this.journeyController.refresh(); this.changeScreen(this.journeyController.screen); }
         }));
         footer.appendButton(journeyButton);
 
@@ -154,8 +168,18 @@ export class PulseApp {
         // }
     }
 
-    changeScreen(newScreen:Component<any>) {
-        this.screenContainer.replaceChildren(newScreen.root)
+    changeScreen(newScreen: Component<any>) {
+        for (const screen of this.screenContainer.children) {
+            screen.classList.remove("active");
+        }
+
+        newScreen.root.classList.add("active");
+    }
+    
+    // Probabky want screen controller
+    openMyDayAtDate(date: string) {
+        this.myDayController.transitionToDate(fromDateKey(date), "left");
+        this.changeScreen(this.myDayController.screen)
     }
 
     setVersionVisibility(value:boolean) {
