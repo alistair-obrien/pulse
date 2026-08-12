@@ -43,15 +43,18 @@ public class UserDataController : PulseController
         if (user == null)
             return Unauthorized();
 
-        user.DisplayName = data.DisplayName??"";
-        user.ProfileImage = data.ProfileImage;
+        if (data.DisplayName is not null)
+            user.DisplayName = data.DisplayName;
+
+        if (data.ProfileImage is not null)
+            user.ProfileImage = data.ProfileImage;
 
         var result = await _userManager.UpdateAsync(user);
 
         if (!result.Succeeded)
             return BadRequest(result.Errors);
 
-        return Ok();
+        return Ok(true);
     }
 }
 

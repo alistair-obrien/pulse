@@ -19,6 +19,9 @@ export class APIClient {
         const fullUrl = new URL(url, this.apiBase).toString();
         console.log(JSON.stringify(fullUrl));
 
+        if (body) {
+            console.log(JSON.stringify(body));
+        }
 
         if (authenticated && !this.authService.isLoggedIn()) {
             throw new Error("Authentication required.");
