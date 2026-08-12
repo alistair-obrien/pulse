@@ -9,6 +9,7 @@ import { MeScreen, MeScreenModel } from "../ui/screens/Me";
 import type { CloudUserDataSyncService } from "../services/CloudUserDataSyncService";
 import { ProfileThumbnailModel } from "../ui/components/ProfileThumbnail";
 import type { UserSession } from "../UserSession";
+import type { CloudMetricsSyncService } from "../services/CloudMetricsSyncService";
 
 const loginProvidernNames: Record<string, string> = {
     google: "Google",
@@ -27,6 +28,7 @@ export class MeController {
     private readonly authService:AuthService;
     private readonly externalAPIServices:ExternalAPIMetricsSyncService[];
     private readonly userDataSyncService: CloudUserDataSyncService;
+    private readonly metricsDataSyncService: CloudMetricsSyncService;
 
     constructor(
         args: {
@@ -34,6 +36,7 @@ export class MeController {
             authService:AuthService,
             externalAPIServices: ExternalAPIMetricsSyncService[],
             userDataSyncService: CloudUserDataSyncService,
+            metricsDataSyncService: CloudMetricsSyncService
         }
     ) {
         this.screen = new MeScreen();
@@ -41,6 +44,7 @@ export class MeController {
         this.authService = args.authService;
         this.externalAPIServices = args.externalAPIServices;
         this.userDataSyncService = args.userDataSyncService;
+        this.metricsDataSyncService = args.metricsDataSyncService;
         this.userSession = args.userSession;
 
         this.model = new MeScreenModel({ cards: [] });
@@ -67,7 +71,12 @@ export class MeController {
                 cardModel.content.push(new ActionButtonModel({ 
                     labelStr: `Login with ${loginProvidernNames[provider]}`,
                     iconClass: loginProviderIcons[provider],
-                    onClick: async () => this.login(provider)
+                    onClick: async () => { 
+                        await this.login(provider);
+                        await this.userDataSyncService.sync();
+                        await this.metricsDataSyncService.sync(new Date());
+                        this.refresh(); 
+                    } 
                 }))
             });
         }

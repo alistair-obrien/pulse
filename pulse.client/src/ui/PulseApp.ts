@@ -110,7 +110,8 @@ export class PulseApp {
         });
         this.meController = new MeController({ 
             authService: authService, 
-            externalAPIServices: extAPIMetricsSyncServices, 
+            externalAPIServices: extAPIMetricsSyncServices,
+            metricsDataSyncService: cloudMetricsSyncService,
             userSession: userSession,
             userDataSyncService: userDataSyncService
         });
@@ -149,7 +150,7 @@ export class PulseApp {
             new ActionButtonModel({
                 labelStr: "My Day", 
                 iconClass: ICONS.MyDay, 
-                onClick: () => this.changeScreen(this.myDayController.screen)
+                onClick: () => { this.myDayController.refresh(); this.changeScreen(this.myDayController.screen); }
         }));
         footer.appendButton(myDayButton);
 
@@ -158,7 +159,7 @@ export class PulseApp {
             new ActionButtonModel({
                 labelStr: "Me", 
                 iconClass: ICONS.Me, 
-                onClick: () => this.changeScreen(this.meController.screen)
+                onClick: () => { this.meController.refresh(); this.changeScreen(this.meController.screen) }
         }));
         footer.appendButton(meButton);
 
