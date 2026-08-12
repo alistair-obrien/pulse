@@ -1,11 +1,10 @@
-import { Card, type CardModel } from "../components/Card"
 import { Component, ComponentModel } from "../components/Component";
 import { Div } from "../components/Div";
-import { JourneyStepCard, JourneyStepCardModel } from "../components/JourneyStepCard";
+import { JourneyStepGroup, type JourneyStepGroupModel } from "../components/JourneyStepGroup";
 
 export class JourneyScreen extends Component<JourneyScreenModel> {
 
-    private readonly journeySteps: JourneyStepCard[] = [];
+    private readonly journeyStepGroups: JourneyStepGroup[] = [];
     private readonly journeyStepsContainer:Div = new Div();
 
 
@@ -21,31 +20,31 @@ export class JourneyScreen extends Component<JourneyScreenModel> {
     }
 
     protected render(): void {
-        while (this.journeySteps.length < this.model.journeySteps.length) {
-            const card = new JourneyStepCard();
-            this.journeySteps.push(card);
+        while (this.journeyStepGroups.length < this.model.journeyStepGroups.length) {
+            const card = new JourneyStepGroup();
+            this.journeyStepGroups.push(card);
             this.journeyStepsContainer.append(card);
         }
 
-        while (this.journeySteps.length > this.model.journeySteps.length) {
-            this.journeySteps.pop()!.root.remove();
+        while (this.journeyStepGroups.length > this.model.journeyStepGroups.length) {
+            this.journeyStepGroups.pop()!.root.remove();
         }
 
-        this.journeySteps.forEach((card, i) =>
-            card.update(this.model.journeySteps[i]));
+        this.journeyStepGroups.forEach((card, i) =>
+            card.update(this.model.journeyStepGroups[i]));
     }
 }
 
 export class JourneyScreenModel extends ComponentModel<JourneyScreen> {
         readonly component =  JourneyScreen;
 
-        readonly journeySteps: JourneyStepCardModel[];
+        readonly journeyStepGroups: JourneyStepGroupModel[];
 
         constructor(args: {
-            journeySteps: JourneyStepCardModel[];
+            journeySteps: JourneyStepGroupModel[];
         }) {
             super();
-            this.journeySteps = args.journeySteps
+            this.journeyStepGroups = args.journeySteps
         }
 }
 

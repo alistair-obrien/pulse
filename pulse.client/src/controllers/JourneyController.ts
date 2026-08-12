@@ -13,6 +13,7 @@ import { JourneyStepCardModel } from "../ui/components/JourneyStepCard";
 import { ProfileThumbnailModel } from "../ui/components/ProfileThumbnail";
 import { CardIdHeaderModel } from "../ui/components/CardIdHeader";
 import { ActionButtonModel } from "../ui/components/ActionButton";
+import { JourneyStepGroupModel } from "../ui/components/JourneyStepGroup";
 
 const DEFAULT_JOURNEY_STEP_METRICS  = [
     MetricTypeIds.Reflection,
@@ -65,7 +66,21 @@ export class JourneyController {
             }
         )
 
+        let currentDate = "";
+
+        let journeyStepGroup:JourneyStepGroupModel;
+
         journeySteps.forEach(element => {
+
+            if (element.date !== currentDate) {
+                currentDate = element.date;
+
+                journeyStepGroup = new JourneyStepGroupModel({
+                        date: element.date
+                    })
+
+                this.model.journeyStepGroups.push(journeyStepGroup);
+            }
 
             let journeyStepsCard = new JourneyStepCardModel()
 
@@ -150,7 +165,7 @@ export class JourneyController {
                 }
             }));
 
-            this.model.journeySteps.push(journeyStepsCard);
+            journeyStepGroup.journeyStepCards.push(journeyStepsCard);
         });
 
         this.screen.update(this.model);
