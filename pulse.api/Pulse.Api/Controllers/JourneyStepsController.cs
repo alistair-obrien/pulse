@@ -31,7 +31,7 @@ public class JourneyStepsController : PulseController
             {
                 JourneyStepId = journeyStep.Id,
                 journeyStep.UserId,
-                UserName = user.UserName,
+                DisplayName = user.DisplayName,
                 UserProfilePicture = user.ProfileImage,
                 Metric = metric
             })
@@ -69,7 +69,7 @@ public class JourneyStepsController : PulseController
             journeySteps.Add(new JourneyStepRecord(
                 userId: first.UserId,
                 date: first.Metric.Date,
-                userName: first.UserName ?? "",
+                userName: first.DisplayName ?? "",
                 userProfilePicture: first.UserProfilePicture,
                 liked: liked,
                 likesCount: likes.Count,
