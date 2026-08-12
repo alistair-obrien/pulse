@@ -7,11 +7,11 @@ export class UserDataRepository {
     private readonly localStore: UserDataStore;
     private readonly cloudStore: UserDataStore;
 
-    constructor(appConfig: AppConfig, userId: string) {
-        const prefix = `pulse_${appConfig.environment}:${userId}`;
+    constructor(appConfig: AppConfig, prefix:string) {
+        const storagePrefix = `pulse_${appConfig.environment}:${prefix}`;
 
-        this.localStore = new UserDataStore(`${prefix}:local`);
-        this.cloudStore = new UserDataStore(`${prefix}:cloud`);
+        this.localStore = new UserDataStore(`${storagePrefix}:local`);
+        this.cloudStore = new UserDataStore(`${storagePrefix}:cloud`);
     }
 
     getUserData(): UserData {

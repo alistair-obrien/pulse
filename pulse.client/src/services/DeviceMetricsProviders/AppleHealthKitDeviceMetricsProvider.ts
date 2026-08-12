@@ -1,12 +1,12 @@
-import type { MetricsRepository } from "../../repositories/MetricsRepository";
+import type { UserSession } from "../../UserSession";
 import type { DeviceMetricsSyncService } from "../DeviceMetricsSyncService";
 
 export class HealthKitSyncService implements DeviceMetricsSyncService {
     
-    private metricsRepositoryController:MetricsRepository;
+    private userSession:UserSession;
 
-    constructor(metricsRepository: MetricsRepository) {
-        this.metricsRepositoryController = metricsRepository;
+    constructor(userSession: UserSession) {
+        this.userSession = userSession;
     }
 
     async initialize(): Promise<void> {

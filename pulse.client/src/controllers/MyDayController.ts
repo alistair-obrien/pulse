@@ -17,8 +17,7 @@ const DATE_FADE_DIST = 20;
 import { Clipboard } from "@capacitor/clipboard";
 import { type MetricTypeId, type MetricTypes, MetricTypeIds } from "../models/MetricRegistry";
 
-// Repositories
-import type { MetricsRepository } from "../repositories/MetricsRepository";
+import type { UserSession } from "../UserSession";
 
 // Services
 import type { CloudMetricsSyncService } from "../services/CloudMetricsSyncService";
@@ -51,8 +50,9 @@ export class MyDayController {
     model:MyDayScreenModel;
     screen:MyDayScreen;
 
+    private readonly userSession:UserSession;
+
     // Controllers
-    private readonly metricsRepository: MetricsRepository;
     private readonly journeyController: JourneyController;
 
     // Services
@@ -63,7 +63,7 @@ export class MyDayController {
 
     constructor(
         args: {
-            metricsRepository: MetricsRepository,
+            userSession: UserSession,
             
             journeyController: JourneyController,
             
@@ -74,7 +74,7 @@ export class MyDayController {
             imageService: ImageService;
         }
     ) {
-        this.metricsRepository = args.metricsRepository;
+        this.userSession = args.userSession;
         this.journeyController = args.journeyController;
 
         this.cloudMetricsSyncService = args.cloudMetricsSyncService;
@@ -88,11 +88,11 @@ export class MyDayController {
     }
 
     setSelectedDayMetric<K extends MetricTypeId>(metricTypeId: K, value:MetricTypes[K]) {
-        this.metricsRepository.setUserEditMetric(this.model!.selectedDateKey, metricTypeId, value);         
+        this.userSession.metrics.setUserEditMetric(this.model!.selectedDateKey, metricTypeId, value);         
     }
 
     getSelectedDayMetric<K extends MetricTypeId>(metricTypeId: K): MetricTypes[K] { 
-        return this.metricsRepository.resolveMetric(this.model!.selectedDateKey, metricTypeId); 
+        return this.userSession.metrics.resolveMetric(this.model!.selectedDateKey, metricTypeId); 
     }
 
     async loadToday() {
@@ -168,16 +168,16 @@ export class MyDayController {
         recoveryCardModel.content.push(recoveryRowModel);
 
         // Sleep
-        const sleepRecords = this.metricsRepository.resolveMetric(this.model.selectedDateKey, MetricTypeIds.Sleep);
+        const sleepRecords = this.userSession.metrics.resolveMetric(this.model.selectedDateKey, MetricTypeIds.Sleep);
         const totalSleepHours = sleepRecords.reduce( (total, sleep) => total + sleep.sleepHours, 0);
         recoveryRowModel.content.push(new MetricCardModel({ name: "Total Sleep", iconClass: ICONS.Sleep, metricValue: new TimeSpanModel({ time: totalSleepHours }) }));
         
         // Steps
-        const steps = this.metricsRepository.resolveMetric(this.model.selectedDateKey, MetricTypeIds.Steps);
+        const steps = this.userSession.metrics.resolveMetric(this.model.selectedDateKey, MetricTypeIds.Steps);
         recoveryRowModel.content.push(new MetricCardModel({ name: "Total Steps", iconClass: ICONS.Steps, metricValue: new MetricTextModel({ value: steps.toLocaleString() }) }));
         
         // RHR
-        const rhr = this.metricsRepository.resolveMetric(this.model.selectedDateKey, MetricTypeIds.RestingHeartRate);
+        const rhr = this.userSession.metrics.resolveMetric(this.model.selectedDateKey, MetricTypeIds.RestingHeartRate);
         recoveryRowModel.content.push(new MetricCardModel({ name: "Resting HR", iconClass: ICONS.RestingHeartRate, metricValue: new MetricTextModel({ value: rhr.toLocaleString(), unit: "bpm" }) }));
 
         this.model.metricSectionCardModels.push(recoveryCardModel);
@@ -192,7 +192,7 @@ export class MyDayController {
         const nutritionRowModel = new DivModel({ className: "row" });
         nutritionCardModel.content.push(nutritionRowModel);
 
-        let calories = this.metricsRepository.resolveMetric(this.model.selectedDateKey, MetricTypeIds.Nutrition_Calories);
+        let calories = this.userSession.metrics.resolveMetric(this.model.selectedDateKey, MetricTypeIds.Nutrition_Calories);
         calories = Math.round(calories);
         nutritionRowModel.content.push(new MetricCardModel({ 
             name: "Calories", 
@@ -203,7 +203,7 @@ export class MyDayController {
             }) 
         }));
 
-        let protein = this.metricsRepository.resolveMetric(this.model.selectedDateKey, MetricTypeIds.Nutrition_Protein);
+        let protein = this.userSession.metrics.resolveMetric(this.model.selectedDateKey, MetricTypeIds.Nutrition_Protein);
         protein = Math.round(protein);
         nutritionRowModel.content.push(new MetricCardModel({ 
             name: "Protein", 
@@ -214,7 +214,7 @@ export class MyDayController {
             }) 
         }));
 
-        let carbs = this.metricsRepository.resolveMetric(this.model.selectedDateKey, MetricTypeIds.Nutrition_Carbs);
+        let carbs = this.userSession.metrics.resolveMetric(this.model.selectedDateKey, MetricTypeIds.Nutrition_Carbs);
         carbs = Math.round(carbs);
         nutritionRowModel.content.push(new MetricCardModel({ 
             name: "Carbs", 
@@ -225,7 +225,7 @@ export class MyDayController {
             }) 
         }));
 
-        let fat = this.metricsRepository.resolveMetric(this.model.selectedDateKey, MetricTypeIds.Nutrition_Fat);
+        let fat = this.userSession.metrics.resolveMetric(this.model.selectedDateKey, MetricTypeIds.Nutrition_Fat);
         fat = Math.round(fat);
         nutritionRowModel.content.push(new MetricCardModel({ 
             name: "Fat", 
@@ -246,7 +246,7 @@ export class MyDayController {
         const activitiesRowModel = new DivModel({ className: "row" });
         activityCardModel.content.push(activitiesRowModel);
 
-        const workouts = this.metricsRepository.resolveMetric(this.model.selectedDateKey, MetricTypeIds.Workouts);
+        const workouts = this.userSession.metrics.resolveMetric(this.model.selectedDateKey, MetricTypeIds.Workouts);
 
         workouts.forEach(element => {
             activitiesRowModel.content.push(new MetricCardModel({ 

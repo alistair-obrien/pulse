@@ -53,7 +53,8 @@ namespace Pulse.Api.Services
             return new LoginResponse(
                 accessToken,
                 refreshToken,
-                _jwtOptions.ExpiryInSeconds);
+                _jwtOptions.ExpiryInSeconds,
+                user.Id);
         }
 
         public async Task<LoginResponse> LoginWithGoogle(GoogleLoginRequest request)

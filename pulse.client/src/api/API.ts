@@ -125,4 +125,5 @@ export interface LoginResponse {
     accessToken: string;
     expiryInSeconds: number;
     refreshToken: string;
+    userId: string;
 }

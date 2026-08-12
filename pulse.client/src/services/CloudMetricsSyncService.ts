@@ -3,18 +3,18 @@ import { MetricTypeIdsArray } from "../models/MetricRegistry";
 import * as DateUtils from "../utils/DateUtils";
 
 // Controllers
-import type { MetricsRepository } from "../repositories/MetricsRepository";
 import type { AuthService } from "./AuthService";
 import type { API } from "../api/API";
+import type { UserSession } from "../UserSession";
 
 export class CloudMetricsSyncService {
 
-    private readonly metricsRepository:MetricsRepository;
+    private readonly userSession:UserSession;
     private readonly authService:AuthService;
     private readonly api:API;
 
-    constructor(metricsRepository:MetricsRepository, authService:AuthService, api:API) {
-        this.metricsRepository = metricsRepository;
+    constructor(userSession:UserSession, authService:AuthService, api:API) {
+        this.userSession = userSession;
         this.authService = authService;
         this.api = api;
     }
@@ -28,7 +28,7 @@ export class CloudMetricsSyncService {
 
         try {
             await this.uploadMetrics(dateKey);
-            this.metricsRepository.clearPendingChanges(dateKey);
+            this.userSession.metrics.clearPendingChanges(dateKey);
             await this.downloadMetrics(dateKey);
 
             return true;
@@ -47,7 +47,7 @@ export class CloudMetricsSyncService {
             const value = allMetrics[id];
 
             if (value !== undefined) {
-                this.metricsRepository.setCloudMetric(dateKey, id, value);
+                this.userSession.metrics.setCloudMetric(dateKey, id, value);
             }
         }
     }
@@ -55,7 +55,7 @@ export class CloudMetricsSyncService {
     private async uploadMetrics(dateKey: DateUtils.DateKey) {
         await Promise.all(
             MetricTypeIdsArray.map(async id => {
-                const value = this.metricsRepository.getMetricToUpload(dateKey, id);
+                const value = this.userSession.metrics.getMetricToUpload(dateKey, id);
 
                 if (value !== undefined) {
                     await this.api.setMetric(dateKey, id, value);

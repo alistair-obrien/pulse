@@ -3,6 +3,7 @@
     public sealed record LoginResponse(
         string AccessToken,
         string RefreshToken,
-        int ExpiryInSeconds
+        int ExpiryInSeconds,
+        string userId
     );
 }

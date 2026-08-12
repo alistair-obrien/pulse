@@ -14,8 +14,7 @@ import { VersionTag } from './components/VersionTag';
 import { Footer } from "./components/Footer";
 import { type Component } from './components/Component';
 
-// Repositories
-import { MetricsRepository } from '../repositories/MetricsRepository';
+import { UserSession } from '../UserSession';
 
 // Services
 import { CloudMetricsSyncService } from '../services/CloudMetricsSyncService';
@@ -37,8 +36,8 @@ import { GoogleAuthProvider } from '../services/AuthProviders/GoogleAuthProvider
 import { API } from '../api/API';
 import { APIClient } from '../api/APIClient';
 import { fromDateKey } from '../utils/DateUtils';
-import { UserDataRepository } from '../repositories/UserDataRepository';
 import { CloudUserDataSyncService } from '../services/CloudUserDataSyncService';
+
 export class PulseApp {
 
     private readonly version_tag:VersionTag;
@@ -55,50 +54,51 @@ export class PulseApp {
     constructor(appConfig:AppConfig) {
         this.splashEnabled = appConfig.splashEnabled;
         this.showDebugVersionAnnotation = appConfig.showDebugVersionAnnotation;
-    
-        // >>> Repositories <<<
-        const metricsRepository:MetricsRepository = new MetricsRepository(appConfig);
-        const userDataRepository:UserDataRepository = new UserDataRepository(appConfig, "local_user"); // Later we should wrap these in a session object so we can manage multi users. And then load the last user id from local storage
+            
+        // >>> User Session <<<
+        const userSession:UserSession = new UserSession(appConfig);
 
+        // >>> API and AUTH <<<
         const api:API = new API(); // HACK. We attach the client after auth is ready
 
-        const authService:AuthService = new AuthService(appConfig, api);
+        const authService:AuthService = new AuthService(appConfig, api, userSession);
         authService.addProvider(new GoogleAuthProvider(appConfig.socialLoginIds.googleWebClientId, appConfig.platform, api));
         
         api.attachClient(new APIClient(appConfig.apiBase, authService))
         // HACK end
 
+
+
         // >>> Sync Services <<<
-        const cloudMetricsSyncService:CloudMetricsSyncService = new CloudMetricsSyncService(metricsRepository, authService, api);
+        const cloudMetricsSyncService:CloudMetricsSyncService = new CloudMetricsSyncService(userSession, authService, api);
         let deviceMetricsSyncService:DeviceMetricsSyncService | undefined = undefined; // Can be undefined on web.
         
         if (appConfig.platform == 'android') {
-            deviceMetricsSyncService = new HealthConnectSyncService(metricsRepository);
+            deviceMetricsSyncService = new HealthConnectSyncService(userSession);
         }
         else if (appConfig.platform == 'ios') {
-            deviceMetricsSyncService = new HealthKitSyncService(metricsRepository);
+            deviceMetricsSyncService = new HealthKitSyncService(userSession);
         }
         deviceMetricsSyncService?.initialize()
 
         const extAPIMetricsSyncServices:ExternalAPIMetricsSyncService[] = [];
-        extAPIMetricsSyncServices.push(new HEVYAPIMetricsSyncService(metricsRepository));
+        extAPIMetricsSyncServices.push(new HEVYAPIMetricsSyncService(userSession));
 
-        const userDataSyncService:CloudUserDataSyncService = new CloudUserDataSyncService(userDataRepository, authService, api);
+        const userDataSyncService:CloudUserDataSyncService = new CloudUserDataSyncService(userSession, authService, api);
 
         // >>> Other Services <<<
         const imageService:ImageService = new ImageService();
         
         // >>> Controllers <<<
         this.journeyController = new JourneyController({
-            metricsRepository: metricsRepository, 
-            userDataRepository: userDataRepository,
+            userSession: userSession, 
             authService: authService, 
             api: api,
             pulseApp: this
         });
         
-            this.myDayController = new MyDayController({
-            metricsRepository: metricsRepository,
+        this.myDayController = new MyDayController({
+            userSession: userSession,
 
             journeyController: this.journeyController,
 
@@ -111,7 +111,7 @@ export class PulseApp {
         this.meController = new MeController({ 
             authService: authService, 
             externalAPIServices: extAPIMetricsSyncServices, 
-            userDataRepository: userDataRepository,
+            userSession: userSession,
             userDataSyncService: userDataSyncService
         });
 

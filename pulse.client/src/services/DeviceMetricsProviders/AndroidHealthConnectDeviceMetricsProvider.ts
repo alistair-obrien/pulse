@@ -8,6 +8,7 @@ import type { DeviceMetricsSyncService } from "../DeviceMetricsSyncService";
 
 // Controllers
 import type { MetricsRepository } from "../../repositories/MetricsRepository";
+import type { UserSession } from "../../UserSession";
 
 interface HealthConnectPlugin {
     isAvailable() : Promise<AvailabilityResult>;
@@ -151,10 +152,10 @@ export class HealthConnectSyncService implements DeviceMetricsSyncService {
     private _isAvailable:boolean = false;
     private syncing = false;
     
-    private metricsRepositoryController:MetricsRepository;
+    private readonly userSession:UserSession;
 
-    constructor(metricsRepository: MetricsRepository) {
-        this.metricsRepositoryController = metricsRepository;
+    constructor(userSession: UserSession) {
+        this.userSession = userSession;
     }
 
     async initialize() {
@@ -230,7 +231,7 @@ export class HealthConnectSyncService implements DeviceMetricsSyncService {
             };
 
             for (const { metric, value } of IMPORTERS) {
-                this.metricsRepositoryController.setDeviceMetric(
+                this.userSession.metrics.setDeviceMetric(
                     dateKey,
                     metric,
                     value(healthData)

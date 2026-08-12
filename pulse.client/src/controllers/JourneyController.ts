@@ -3,7 +3,6 @@ import { MetricTypeIds, type MetricTypes } from "../models/MetricRegistry";
 import { JourneyStep } from "../models/JourneyStep";
 import { AuthService } from "../services/AuthService";
 import { toDateKey } from "../utils/DateUtils";
-import type { MetricsRepository } from "../repositories/MetricsRepository";
 import { JourneyScreen, JourneyScreenModel } from "../ui/screens/Journey";
 import { DivModel } from "../ui/components/Div";
 import { ICONS } from "../ui/components/ICONS";
@@ -16,7 +15,7 @@ import { ActionButtonModel } from "../ui/components/ActionButton";
 import { JourneyStepGroupModel } from "../ui/components/JourneyStepGroup";
 import type { PulseApp } from "../ui/PulseApp";
 import { ReflectionTextModel } from "../ui/components/ReflectionText";
-import type { UserDataRepository } from "../repositories/UserDataRepository";
+import type { UserSession } from "../UserSession";
 
 const DEFAULT_JOURNEY_STEP_METRICS  = [
     MetricTypeIds.Reflection,
@@ -35,24 +34,21 @@ export class JourneyController {
     model:JourneyScreenModel;
     screen:JourneyScreen;
 
-    private readonly metricsRepository:MetricsRepository;
-    private readonly userRepository:UserDataRepository;
+    private readonly userSession:UserSession;
     private readonly authService:AuthService;
     private readonly api:API;
     private readonly pulseApp:PulseApp;
 
 
     constructor(args: {
-        metricsRepository: MetricsRepository,
-        userDataRepository: UserDataRepository,
+        userSession: UserSession,
         authService: AuthService,
         api:API,
         pulseApp:PulseApp
     }
     ) {
 
-        this.metricsRepository = args.metricsRepository;
-        this.userRepository = args.userDataRepository;
+        this.userSession = args.userSession;
         this.authService = args.authService;
         this.api = args.api;
         this.pulseApp = args.pulseApp;
@@ -104,14 +100,14 @@ export class JourneyController {
             });
             journeyStepsCard.card.content.push(idHeader);
 
-            const reflections = this.metricsRepository.resolveMetric(element.date, MetricTypeIds.Reflection);
+            const reflections = element.getMetric(MetricTypeIds.Reflection);
             const reflectionTextModel = new ReflectionTextModel({text: reflections})
             journeyStepsCard.card.content.push(reflectionTextModel);
 
             const nutritionRowModel = new DivModel({ className: "row" });
             journeyStepsCard.card.content.push(nutritionRowModel);
 
-            let calories = this.metricsRepository.resolveMetric(element.date, MetricTypeIds.Nutrition_Calories);
+            let calories = element.getMetric(MetricTypeIds.Nutrition_Calories);
             calories = Math.round(calories);
             nutritionRowModel.content.push(new MetricCardModel({ 
                 name: "Calories", 
@@ -122,7 +118,7 @@ export class JourneyController {
                 }) 
             }));
 
-            let protein = this.metricsRepository.resolveMetric(element.date, MetricTypeIds.Nutrition_Protein);
+            let protein = element.getMetric(MetricTypeIds.Nutrition_Protein);
             protein = Math.round(protein);
             nutritionRowModel.content.push(new MetricCardModel({ 
                 name: "Protein", 
@@ -133,7 +129,7 @@ export class JourneyController {
                 }) 
             }));
 
-            let carbs = this.metricsRepository.resolveMetric(element.date, MetricTypeIds.Nutrition_Carbs);
+            let carbs = element.getMetric(MetricTypeIds.Nutrition_Carbs);
             carbs = Math.round(carbs);
             nutritionRowModel.content.push(new MetricCardModel({ 
                 name: "Carbs", 
@@ -144,7 +140,7 @@ export class JourneyController {
                 }) 
             }));
 
-            let fat = this.metricsRepository.resolveMetric(element.date, MetricTypeIds.Nutrition_Fat);
+            let fat = element.getMetric(MetricTypeIds.Nutrition_Fat);
             fat = Math.round(fat);
             nutritionRowModel.content.push(new MetricCardModel({ 
                 name: "Fat", 
@@ -188,9 +184,17 @@ export class JourneyController {
                 iconClass: element.liked ? ICONS.LikeFilled : ICONS.Like,
                 labelStr: element.likesCount.toLocaleString(),
                 
-                onClick: async () => { 
+                onClick: async () => {
+                    // Optimistic
+                    element.liked = !element.liked;
+                    element.likesCount += !element.liked ? -1 : 1;
+                    likeActBtn.iconClass = element.liked ? ICONS.LikeFilled : ICONS.Like;
+                    likeActBtn.labelStr = element.likesCount.toLocaleString();
+                    this.screen.update(this.model);
+                    
+                    // Authorative
                     await this.likeJourneyStep(element); 
-                    await this.refresh(); 
+                    await this.refresh();
                 }
             });
             rightGroup.content.push(likeActBtn);
@@ -218,8 +222,10 @@ export class JourneyController {
 
         // Remote Construction since we need other users specifically exposed metrics
         if (this.authService.isLoggedIn()) {
+        
             const journeyStepsResponse = await this.api.getJourneySteps(0);
             journeySteps = journeyStepsResponse?.journeySteps ?? [];
+        
         // Local Construction
         } else {
         journeySteps = [];
@@ -231,13 +237,13 @@ export class JourneyController {
 
                 const dateKey = toDateKey(selDate);
 
-                const metrics:Partial<MetricTypes> = this.metricsRepository.resolveMetrics(dateKey, ...DEFAULT_JOURNEY_STEP_METRICS );
+                const metrics:Partial<MetricTypes> = this.userSession.metrics.resolveMetrics(dateKey, ...DEFAULT_JOURNEY_STEP_METRICS );
 
                 const journeyStep = JourneyStep.fromJson({
                     id: "local",
                     date: dateKey,
-                    userName: this.userRepository.getUserData().displayName,
-                    userProfilePicture: this.userRepository.getUserData().profileImage,
+                    userName: this.userSession.userData.getUserData().displayName,
+                    userProfilePicture: this.userSession.userData.getUserData().profileImage,
                     liked: true,
                     likesCount: 0,
                     comments: [],

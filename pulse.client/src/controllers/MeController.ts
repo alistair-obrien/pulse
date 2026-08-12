@@ -1,4 +1,3 @@
-import type { UserDataRepository } from "../repositories/UserDataRepository";
 import type { AuthService } from "../services/AuthService";
 import type { ExternalAPIMetricsSyncService } from "../services/ExternalAPIMetricsSyncService";
 import { ActionButtonModel } from "../ui/components/ActionButton";
@@ -9,6 +8,7 @@ import { MetricTextInputFieldModel } from "../ui/components/MetricTextInputField
 import { MeScreen, MeScreenModel } from "../ui/screens/Me";
 import type { CloudUserDataSyncService } from "../services/CloudUserDataSyncService";
 import { ProfileThumbnailModel } from "../ui/components/ProfileThumbnail";
+import type { UserSession } from "../UserSession";
 
 const loginProvidernNames: Record<string, string> = {
     google: "Google",
@@ -23,17 +23,17 @@ export class MeController {
     model:MeScreenModel;
     screen:MeScreen;
 
-    authService:AuthService;
-    externalAPIServices:ExternalAPIMetricsSyncService[];
-    userDataRepository: UserDataRepository;
-    userDataSyncService: CloudUserDataSyncService;
+    private readonly userSession:UserSession;
+    private readonly authService:AuthService;
+    private readonly externalAPIServices:ExternalAPIMetricsSyncService[];
+    private readonly userDataSyncService: CloudUserDataSyncService;
 
     constructor(
         args: {
+            userSession:UserSession,
             authService:AuthService,
             externalAPIServices: ExternalAPIMetricsSyncService[],
             userDataSyncService: CloudUserDataSyncService,
-            userDataRepository: UserDataRepository
         }
     ) {
         this.screen = new MeScreen();
@@ -41,10 +41,11 @@ export class MeController {
         this.authService = args.authService;
         this.externalAPIServices = args.externalAPIServices;
         this.userDataSyncService = args.userDataSyncService;
-        this.userDataRepository = args.userDataRepository;
+        this.userSession = args.userSession;
 
         this.model = new MeScreenModel({ cards: [] });
 
+        this.userDataSyncService.sync();
         this.buildModel();
         this.screen.update(this.model);
     }
@@ -103,16 +104,16 @@ export class MeController {
         profileCard.content.push(
             new MetricTextInputFieldModel({
                 placeholderText: "Username",
-                getter: () => this.userDataRepository.getUserData().displayName ?? "",
+                getter: () => this.userSession.userData.getUserData().displayName ?? "",
                 setter: (value: string) =>
-                    this.userDataRepository.setDisplayName(value)
+                    this.userSession.userData.setDisplayName(value)
             })
         );
 
         profileCard.content.push(
             new ProfileThumbnailModel(
                 {
-                    imageUrl: this.userDataRepository.getUserData().profileImage?? ""
+                    imageUrl: this.userSession.userData.getUserData().profileImage?? ""
                 }
             )
         )
@@ -127,7 +128,7 @@ export class MeController {
                     if (!image)
                         return;
 
-                    this.userDataRepository.setProfileImage(image);
+                    this.userSession.userData.setProfileImage(image);
                     await this.refresh();
                 }
             })

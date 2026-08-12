@@ -2,7 +2,7 @@ import { isSameDay, toDateKey } from "../../utils/DateUtils";
 import type { WorkoutLogData, WorkoutType } from "../../models/WorkoutLogData";
 import { MetricTypeIds } from "../../models/MetricRegistry";
 import type { ExternalAPIMetricsSyncService } from "../ExternalAPIMetricsSyncService";
-import type { MetricsRepository } from "../../repositories/MetricsRepository";
+import type { UserSession } from "../../UserSession";
 
 const HEVY_API_KEY = "hevy-api-key";
 
@@ -10,10 +10,10 @@ export class HEVYAPIMetricsSyncService implements ExternalAPIMetricsSyncService 
 
     readonly name:string = "HEVY";
 
-    private readonly metricsRepository:MetricsRepository;
+    private readonly userSession:UserSession;
 
-    constructor(metricsRepository:MetricsRepository) {
-        this.metricsRepository = metricsRepository;
+    constructor(userSession:UserSession) {
+        this.userSession = userSession;
     }
 
     isAvailable(): boolean {
@@ -76,7 +76,7 @@ export class HEVYAPIMetricsSyncService implements ExternalAPIMetricsSyncService 
             page++;
         }
 
-        this.metricsRepository.setDeviceMetric(
+        this.userSession.metrics.setDeviceMetric(
             toDateKey(date),
             MetricTypeIds.Workouts,
             workoutLogs

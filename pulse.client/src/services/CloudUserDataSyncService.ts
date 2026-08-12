@@ -1,15 +1,15 @@
 import type { API } from "../api/API";
-import type { UserDataRepository } from "../repositories/UserDataRepository";
+import type { UserSession } from "../UserSession";
 import type { AuthService } from "./AuthService";
 
 export class CloudUserDataSyncService {
 
-    private readonly userDataRepository:UserDataRepository;
+    private readonly userSession:UserSession;
     private readonly authService:AuthService;
     private readonly api:API;
 
-    constructor(userDataRepository:UserDataRepository, authService:AuthService, api:API) {
-        this.userDataRepository = userDataRepository;
+    constructor(userSession:UserSession, authService:AuthService, api:API) {
+        this.userSession = userSession;
         this.authService = authService;
         this.api = api;
     }
@@ -23,7 +23,7 @@ export class CloudUserDataSyncService {
         try {
             
             await this.uploadUserData();
-            this.userDataRepository.clearPendingChanges();
+            this.userSession.userData.clearPendingChanges();
             await this.downloadUserData();
             return true;
 
@@ -36,7 +36,7 @@ export class CloudUserDataSyncService {
 
     private async uploadUserData() {
         await this.api.setUserData(
-            this.userDataRepository.getUserDataToUpload()
+            this.userSession.userData.getUserDataToUpload()
         );
     }
 
@@ -44,7 +44,7 @@ export class CloudUserDataSyncService {
         const userData = await this.api.getUserData();
         console.log(JSON.stringify(userData));
         if (userData) {
-            this.userDataRepository.setUserData(userData);
+            this.userSession.userData.setUserData(userData);
         }
     }
 }

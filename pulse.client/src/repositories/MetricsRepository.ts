@@ -15,8 +15,8 @@ export class MetricsRepository {
     private readonly deviceCacheStore:MetricRecordStore;
     private readonly cloudCacheStore:MetricRecordStore;
 
-    constructor(appConfig:AppConfig) {
-        this.storagePrefix = `pulse_${appConfig.environment}`
+    constructor(appConfig:AppConfig, prefix:string) {
+        this.storagePrefix = `pulse_${appConfig.environment}:${prefix}`
 
         const today = new Date();
         const oneWeekAgo = new Date(today);

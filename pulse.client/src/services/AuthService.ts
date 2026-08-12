@@ -1,5 +1,6 @@
 import type { API, LoginResponse } from "../api/API";
 import type { AppConfig } from "../AppConfig";
+import type { UserSession } from "../UserSession";
 
 // TODO
 export interface AuthProvider {
@@ -21,13 +22,15 @@ export class AuthService {
 
     private readonly storageKey:string;
     private readonly api: API;
+    private readonly userSession: UserSession;
     
     private currentSession: AuthState | null = null;
 
     // >>> REFRESH TOKEN <<<
     refreshPromise: Promise<void> | null = null;
 
-    constructor(appConfig:AppConfig, api:API) {
+    constructor(appConfig:AppConfig, api:API, userSession:UserSession) {
+        this.userSession = userSession;
         this.storageKey = `${appConfig.environment}:auth`;
         this.loadSession();
         this.api = api;
@@ -53,6 +56,8 @@ export class AuthService {
             refreshToken: response.refreshToken,
             expiresAtUtc: Date.now() + response.expiryInSeconds * 1000
         };
+
+        this.userSession.setUser(response.userId);
 
         this.saveSession();
     }
