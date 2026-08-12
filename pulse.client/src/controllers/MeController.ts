@@ -110,11 +110,26 @@ export class MeController {
 
         profileCard.content.push(
             new ActionButtonModel({
+                iconClass: ICONS.None,
+                labelStr: "Change Profile Image",
+                onClick: async () => {
+                    const image = await this.selectProfileImage();
+
+                    if (!image)
+                        return;
+
+                    this.userDataRepository.setProfileImage(image);
+                }
+            })
+        );
+
+        profileCard.content.push(
+            new ActionButtonModel({
                 iconClass: ICONS.CloudSync,
                 labelStr: "save",
                 onClick: () => this.userDataSyncService.sync()
             })
-        )
+        );
 
         this.model.cards.push(profileCard);
     }
@@ -156,5 +171,37 @@ export class MeController {
         catch (e) {
             console.error(e);
         }
+    }
+
+    private selectProfileImage(): Promise<string | null> {
+        return new Promise(resolve => {
+            const input = document.createElement("input");
+
+            input.type = "file";
+            input.accept = "image/*";
+
+            input.onchange = async () => {
+                const file = input.files?.[0];
+
+                if (!file) {
+                    resolve(null);
+                    return;
+                }
+
+                const reader = new FileReader();
+
+                reader.onload = () => {
+                    resolve(reader.result as string);
+                };
+
+                reader.onerror = () => {
+                    resolve(null);
+                };
+
+                reader.readAsDataURL(file);
+            };
+
+            input.click();
+        });
     }
 }

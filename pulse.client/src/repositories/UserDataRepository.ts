@@ -38,7 +38,7 @@ export class UserDataRepository {
         this.localStore.set("displayName", displayName);
     }
 
-    setProfileImage(profileImage: Blob) {
+    setProfileImage(profileImage: string) {
         this.localStore.set("profileImage", profileImage);
     }
 
