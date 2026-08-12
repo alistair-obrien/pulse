@@ -1,6 +1,7 @@
 import { Component, ComponentModel } from "./Component";
 import { DateRow, type DateRowModel } from "./DateRow";
 import type { Div } from "./Div";
+import { PublishButton, type PublishButtonModel } from "./PublishButton";
 
 export class MyDayHeaderModel extends ComponentModel<MyDayHeader> {
     readonly component = MyDayHeader;
@@ -10,6 +11,7 @@ export class MyDayHeaderModel extends ComponentModel<MyDayHeader> {
     dateFadeDistance:number;
     heroAreaVisibleHeight:number;
     dateRowModel:DateRowModel;
+    publishButtonModel: PublishButtonModel;
 
     constructor(args: { 
         date: Date;
@@ -25,12 +27,14 @@ export class MyDayHeaderModel extends ComponentModel<MyDayHeader> {
         this.dateFadeThreshold = args.dateFadeThreshold;
         this.dateFadeDistance = args.dateFadeDistance;
         this.heroAreaVisibleHeight = args.heroAreaVisibleHeight
+        this.publishButtonModel = args.publishButtonModel;
         this.dateRowModel = args.dateRowModel;
     }
 }
 
 export class MyDayHeader extends Component<MyDayHeaderModel> {
     dateRow: DateRow;
+    publishButton: PublishButton;
 
     constructor() {
         super();
@@ -38,6 +42,9 @@ export class MyDayHeader extends Component<MyDayHeaderModel> {
 
         this.dateRow = new DateRow();
         this.root.append(this.dateRow.root);
+
+        this.publishButton = new PublishButton();
+        this.root.append(this.publishButton.root);
     }
 
     // HACKS
@@ -63,6 +70,7 @@ export class MyDayHeader extends Component<MyDayHeaderModel> {
 
     protected render(): void {
         this.dateRow.update(this.model.dateRowModel);
+        this.publishButton.update(this.model.publishButtonModel);
     }
 
     // Update Children too

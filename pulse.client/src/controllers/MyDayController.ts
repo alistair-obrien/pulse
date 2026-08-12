@@ -115,6 +115,8 @@ export class MyDayController {
         const journeyStep = await this.journeyController.getJourneyStep(newDate);
 
         const published = journeyStep?.published ?? false;
+        console.log(JSON.stringify(journeyStep));
+        console.log(published);
 
         this.model = new MyDayScreenModel({
             heroAreaVisibleHeight: HERO_AREA_VISIBLE_HEIGHT,

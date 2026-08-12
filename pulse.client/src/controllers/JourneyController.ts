@@ -217,7 +217,11 @@ export class JourneyController {
 
     async getJourneyStep(date: Date): Promise<JourneyStep | undefined> {
         let dateKey = toDateKey(date);
+
+        console.log("Hi");
+
         if (this.authService.isLoggedIn()) {
+                    console.log("Logged in yes");
             const journeyStepResponse = await this.api.getJourneyStep(dateKey);
             return journeyStepResponse?.journeyStep;
         } else {

@@ -59,6 +59,60 @@ h3 {
     color: var(--primary-text);
 }
 
+.publish-button {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    margin: 12px;
+    padding: 8px 12px;
+
+    align-self: flex-end;
+
+    background: var(--accent-secondary);
+    color: var(--primary-text-light-muted);
+
+    border: none;
+    border-radius: 999px;
+
+    box-shadow: var(--text-shadow);
+
+    font-size: 14px;
+    font-weight: 600;
+
+    z-index: 1;
+    cursor: pointer;
+}
+
+.publish-button i {
+    font-size: 17px;
+    color: var(--primary-text-light-muted);
+}
+
+.publish-button span {
+    font-size: 14px;
+}
+
+/* .publish-button {
+    z-index: 1;
+    position: absolute;
+    height: 100px;
+    width: 140px;
+    right: 4px;
+    top: 4px;
+    height: 40px;
+    background: red;
+}
+
+.publish-button i {
+    color: yellow;
+}
+
+.publish-button span {
+    color: yellow;
+    z-index: 1;
+} */
+
 .text-area {
     display: flex;
     align-items: flex-start;

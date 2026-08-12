@@ -77,7 +77,7 @@ public class JourneyStepsController : PulseController
     }
 
     // Returns the journey step for the user from date
-    [HttpGet("date/{date}")]
+    [HttpGet("{date}")]
     public async Task<IActionResult> Get(DateOnly date)
     {
         var journeyStep = await _db.JourneySteps

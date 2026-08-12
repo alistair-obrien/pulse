@@ -11,6 +11,7 @@ import { HeroArea, HeroAreaModel } from "../components/HeroArea";
 
 // Utils
 import * as DateUtils from "../../utils/DateUtils";
+import { PublishButton } from "../components/PublishButton";
 
 export class MyDayScreenModel extends ComponentModel<MyDayScreen> {
     readonly component = MyDayScreen;
@@ -70,7 +71,8 @@ export class MyDayScreen extends Component<MyDayScreenModel> {
         // The content inside the screen
         this.content = new Div();
         this.content.className = "content";
-        
+
+
         // The header and hero area
         this.header = new MyDayHeader();
         this.header.setContentRoot(this.content);
