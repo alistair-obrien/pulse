@@ -1,4 +1,5 @@
 
+
 export class TextBlock {
     readonly root: HTMLElement;
 

@@ -7,7 +7,9 @@ body {
     align-items: center;
     flex-direction: column;
 
-    font-family: "Manrope", sans-serif;
+    font-family: "Manrope";
+    /* font-family: "Josefin Sans"; */
+    /* letter-spacing: 0.1px; */
     font-size: small;
 
     color: var(--secondary-muted-text);
@@ -103,6 +105,21 @@ h3 {
     word-break: break-word;     /* Prevent long words/URLs overflowing */
     line-height: 1.5;
 }
+
+.reflections-text {
+    text-align: left;
+    margin: 0%;
+    color: var(--accent-primary);
+    
+    font-family: "Josefin Sans";
+    font-size: 16px;
+    line-height: 17px;
+    word-spacing: -2px;
+
+    border-left: 2px var(--accent-primary) solid;
+    padding-left: 10px;
+}
+
 
 .metric-grid-3 {
     display: flex;

@@ -15,6 +15,7 @@ import { CardIdHeaderModel } from "../ui/components/CardIdHeader";
 import { ActionButtonModel } from "../ui/components/ActionButton";
 import { JourneyStepGroupModel } from "../ui/components/JourneyStepGroup";
 import type { PulseApp } from "../ui/PulseApp";
+import { ReflectionTextModel } from "../ui/components/ReflectionText";
 
 const DEFAULT_JOURNEY_STEP_METRICS  = [
     MetricTypeIds.Reflection,
@@ -100,7 +101,7 @@ export class JourneyController {
             journeyStepsCard.card.content.push(idHeader);
 
             const reflections = this.metricsRepository.resolveMetric(element.date, MetricTypeIds.Reflection);
-            const reflectionTextModel = new MetricTextModel({value: reflections})
+            const reflectionTextModel = new ReflectionTextModel({text: reflections})
             journeyStepsCard.card.content.push(reflectionTextModel);
 
             const nutritionRowModel = new DivModel({ className: "row" });
@@ -159,7 +160,7 @@ export class JourneyController {
             })
             actionRowModel.content.push(leftGroup);
             const editActBtn = new ActionButtonModel({
-                iconClass: ICONS.EditTextField,
+                iconClass: ICONS.Edit,
                 labelStr: "",
                 onClick: () => {
                     this.pulseApp.openMyDayAtDate(element.date)

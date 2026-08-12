@@ -19,8 +19,6 @@ if (platform != "web")
 
 let apiBase = import.meta.env.VITE_API_URL;
 
-console.log("API URL:", apiBase);
-
 if (!apiBase) {
     throw new Error("VITE_API_URL is not configured");
 }
@@ -44,9 +42,6 @@ if (platform !== "web" && apiUrl.hostname === "api.localhost") {
     apiBase = apiUrl.toString();
 }
 
-console.log("API URL resolved:", JSON.stringify(apiBase));
-
-
 declare const __APP_SOURCE__: string;
 const appConfig:AppConfig = {
     appSource: __APP_SOURCE__,
@@ -57,21 +52,9 @@ const appConfig:AppConfig = {
     splashEnabled: import.meta.env.VITE_SPLASH_ENABLED === "true",
     showDebugVersionAnnotation: import.meta.env.VITE_VERSION_TEXT_ENABLED === "true",
     socialLoginIds: {
-        googleWebClientId: "945193684598-alu18k11ei67297aj839cejoekpb6flb.apps.googleusercontent.com"
+        googleWebClientId: import.meta.env.VITE_GOOGLE_LOGIN_WEBCLIENT_ID
     }
 }
-
-// import.meta.env.VITE_GOOGLE_LOGIN_WEBCLIENT_ID
-
-const googleClientId =
-    import.meta.env.VITE_GOOGLE_LOGIN_WEBCLIENT_ID;
-
-console.error(
-    "Google Web Client ID:",
-    googleClientId
-        ? googleClientId
-        : "MISSING"
-);
 
  const pulseApp = new PulseApp(appConfig);
  await pulseApp.start();
