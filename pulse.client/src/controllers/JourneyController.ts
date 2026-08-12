@@ -16,6 +16,7 @@ import { ActionButtonModel } from "../ui/components/ActionButton";
 import { JourneyStepGroupModel } from "../ui/components/JourneyStepGroup";
 import type { PulseApp } from "../ui/PulseApp";
 import { ReflectionTextModel } from "../ui/components/ReflectionText";
+import type { UserDataRepository } from "../repositories/UserDataRepository";
 
 const DEFAULT_JOURNEY_STEP_METRICS  = [
     MetricTypeIds.Reflection,
@@ -35,13 +36,15 @@ export class JourneyController {
     screen:JourneyScreen;
 
     private readonly metricsRepository:MetricsRepository;
+    private readonly userRepository:UserDataRepository;
     private readonly authService:AuthService;
     private readonly api:API;
     private readonly pulseApp:PulseApp;
 
 
     constructor(args: {
-        metricsRepository: MetricsRepository, 
+        metricsRepository: MetricsRepository,
+        userDataRepository: UserDataRepository,
         authService: AuthService,
         api:API,
         pulseApp:PulseApp
@@ -49,6 +52,7 @@ export class JourneyController {
     ) {
 
         this.metricsRepository = args.metricsRepository;
+        this.userRepository = args.userDataRepository;
         this.authService = args.authService;
         this.api = args.api;
         this.pulseApp = args.pulseApp;
@@ -219,7 +223,7 @@ export class JourneyController {
         // Local Construction
         } else {
         journeySteps = [];
-        
+
         const today = new Date();
         for (let i = 0; i < 10; i++) {
                 const selDate = new Date(today);
@@ -232,10 +236,10 @@ export class JourneyController {
                 const journeyStep = JourneyStep.fromJson({
                     id: "local",
                     date: dateKey,
-                    userName: "Ali",
-                    userProfilePicture: "",
+                    userName: this.userRepository.getUserData().displayName,
+                    userProfilePicture: this.userRepository.getUserData().profileImage,
                     liked: true,
-                    likesCount: 42,
+                    likesCount: 0,
                     comments: [],
                     metrics,
                 });

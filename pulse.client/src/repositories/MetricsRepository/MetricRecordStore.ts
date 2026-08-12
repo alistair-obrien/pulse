@@ -1,15 +1,10 @@
 import { MetricRecord } from "./MetricRecord";
 import type { MetricTypeId, MetricTypes } from "../../models/MetricRegistry";
 import { toDateKey, type DateKey } from "../../utils/DateUtils";
+import { DataStore } from "../DataStore";
 
 
-export class MetricRecordStore {
-
-    private readonly storagePrefix: string;
-
-    constructor(storagePrefix: string) {
-        this.storagePrefix = storagePrefix;
-    }
+export class MetricRecordStore extends DataStore {
 
     private loadedDates = new Set<DateKey>();
     private metricRecordsByDate: Record<

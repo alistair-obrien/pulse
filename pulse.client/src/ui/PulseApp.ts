@@ -37,6 +37,8 @@ import { GoogleAuthProvider } from '../services/AuthProviders/GoogleAuthProvider
 import { API } from '../api/API';
 import { APIClient } from '../api/APIClient';
 import { fromDateKey } from '../utils/DateUtils';
+import { UserDataRepository } from '../repositories/UserDataRepository';
+import { CloudUserDataSyncService } from '../services/CloudUserDataSyncService';
 export class PulseApp {
 
     private readonly version_tag:VersionTag;
@@ -54,15 +56,19 @@ export class PulseApp {
         this.splashEnabled = appConfig.splashEnabled;
         this.showDebugVersionAnnotation = appConfig.showDebugVersionAnnotation;
     
-        // Repositories
-        const metricsRepository:MetricsRepository = new MetricsRepository();
+        // >>> Repositories <<<
+        const metricsRepository:MetricsRepository = new MetricsRepository(appConfig);
+        const userDataRepository:UserDataRepository = new UserDataRepository(appConfig, "local_user"); // Later we should wrap these in a session object so we can manage multi users. And then load the last user id from local storage
+
         const api:API = new API(); // HACK. We attach the client after auth is ready
-        
+
         const authService:AuthService = new AuthService(appConfig, api);
         authService.addProvider(new GoogleAuthProvider(appConfig.socialLoginIds.googleWebClientId, appConfig.platform, api));
         
         api.attachClient(new APIClient(appConfig.apiBase, authService))
+        // HACK end
 
+        // >>> Sync Services <<<
         const cloudMetricsSyncService:CloudMetricsSyncService = new CloudMetricsSyncService(metricsRepository, authService, api);
         let deviceMetricsSyncService:DeviceMetricsSyncService | undefined = undefined; // Can be undefined on web.
         
@@ -77,11 +83,15 @@ export class PulseApp {
         const extAPIMetricsSyncServices:ExternalAPIMetricsSyncService[] = [];
         extAPIMetricsSyncServices.push(new HEVYAPIMetricsSyncService(metricsRepository));
 
+        const userDataSyncService:CloudUserDataSyncService = new CloudUserDataSyncService(userDataRepository, authService, api);
+
+        // >>> Other Services <<<
         const imageService:ImageService = new ImageService();
         
-        // Controllers
+        // >>> Controllers <<<
         this.journeyController = new JourneyController({
             metricsRepository: metricsRepository, 
+            userDataRepository: userDataRepository,
             authService: authService, 
             api: api,
             pulseApp: this
@@ -98,7 +108,12 @@ export class PulseApp {
 
             imageService: imageService
         });
-        this.meController = new MeController({ authService: authService, externalAPIServices: extAPIMetricsSyncServices });
+        this.meController = new MeController({ 
+            authService: authService, 
+            externalAPIServices: extAPIMetricsSyncServices, 
+            userDataRepository: userDataRepository,
+            userDataSyncService: userDataSyncService
+        });
 
         // >>> Build DOM
         const app = document.createElement("div");

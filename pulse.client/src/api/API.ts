@@ -1,5 +1,6 @@
 import { JourneyStep } from "../models/JourneyStep";
 import type { MetricTypeId, MetricTypes } from "../models/MetricRegistry";
+import type { UserData } from "../repositories/UserDataRepository/UserData";
 import type { GoogleCredential } from "../services/AuthProviders/Google/GoogleAuthCredential";
 import type { DateKey } from "../utils/DateUtils";
 import type { APIClient } from "./APIClient";
@@ -44,7 +45,7 @@ export class API {
         dateKey: DateKey,
         value: Partial<MetricTypes>
     ): Promise<boolean> {
-        return this.apiClient.put(`/api/metrics/${dateKey}/${value}`);
+        return this.apiClient.put(`/api/metrics/${dateKey}`, value);
     }
 
     // >>> AUTH <<<
@@ -61,7 +62,7 @@ export class API {
     }
 
     async refresh(request: RefreshRequest): Promise<LoginResponse> {
-        return this.apiClient.post("api/auth/refresh", request);
+        return this.apiClient.post("/api/auth/refresh", request);
     }
 
     // >>> JOURNEY <<<
@@ -88,6 +89,15 @@ export class API {
 
     async putJournalStep(dateKey: DateKey): Promise<boolean> {
         return this.apiClient.put(`/api/journeysteps/${dateKey}`); 
+    }
+
+    // >>> USER DATA <<<
+    async getUserData(): Promise<UserData | null> {
+        return this.apiClient.get("/api/userdata");
+    }
+
+    async setUserData(userData: UserData): Promise<boolean> {
+        return this.apiClient.put("/api/userdata", userData);
     }
 }
 

@@ -1,3 +1,4 @@
+import type { UserDataRepository } from "../repositories/UserDataRepository";
 import type { AuthService } from "../services/AuthService";
 import type { ExternalAPIMetricsSyncService } from "../services/ExternalAPIMetricsSyncService";
 import { ActionButtonModel } from "../ui/components/ActionButton";
@@ -6,6 +7,7 @@ import { CardHeaderModel } from "../ui/components/CardHeader";
 import { ICONS } from "../ui/components/ICONS";
 import { MetricTextInputFieldModel } from "../ui/components/MetricTextInputField";
 import { MeScreen, MeScreenModel } from "../ui/screens/Me";
+import type { CloudUserDataSyncService } from "../services/CloudUserDataSyncService";
 
 const loginProvidernNames: Record<string, string> = {
     google: "Google",
@@ -21,20 +23,24 @@ export class MeController {
     screen:MeScreen;
 
     authService:AuthService;
-
     externalAPIServices:ExternalAPIMetricsSyncService[];
+    userDataRepository: UserDataRepository;
+    userDataSyncService: CloudUserDataSyncService;
 
     constructor(
         args: {
             authService:AuthService,
-            externalAPIServices: ExternalAPIMetricsSyncService[]
+            externalAPIServices: ExternalAPIMetricsSyncService[],
+            userDataSyncService: CloudUserDataSyncService,
+            userDataRepository: UserDataRepository
         }
     ) {
         this.screen = new MeScreen();
         
         this.authService = args.authService;
-
         this.externalAPIServices = args.externalAPIServices;
+        this.userDataSyncService = args.userDataSyncService;
+        this.userDataRepository = args.userDataRepository;
 
         this.model = new MeScreenModel({ cards: [] });
 
@@ -83,6 +89,34 @@ export class MeController {
             }));            
             this.model.cards.push(extAPIServiceCard);
         });
+
+        const profileCard = new CardModel({ content: [] });
+
+        profileCard.content.push(
+            new CardHeaderModel({
+                title: "Profile",
+                iconClass: ICONS.None
+            })
+        );
+
+        profileCard.content.push(
+            new MetricTextInputFieldModel({
+                placeholderText: "Username",
+                getter: () => this.userDataRepository.getUserData().displayName ?? "",
+                setter: (value: string) =>
+                    this.userDataRepository.setDisplayName(value)
+            })
+        );
+
+        profileCard.content.push(
+            new ActionButtonModel({
+                iconClass: ICONS.CloudSync,
+                labelStr: "save",
+                onClick: () => this.userDataSyncService.sync()
+            })
+        )
+
+        this.model.cards.push(profileCard);
     }
 
     async logout() {

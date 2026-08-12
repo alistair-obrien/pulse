@@ -5,22 +5,26 @@ import {
     type MetricTypes
 } from "../models/MetricRegistry";
 import type { DateKey } from "../utils/DateUtils";
-
-const ENV = import.meta.env.VITE_ENVIRONMENT;
-
-const storagePrefix = (() => {
-    return `pulse_${ENV}`
-})();
+import type { AppConfig } from "../AppConfig";
 
 export class MetricsRepository {
-    private readonly userEditsStore = new MetricRecordStore(`${storagePrefix}:user:`);
-    private readonly deviceCacheStore = new MetricRecordStore(`${storagePrefix}:device:`);
-    private readonly cloudCacheStore = new MetricRecordStore(`${storagePrefix}:cloud:`);
 
-    constructor() {
+    private readonly storagePrefix:string; 
+ 
+    private readonly userEditsStore:MetricRecordStore;
+    private readonly deviceCacheStore:MetricRecordStore;
+    private readonly cloudCacheStore:MetricRecordStore;
+
+    constructor(appConfig:AppConfig) {
+        this.storagePrefix = `pulse_${appConfig.environment}`
+
         const today = new Date();
         const oneWeekAgo = new Date(today);
         oneWeekAgo.setDate(today.getDate() - 7);
+
+        this.userEditsStore = new MetricRecordStore(`${this.storagePrefix}:user:`);
+        this.deviceCacheStore = new MetricRecordStore(`${this.storagePrefix}:device:`);
+        this.cloudCacheStore = new MetricRecordStore(`${this.storagePrefix}:cloud:`);
 
         this.userEditsStore.Preload(oneWeekAgo, today);
         this.deviceCacheStore.Preload(oneWeekAgo, today);
