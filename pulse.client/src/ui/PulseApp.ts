@@ -108,6 +108,7 @@ export class PulseApp {
             authService: authService, 
             externalAPIServices: extAPIMetricsSyncServices,
             cloudSyncService: cloudSyncService,
+            deviceMetricsSyncService: deviceMetricsSyncService
         });
 
         // >>> Build DOM

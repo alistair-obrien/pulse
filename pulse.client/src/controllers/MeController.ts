@@ -9,6 +9,7 @@ import { MeScreen, MeScreenModel } from "../ui/screens/Me";
 import { ProfileThumbnailModel } from "../ui/components/ProfileThumbnail";
 import type { UserSession } from "../UserSession";
 import type { CloudSyncService } from "../services/CloudSyncService";
+import type { DeviceMetricsSyncService } from "../services/DeviceMetricsSyncService";
 
 const loginProvidernNames: Record<string, string> = {
     google: "Google",
@@ -27,21 +28,24 @@ export class MeController {
     private readonly authService:AuthService;
     private readonly externalAPIServices:ExternalAPIMetricsSyncService[];
     private readonly cloudSyncService: CloudSyncService;
+    private readonly deviceMetricsSyncService: DeviceMetricsSyncService | undefined;
 
     constructor(
         args: {
             userSession:UserSession,
             authService:AuthService,
             externalAPIServices: ExternalAPIMetricsSyncService[],
-            cloudSyncService: CloudSyncService
+            cloudSyncService: CloudSyncService,
+            deviceMetricsSyncService?: DeviceMetricsSyncService
         }
     ) {
         this.screen = new MeScreen();
         
+        this.userSession = args.userSession;
         this.authService = args.authService;
         this.externalAPIServices = args.externalAPIServices;
         this.cloudSyncService = args.cloudSyncService;
-        this.userSession = args.userSession;
+        this.deviceMetricsSyncService = args.deviceMetricsSyncService;
 
         this.model = new MeScreenModel({ cards: [] });
 
@@ -147,6 +151,14 @@ export class MeController {
         );
 
         this.model.cards.push(profileCard);
+
+        const deviceSyncCard = new CardModel({ content: [] });
+        this.model.cards.push(deviceSyncCard);
+
+        deviceSyncCard.content.push(new CardHeaderModel({ title: "Device Sync", iconClass: ICONS.DeviceSync }))
+
+        deviceSyncCard.content.push(new ActionButtonModel({ iconClass: "", labelStr: "Configure", onClick: () => this.configureDeviceSync() }))
+                // TODO: Add a button to configure permissions
     }
 
     async refresh() {
@@ -261,4 +273,10 @@ export class MeController {
             image.src = URL.createObjectURL(file);
         });
     }
+
+    
+    configureDeviceSync(): any {
+        this.deviceMetricsSyncService?.configure();
+    }
 }
+

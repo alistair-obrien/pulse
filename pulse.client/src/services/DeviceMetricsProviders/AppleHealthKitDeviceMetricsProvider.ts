@@ -12,7 +12,11 @@ export class HealthKitSyncService implements DeviceMetricsSyncService {
     async initialize(): Promise<void> {
         console.log("Health Kit not yet implemented.");
     }
-    
+
+    configure(): void {
+        
+    }
+
     async isAvailable(): Promise<boolean> {
         return false;
     }

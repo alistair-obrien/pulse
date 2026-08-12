@@ -41,7 +41,7 @@ export class PublishButton extends Component<PublishButtonModel> {
         if (this.model.published) {
             this.root.classList.add("published");
             this.icon.className = ICONS.PublishedToServer;
-            this.label.textContent = "Published";
+            this.label.textContent = "Update";
         }
         else {
             this.root.classList.remove("published");

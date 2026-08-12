@@ -17,6 +17,8 @@ interface HealthConnectPlugin {
     
     requestHealthConnectPermissions() : Promise<{}>;
 
+    openHealthConnectSettings() : Promise<void>;
+
     readSteps(options:ReadStepsOptions) : Promise<ReadStepsResult>;
 
     readSleep(options:ReadSleepOptions) : Promise<ReadSleepResult>;
@@ -159,6 +161,8 @@ export class HealthConnectSyncService implements DeviceMetricsSyncService {
     }
 
     async initialize() {
+        if (this.initialized)
+            return;
 
         const response = await HealthConnect.isAvailable()
         
@@ -167,15 +171,7 @@ export class HealthConnectSyncService implements DeviceMetricsSyncService {
             console.log(JSON.stringify(hasPerms));
 
             if (!hasPerms.has_permissions) {
-                console.log("Requesting permissions...");
-
-                const result = await HealthConnect.requestHealthConnectPermissions();
-
-                console.log(JSON.stringify(result));
-
-                const after = await HealthConnect.hasHealthConnectPermissions();
-
-                console.log(JSON.stringify(after));
+                await this.openPermissions();
             }
 
             this._isAvailable = true;
@@ -184,21 +180,39 @@ export class HealthConnectSyncService implements DeviceMetricsSyncService {
         this.initialized = true;
     }
     
+    private async openPermissions() {
+        console.log("Requesting permissions...");
+
+        const result = await HealthConnect.requestHealthConnectPermissions();
+
+        console.log(JSON.stringify(result));
+
+        const after = await HealthConnect.hasHealthConnectPermissions();
+
+        console.log(JSON.stringify(after));
+    }
+
     async isAvailable(): Promise<boolean> {
 
         await this.ensureInitialized();
         return this._isAvailable;
     }
     
+    async configure(): Promise<void> {
+        await HealthConnect.openHealthConnectSettings();
+        // await this.openPermissions();
+    }
+
     async ensureInitialized() {
         if (!this.initialized) {
-            this.initialize();            
+            await this.initialize();            
         }
     }
 
     async sync(date: Date) {
 
         if (this.syncing) {
+            console.log("Health Sync not already syncing.");
             return;
         }
 
@@ -208,8 +222,14 @@ export class HealthConnectSyncService implements DeviceMetricsSyncService {
         }
 
         try {
+            this.syncing = true;
             const dateRange = getLocalDayUtcRange(date);
             const dateKey = toDateKey(date);
+
+
+            console.log("SYNC DATE", date.toString());
+            console.log("START UTC", JSON.stringify(dateRange.startUtc));
+            console.log("END UTC", JSON.stringify(dateRange.endUtc));
 
             const [
                 steps,
@@ -230,6 +250,8 @@ export class HealthConnectSyncService implements DeviceMetricsSyncService {
                 nutrition
             };
 
+            console.log(JSON.stringify(healthData));
+
             for (const { metric, value } of IMPORTERS) {
                 this.userSession.metrics.setDeviceMetric(
                     dateKey,
@@ -246,4 +268,3 @@ export class HealthConnectSyncService implements DeviceMetricsSyncService {
         }
     }
 }
-

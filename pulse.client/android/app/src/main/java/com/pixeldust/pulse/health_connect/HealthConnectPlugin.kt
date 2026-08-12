@@ -1,5 +1,6 @@
 package com.pixeldust.pulse.health_connect
 
+import android.content.Intent
 import com.getcapacitor.JSObject
 import com.getcapacitor.Plugin
 import com.getcapacitor.PluginCall
@@ -69,6 +70,21 @@ class HealthConnectPlugin : Plugin() {
     fun requestHealthConnectPermissions(call: PluginCall) {
         pendingPermissionCall = call
         permissionLauncher.launch(PERMISSIONS)
+    }
+
+    @PluginMethod
+    fun openHealthConnectSettings(call: PluginCall) {
+        try {
+            val intent = Intent(
+                HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS
+            )
+
+            activity.startActivity(intent)
+
+            call.resolve()
+        } catch (e: Exception) {
+            call.reject(e.message, e)
+        }
     }
 
 
