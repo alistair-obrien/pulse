@@ -20,7 +20,7 @@ import { type MetricTypeId, type MetricTypes, MetricTypeIds } from "../models/Me
 import type { UserSession } from "../UserSession";
 
 // Services
-import type { CloudMetricsSyncService } from "../services/CloudMetricsSyncService";
+import type { CloudSyncService } from "../services/CloudSyncService";
 import type { DeviceMetricsSyncService } from "../services/DeviceMetricsSyncService";
 import type { ExternalAPIMetricsSyncService } from "../services/ExternalAPIMetricsSyncService";
 import type { ImageService } from "../services/ImageService";
@@ -45,6 +45,7 @@ import type { JourneyController } from "./JourneyController";
 import { getHoursAndMinutesStrFromTime, toDateKey } from "../utils/DateUtils";
 import { MetricTextInputFieldModel } from "../ui/components/MetricTextInputField";
 import { DateRowModel } from "../ui/components/DateRow";
+import { PublishButtonModel } from "../ui/components/PublishButton";
 
 export class MyDayController {
     model:MyDayScreenModel;
@@ -56,7 +57,7 @@ export class MyDayController {
     private readonly journeyController: JourneyController;
 
     // Services
-    private readonly cloudMetricsSyncService?: CloudMetricsSyncService;
+    private readonly cloudMetricsSyncService?: CloudSyncService;
     private readonly deviceMetricsSyncService?: DeviceMetricsSyncService;
     private readonly extAPIMetricsSyncServices: ExternalAPIMetricsSyncService[];
     private readonly imageService: ImageService;
@@ -67,7 +68,7 @@ export class MyDayController {
             
             journeyController: JourneyController,
             
-            cloudMetricsSyncService?: CloudMetricsSyncService,
+            cloudMetricsSyncService?: CloudSyncService,
             deviceMetricsSyncService?: DeviceMetricsSyncService,
             extAPIMetricsSyncServices: ExternalAPIMetricsSyncService[],
 
@@ -111,6 +112,10 @@ export class MyDayController {
 
         const image = this.imageService.getRandomImageUrl(newDate.getFullYear() + newDate.getMonth() + newDate.getDate());
 
+        const journeyStep = await this.journeyController.getJourneyStep(newDate);
+
+        const published = journeyStep?.published ?? false;
+
         this.model = new MyDayScreenModel({
             heroAreaVisibleHeight: HERO_AREA_VISIBLE_HEIGHT,
             heroAreaTotalHeight: HERO_AREA_TOTAL_HEIGHT,
@@ -121,6 +126,12 @@ export class MyDayController {
                 dateFadeThreshold: DATE_FADE_THRESHOLD,
                 dateFadeDistance: DATE_FADE_DIST,
                 heroAreaVisibleHeight: HERO_AREA_VISIBLE_HEIGHT,
+                publishButtonModel: new PublishButtonModel( 
+                    {
+                        published: published,
+                        onClick: () => this.publishAction(published)
+                    }
+                ), 
                 dateRowModel: new DateRowModel({
                     date: newDate,
                     minDate: minDate,
@@ -141,6 +152,15 @@ export class MyDayController {
                 content: []
             })
         })
+
+        // // >>> Publish Button <<<
+        // this.model.push(
+        //     new ActionButtonModel({
+        //         iconClass: ICONS.PublishToServer,
+        //         labelStr: "Publish",
+        //         onClick: () => this.publish()
+        //     })
+        // );
 
         // >>> Reflection Card <<<
         const reflectionsCard = new CardModel({
@@ -293,14 +313,6 @@ export class MyDayController {
         
         actionsRowModel.content.push(
             new ActionButtonModel({
-                iconClass: ICONS.PublishToServer,
-                labelStr: "Publish",
-                onClick: () => this.publish()
-            })
-        );
-
-        actionsRowModel.content.push(
-            new ActionButtonModel({
                 iconClass: ICONS.CopyText,
                 labelStr: "Copy Text",
                 onClick: () => this.copyAsTextToClipboard()
@@ -363,7 +375,7 @@ export class MyDayController {
         }
     }
 
-    async publish() {
+    async publishAction(published:boolean) {
         await this.journeyController.publish(this.model!.selectedDate); 
         // await Toast.show({ text: "Published!", duration: "short", position: "bottom" });
     }
@@ -426,6 +438,10 @@ export class MyDayController {
                 dateFadeThreshold: DATE_FADE_THRESHOLD,
                 dateFadeDistance: DATE_FADE_DIST,
                 heroAreaVisibleHeight: HERO_AREA_VISIBLE_HEIGHT,
+                publishButtonModel: new PublishButtonModel({
+                    published: false,
+                    onClick: () => null
+                }),
                 dateRowModel: new DateRowModel({
                     date: newDate,
                     minDate: newDate,

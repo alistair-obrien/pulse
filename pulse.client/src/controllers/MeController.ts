@@ -6,10 +6,9 @@ import { CardHeaderModel } from "../ui/components/CardHeader";
 import { ICONS } from "../ui/components/ICONS";
 import { MetricTextInputFieldModel } from "../ui/components/MetricTextInputField";
 import { MeScreen, MeScreenModel } from "../ui/screens/Me";
-import type { CloudUserDataSyncService } from "../services/CloudUserDataSyncService";
 import { ProfileThumbnailModel } from "../ui/components/ProfileThumbnail";
 import type { UserSession } from "../UserSession";
-import type { CloudMetricsSyncService } from "../services/CloudMetricsSyncService";
+import type { CloudSyncService } from "../services/CloudSyncService";
 
 const loginProvidernNames: Record<string, string> = {
     google: "Google",
@@ -27,29 +26,26 @@ export class MeController {
     private readonly userSession:UserSession;
     private readonly authService:AuthService;
     private readonly externalAPIServices:ExternalAPIMetricsSyncService[];
-    private readonly userDataSyncService: CloudUserDataSyncService;
-    private readonly metricsDataSyncService: CloudMetricsSyncService;
+    private readonly cloudSyncService: CloudSyncService;
 
     constructor(
         args: {
             userSession:UserSession,
             authService:AuthService,
             externalAPIServices: ExternalAPIMetricsSyncService[],
-            userDataSyncService: CloudUserDataSyncService,
-            metricsDataSyncService: CloudMetricsSyncService
+            cloudSyncService: CloudSyncService
         }
     ) {
         this.screen = new MeScreen();
         
         this.authService = args.authService;
         this.externalAPIServices = args.externalAPIServices;
-        this.userDataSyncService = args.userDataSyncService;
-        this.metricsDataSyncService = args.metricsDataSyncService;
+        this.cloudSyncService = args.cloudSyncService;
         this.userSession = args.userSession;
 
         this.model = new MeScreenModel({ cards: [] });
 
-        this.userDataSyncService.sync();
+        this.cloudSyncService.sync(new Date()); // Kinda weird to pass a date
         this.buildModel();
         this.screen.update(this.model);
     }
@@ -73,8 +69,7 @@ export class MeController {
                     iconClass: loginProviderIcons[provider],
                     onClick: async () => { 
                         await this.login(provider);
-                        await this.userDataSyncService.sync();
-                        await this.metricsDataSyncService.sync(new Date());
+                        await this.cloudSyncService.sync(new Date());
                         this.refresh(); 
                     } 
                 }))
@@ -147,7 +142,7 @@ export class MeController {
             new ActionButtonModel({
                 iconClass: ICONS.CloudSync,
                 labelStr: "save",
-                onClick: () => this.userDataSyncService.sync()
+                onClick: () => this.cloudSyncService.sync(new Date())
             })
         );
 

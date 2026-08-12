@@ -2,6 +2,7 @@ import { metricsRegistry, type MetricTypeId, type MetricTypes } from "./MetricRe
 
 export class JourneyStep {
     userId = "";
+    published = false;
     date = ""; // 2026-07-12
     userName = "";
     userProfilePicture = "";
@@ -19,6 +20,7 @@ export class JourneyStep {
         const step = new JourneyStep();
 
         step.userId = data.userId;
+        step.published = data.published;
         step.date = data.date;
         step.userName = data.userName;
         step.userProfilePicture = data.userProfilePicture;

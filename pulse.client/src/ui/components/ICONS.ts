@@ -21,6 +21,7 @@ export const ICONS = {
     DeviceSync: "ri-smartphone-fill",
     ExtAPISync: "ri-bubble-chart-fill",
     PublishToServer: "ri-send-plane-fill",
+    PublishedToServer: "ri-send-plane-fill",
     CopyText: "ri-file-copy-2-fill",
 
     // Cards

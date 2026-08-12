@@ -60,6 +60,7 @@ public class JourneyStepsController : PulseController
 
             records.Add(new JourneyStepRecord(
                 userId: journeyStep.UserId,
+                published: true,
                 date: journeyStep.Date,
                 userName: user.DisplayName ?? "",
                 userProfilePicture: user.ProfileImage ?? "",
@@ -73,6 +74,37 @@ public class JourneyStepsController : PulseController
             page,
             pages: 1,
             records));
+    }
+
+    // Returns the journey step for the user from date
+    [HttpGet("date/{date}")]
+    public async Task<IActionResult> Get(DateOnly date)
+    {
+        var journeyStep = await _db.JourneySteps
+            .Include(x => x.Metrics)
+            .SingleOrDefaultAsync(x =>
+                x.UserId == UserId &&
+                x.Date == date);
+
+        if (journeyStep == null)
+            return Ok(null);
+
+        var metricData = journeyStep.Metrics
+            .Select(x => new JourneyMetricRecord(
+                metricTypeId: x.MetricTypeId,
+                value: JsonSerializer.Deserialize<JsonElement>(x.JsonValue)))
+            .ToArray();
+
+        return Ok(new JourneyStepRecord(
+            userId: journeyStep.UserId,
+            published: true,
+            date: journeyStep.Date,
+            userName: "",
+            userProfilePicture: "",
+            liked: false,
+            likesCount: 0,
+            comments: [],
+            metricData: metricData));
     }
 
     [HttpPut("{date}")]

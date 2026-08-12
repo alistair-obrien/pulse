@@ -2,6 +2,7 @@
 
 public record JourneyStepRecord(
     string userId,
+    bool published,
     DateOnly date,
     string userName,
     string userProfilePicture,

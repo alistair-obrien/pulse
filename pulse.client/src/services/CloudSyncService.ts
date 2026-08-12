@@ -7,7 +7,7 @@ import type { AuthService } from "./AuthService";
 import type { API } from "../api/API";
 import type { UserSession } from "../UserSession";
 
-export class CloudMetricsSyncService {
+export class CloudSyncService {
 
     private readonly userSession:UserSession;
     private readonly authService:AuthService;
@@ -30,6 +30,14 @@ export class CloudMetricsSyncService {
             await this.uploadMetrics(dateKey);
             this.userSession.metrics.clearPendingChanges(dateKey);
             await this.downloadMetrics(dateKey);
+
+            await this.uploadUserData();
+            this.userSession.userData.clearPendingChanges();
+            await this.downloadUserData();
+
+            // await this.uploadJourneyStep(dateKey);
+            // this.userSession.journey.clearPendingChanges();
+            // await this.downloadJourneyStep(dateKey);
 
             return true;
         } catch (e) {
@@ -63,4 +71,49 @@ export class CloudMetricsSyncService {
             })
         );
     }
+
+    private async uploadUserData() {
+        await this.api.setUserData(
+            this.userSession.userData.getUserDataToUpload()
+        );
+    }
+
+    private async downloadUserData() {
+        const userData = await this.api.getUserData();
+        console.log(JSON.stringify(userData));
+        if (userData) {
+            this.userSession.userData.setUserData(userData);
+        }
+    }
+
+    // private async uploadJourneyStep(dateKey: DateUtils.DateKey) {
+
+    //     const record =
+    //         this.userSession.journey.getPendingRecord(
+    //             DateUtils.fromDateKey(dateKey)
+    //         );
+
+    //     if (!record)
+    //         return;
+
+    //     await this.api.putJourneyStep(
+    //         dateKey,
+    //         record
+    //     );
+    // }
+
+    // private async downloadJourneyStep(dateKey: DateUtils.DateKey) {
+
+    //     const record =
+    //         await this.api.getJourneyStep(
+    //             dateKey
+    //         );
+
+    //     if (!record)
+    //         return;
+
+    //     this.userSession.journey.setCloud(
+    //         record
+    //     );
+    // }
 }

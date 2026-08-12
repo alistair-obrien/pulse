@@ -16,6 +16,7 @@ export class MyDayHeaderModel extends ComponentModel<MyDayHeader> {
         dateFadeThreshold:number;
         dateFadeDistance:number;
         heroAreaVisibleHeight:number;
+        publishButtonModel:PublishButtonModel;
         dateRowModel:DateRowModel;
     }) {
         super();

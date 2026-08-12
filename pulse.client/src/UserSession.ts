@@ -1,4 +1,5 @@
 import type { AppConfig } from "./AppConfig";
+import { JourneyStepRepository as JourneyStepRepository } from "./repositories/JourneyStepRepository";
 import { MetricsRepository } from "./repositories/MetricsRepository";
 import { UserDataRepository } from "./repositories/UserDataRepository";
 
@@ -8,6 +9,7 @@ export class UserSession {
 
     private metricsRepository!:MetricsRepository;
     private userDataRepository!:UserDataRepository;
+    private journeyStepRepository!:JourneyStepRepository;
 
     private readonly appConfig:AppConfig;
 
@@ -29,6 +31,10 @@ export class UserSession {
         return this.userDataRepository;
     }
 
+    get journey(): JourneyStepRepository {
+    return this.journeyStepRepository;
+}
+
     private changeUser(userId: string | null) {
 
         if (userId === null) {
@@ -46,6 +52,7 @@ export class UserSession {
 
         this.metricsRepository = new MetricsRepository(this.appConfig, prefix);
         this.userDataRepository = new UserDataRepository(this.appConfig, prefix);
+        this.journeyStepRepository = new JourneyStepRepository(this.appConfig, prefix);
     }
 
     setUser(userId: string) {

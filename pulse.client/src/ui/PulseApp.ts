@@ -17,7 +17,7 @@ import { type Component } from './components/Component';
 import { UserSession } from '../UserSession';
 
 // Services
-import { CloudMetricsSyncService } from '../services/CloudMetricsSyncService';
+import { CloudSyncService } from '../services/CloudSyncService';
 import { type DeviceMetricsSyncService } from '../services/DeviceMetricsSyncService';
 import { type ExternalAPIMetricsSyncService } from '../services/ExternalAPIMetricsSyncService';
 import { HEVYAPIMetricsSyncService } from '../services/ExternalAPIMetricsProviders/HEVYAPIMetricsProvider';
@@ -36,7 +36,6 @@ import { GoogleAuthProvider } from '../services/AuthProviders/GoogleAuthProvider
 import { API } from '../api/API';
 import { APIClient } from '../api/APIClient';
 import { fromDateKey } from '../utils/DateUtils';
-import { CloudUserDataSyncService } from '../services/CloudUserDataSyncService';
 
 export class PulseApp {
 
@@ -67,10 +66,8 @@ export class PulseApp {
         api.attachClient(new APIClient(appConfig.apiBase, authService))
         // HACK end
 
-
-
         // >>> Sync Services <<<
-        const cloudMetricsSyncService:CloudMetricsSyncService = new CloudMetricsSyncService(userSession, authService, api);
+        const cloudSyncService:CloudSyncService = new CloudSyncService(userSession, authService, api);
         let deviceMetricsSyncService:DeviceMetricsSyncService | undefined = undefined; // Can be undefined on web.
         
         if (appConfig.platform == 'android') {
@@ -83,8 +80,6 @@ export class PulseApp {
 
         const extAPIMetricsSyncServices:ExternalAPIMetricsSyncService[] = [];
         extAPIMetricsSyncServices.push(new HEVYAPIMetricsSyncService(userSession));
-
-        const userDataSyncService:CloudUserDataSyncService = new CloudUserDataSyncService(userSession, authService, api);
 
         // >>> Other Services <<<
         const imageService:ImageService = new ImageService();
@@ -102,18 +97,17 @@ export class PulseApp {
 
             journeyController: this.journeyController,
 
-            cloudMetricsSyncService: cloudMetricsSyncService,
+            cloudMetricsSyncService: cloudSyncService,
             deviceMetricsSyncService: deviceMetricsSyncService,
             extAPIMetricsSyncServices: extAPIMetricsSyncServices,
 
             imageService: imageService
         });
         this.meController = new MeController({ 
+            userSession: userSession,
             authService: authService, 
             externalAPIServices: extAPIMetricsSyncServices,
-            metricsDataSyncService: cloudMetricsSyncService,
-            userSession: userSession,
-            userDataSyncService: userDataSyncService
+            cloudSyncService: cloudSyncService,
         });
 
         // >>> Build DOM

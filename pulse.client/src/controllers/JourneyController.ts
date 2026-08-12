@@ -30,7 +30,6 @@ const DEFAULT_JOURNEY_STEP_METRICS  = [
 
 export class JourneyController {
 
-    // TODO
     model:JourneyScreenModel;
     screen:JourneyScreen;
 
@@ -206,10 +205,24 @@ export class JourneyController {
     }
 
     async publish(date: Date) {
-        let dateKey = toDateKey(date);
-        void dateKey;
+        const dateKey = toDateKey(date);
 
-        await this.api.putJournalStep(dateKey);
+        if (this.authService.isLoggedIn()) {
+            await this.api.putJournalStep(dateKey);
+        } else {
+            // Mark the local journey record as published.
+            // ...
+        }
+    }
+
+    async getJourneyStep(date: Date): Promise<JourneyStep | undefined> {
+        let dateKey = toDateKey(date);
+        if (this.authService.isLoggedIn()) {
+            const journeyStepResponse = await this.api.getJourneyStep(dateKey);
+            return journeyStepResponse?.journeyStep;
+        } else {
+            return undefined;
+        }
     }
 
     async getAllJourneySteps(date: Date) : Promise<JourneyStep[]> {

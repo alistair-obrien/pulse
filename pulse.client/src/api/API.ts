@@ -83,6 +83,17 @@ export class API {
         };
     }
 
+    async getJourneyStep(date: DateKey): Promise<GetJourneyStepResponse | null> {
+        const result = await this.apiClient.get<GetJourneyStepResponse>(
+            `/api/journeysteps/${date}`
+        );
+
+        if (!result)
+            return null;
+
+        return result;
+    }
+
     async likeJourneyStep(dateKey:DateKey, userId: string): Promise<{ liked: boolean }> {
         return this.apiClient.put(`/api/journeysteps/${dateKey}/${userId}/like`); 
     }
@@ -109,6 +120,10 @@ export interface GetJourneyStepsResponse {
     page: number;
     pages: number;
     journeySteps: JourneyStep[];
+}
+
+export interface GetJourneyStepResponse {
+    journeyStep: JourneyStep;
 }
 
 export interface EmailRegisterRequest {
