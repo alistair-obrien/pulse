@@ -95,16 +95,19 @@ public class JourneyStepsController : PulseController
                 value: JsonSerializer.Deserialize<JsonElement>(x.JsonValue)))
             .ToArray();
 
-        return Ok(new JourneyStepRecord(
-            userId: journeyStep.UserId,
-            published: true,
-            date: journeyStep.Date,
-            userName: "",
-            userProfilePicture: "",
-            liked: false,
-            likesCount: 0,
-            comments: [],
-            metricData: metricData));
+        return Ok(new
+        {
+            journeyStep = new JourneyStepRecord(
+                userId: journeyStep.UserId,
+                published: true,
+                date: journeyStep.Date,
+                userName: "",
+                userProfilePicture: "",
+                liked: false,
+                likesCount: 0,
+                comments: [],
+                metricData: metricData)
+        });
     }
 
     [HttpPut("{date}")]

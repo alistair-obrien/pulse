@@ -221,8 +221,9 @@ export class JourneyController {
         console.log("Hi");
 
         if (this.authService.isLoggedIn()) {
-                    console.log("Logged in yes");
+
             const journeyStepResponse = await this.api.getJourneyStep(dateKey);
+            console.log(JSON.stringify(journeyStepResponse));
             return journeyStepResponse?.journeyStep;
         } else {
             return undefined;
