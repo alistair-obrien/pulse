@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Pulse.Domain.Models;
+using System.Reflection.Emit;
 namespace Pulse.Infrastructure;
 
 public class PulseDbContext : IdentityDbContext<ApplicationUser>
@@ -15,6 +16,7 @@ public class PulseDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<Metric> Metrics => Set<Metric>();
     public DbSet<JourneyStep> JourneySteps => Set<JourneyStep>();
+    public DbSet<JourneyStepMetric> JourneyStepMetrics => Set<JourneyStepMetric>();
     public DbSet<JourneyLike> JourneyLikes => Set<JourneyLike>();
     public DbSet<JourneyComment> JourneyComments => Set<JourneyComment>();
 
@@ -44,10 +46,8 @@ public class PulseDbContext : IdentityDbContext<ApplicationUser>
             .HasForeignKey(m => m.UserId);
 
         builder.Entity<JourneyStep>()
-            .HasOne(j => j.Metric)
-            .WithOne(m => m.JourneyStep)
-            .HasForeignKey<JourneyStep>(j => j.MetricId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .HasIndex(x => new { x.UserId, x.Date })
+            .IsUnique();
 
         builder.Entity<JourneyLike>()
             .HasIndex(m => new

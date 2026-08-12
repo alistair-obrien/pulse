@@ -6,8 +6,6 @@ public class Metric
 
     public int Id { get; set; }
 
-    public JourneyStep? JourneyStep { get; set; }
-
     public DateOnly Date { get; set; }
 
     public string MetricTypeId { get; set; } = null!;

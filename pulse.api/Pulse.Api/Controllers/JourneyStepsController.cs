@@ -22,55 +22,47 @@ public class JourneyStepsController : PulseController
     [HttpGet("{page:int}")]
     public async Task<IActionResult> Get(int page)
     {
-        var publishedMetrics = await (
-            from journeyStep in _db.JourneySteps
-            join metric in _db.Metrics on journeyStep.MetricId equals metric.Id
-            join user in _db.Users on journeyStep.UserId equals user.Id
-            orderby metric.Date descending
-            select new
-            {
-                JourneyStepId = journeyStep.Id,
-                journeyStep.UserId,
-                DisplayName = user.DisplayName,
-                UserProfilePicture = user.ProfileImage,
-                Metric = metric
-            })
+        var journeySteps = await _db.JourneySteps
+            .Include(x => x.Metrics)
+            .OrderByDescending(x => x.Date)
+            .Skip(page * PageSize)
+            .Take(PageSize)
             .ToListAsync();
 
-        var grouped = publishedMetrics
-            .GroupBy(x => new
-            {
-                x.UserId,
-                x.Metric.Date
-            })
-            .Skip(page * PageSize)
-            .Take(PageSize);
+        var userIds = journeySteps
+            .Select(x => x.UserId)
+            .Distinct()
+            .ToList();
 
-        var journeySteps = new List<JourneyStepRecord>();
+        var users = await _db.Users
+            .Where(x => userIds.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id);
 
-        foreach (var group in grouped)
+        var records = new List<JourneyStepRecord>();
+
+        foreach (var journeyStep in journeySteps)
         {
-            var first = group.First();
-
-            var metricData = group
-                .Select(x => new JourneyMetricRecord(
-                    metricTypeId: x.Metric.MetricTypeId,
-                    value: JsonSerializer.Deserialize<JsonElement>(x.Metric.JsonValue)))
-                .ToArray();
-
             var likes = await _db.JourneyLikes
                 .Where(x =>
-                    x.JourneyUserId == first.UserId &&
-                    x.JourneyDate == first.Metric.Date)
+                    x.JourneyUserId == journeyStep.UserId &&
+                    x.JourneyDate == journeyStep.Date)
                 .ToListAsync();
 
             var liked = likes.Any(x => x.LikedByUserId == UserId);
 
-            journeySteps.Add(new JourneyStepRecord(
-                userId: first.UserId,
-                date: first.Metric.Date,
-                userName: first.DisplayName ?? "",
-                userProfilePicture: first.UserProfilePicture,
+            var metricData = journeyStep.Metrics
+                .Select(x => new JourneyMetricRecord(
+                    metricTypeId: x.MetricTypeId,
+                    value: JsonSerializer.Deserialize<JsonElement>(x.JsonValue)))
+                .ToArray();
+
+            var user = users[journeyStep.UserId];
+
+            records.Add(new JourneyStepRecord(
+                userId: journeyStep.UserId,
+                date: journeyStep.Date,
+                userName: user.DisplayName ?? "",
+                userProfilePicture: user.ProfileImage ?? "",
                 liked: liked,
                 likesCount: likes.Count,
                 comments: [],
@@ -80,31 +72,46 @@ public class JourneyStepsController : PulseController
         return Ok(new GetMetricResponse(
             page,
             pages: 1,
-            journeySteps));
+            records));
     }
 
-    //, PutJourneyStepRequest request - For later
     [HttpPut("{date}")]
     public async Task<IActionResult> Put(DateOnly date)
     {
         var metrics = await _db.Metrics
-            .Where(x => x.UserId == UserId && x.Date == date)
+            .Where(x =>
+                x.UserId == UserId &&
+                x.Date == date)
             .ToListAsync();
 
-        var publishedMetricIds = await _db.JourneySteps
-            .Where(x => x.UserId == UserId)
-            .Select(x => x.MetricId)
-            .ToHashSetAsync();
+        var journeyStep = await _db.JourneySteps
+            .Include(x => x.Metrics)
+            .SingleOrDefaultAsync(x =>
+                x.UserId == UserId &&
+                x.Date == date);
+
+        if (journeyStep == null)
+        {
+            journeyStep = new JourneyStep
+            {
+                UserId = UserId,
+                Date = date
+            };
+
+            _db.JourneySteps.Add(journeyStep);
+        }
+        else
+        {
+            _db.JourneyStepMetrics.RemoveRange(journeyStep.Metrics);
+            journeyStep.Metrics.Clear();
+        }
 
         foreach (var metric in metrics)
         {
-            if (publishedMetricIds.Contains(metric.Id))
-                continue;
-
-            _db.JourneySteps.Add(new JourneyStep
+            journeyStep.Metrics.Add(new JourneyStepMetric
             {
-                UserId = UserId,
-                MetricId = metric.Id
+                MetricTypeId = metric.MetricTypeId,
+                JsonValue = metric.JsonValue
             });
         }
 
