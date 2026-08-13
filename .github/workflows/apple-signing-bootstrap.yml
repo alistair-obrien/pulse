@@ -61,9 +61,8 @@ jobs:
             exit 1
           fi
 
-
       # ------------------------------------------------------------
-      # Install Python dependencies
+      # Python environment
       # ------------------------------------------------------------
 
       - name: Install Python dependencies
@@ -96,12 +95,37 @@ jobs:
         run: |
           openssl req \
             -new \
+            -sha256 \
             -key "$APPLE_PRIVATE_KEY_PATH" \
             -out "$RUNNER_TEMP/apple-distribution.csr" \
-            -subj "/CN=Pulse Distribution"
+            -subj "/CN=Apple Distribution"
 
           echo "APPLE_CSR_PATH=$RUNNER_TEMP/apple-distribution.csr" \
             >> "$GITHUB_ENV"
+
+      - name: Validate CSR
+        run: |
+          echo "=== CSR validation ==="
+
+          openssl req \
+            -in "$APPLE_CSR_PATH" \
+            -noout \
+            -verify
+
+          echo "=== CSR subject ==="
+
+          openssl req \
+            -in "$APPLE_CSR_PATH" \
+            -noout \
+            -subject
+
+          echo "=== CSR public key ==="
+
+          openssl req \
+            -in "$APPLE_CSR_PATH" \
+            -noout \
+            -pubkey \
+            | openssl rsa -pubin -text -noout | head -20
 
       # ------------------------------------------------------------
       # Generate App Store Connect JWT
@@ -188,8 +212,14 @@ jobs:
           print(bundle_id["id"])
 
           with open(os.environ["GITHUB_ENV"], "a") as f:
-              f.write(f'APPLE_BUNDLE_ID_RESOURCE={bundle_id["id"]}\n')
+              f.write(
+                  f'APPLE_BUNDLE_ID_RESOURCE={bundle_id["id"]}\n'
+              )
           PY
+
+      # ------------------------------------------------------------
+      # Check existing certificates
+      # ------------------------------------------------------------
 
       - name: Check existing iOS distribution certificates
         run: |
@@ -214,7 +244,10 @@ jobs:
 
           certificates = response.get("data", [])
 
-          print(f"Found {len(certificates)} iOS distribution certificate(s):")
+          print(
+              f"Found {len(certificates)} "
+              "iOS distribution certificate(s):"
+          )
 
           for certificate in certificates:
               attrs = certificate["attributes"]
@@ -257,10 +290,6 @@ jobs:
               json.dump(request, f)
           PY
 
-          echo "=== Apple certificate request ==="
-          cat "$RUNNER_TEMP/certificate-request.json"
-
-          echo ""
           echo "=== Apple response ==="
 
           HTTP_STATUS=$(curl \
@@ -286,7 +315,9 @@ jobs:
           import json
           import os
 
-          with open(os.environ["RUNNER_TEMP"] + "/certificate.json") as f:
+          with open(
+              os.environ["RUNNER_TEMP"] + "/certificate.json"
+          ) as f:
               response = json.load(f)
 
           certificate = response["data"]
@@ -322,12 +353,18 @@ jobs:
           import base64
           import os
 
-          path = os.environ["RUNNER_TEMP"] + "/certificate-response.json"
+          path = (
+              os.environ["RUNNER_TEMP"] +
+              "/certificate-response.json"
+          )
 
           with open(path) as f:
               response = json.load(f)
 
-          content = response["data"]["attributes"]["certificateContent"]
+          content = (
+              response["data"]["attributes"]
+              ["certificateContent"]
+          )
 
           certificate_path = (
               os.environ["RUNNER_TEMP"] +
@@ -398,7 +435,9 @@ jobs:
               }
           }
 
-          with open("$RUNNER_TEMP/profile-request.json", "w") as f:
+          with open(
+              "$RUNNER_TEMP/profile-request.json", "w"
+          ) as f:
               json.dump(request, f)
           PY
 
@@ -416,7 +455,10 @@ jobs:
           import base64
           import os
 
-          path = os.environ["RUNNER_TEMP"] + "/profile.json"
+          path = (
+              os.environ["RUNNER_TEMP"] +
+              "/profile.json"
+          )
 
           with open(path) as f:
               response = json.load(f)
