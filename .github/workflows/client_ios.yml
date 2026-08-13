@@ -86,7 +86,7 @@ jobs:
         run: npx cap sync ios
 
       # ------------------------------------------------------------
-      # Apple signing
+      # Apple certificate
       # ------------------------------------------------------------
 
       - name: Install Apple certificate
@@ -101,6 +101,10 @@ jobs:
             | base64 --decode \
             > "$CERTIFICATE_PATH"
 
+          echo "=== Certificate file ==="
+          ls -lh "$CERTIFICATE_PATH"
+
+          # Create temporary keychain
           security create-keychain \
             -p "" \
             "$KEYCHAIN_PATH"
@@ -113,26 +117,52 @@ jobs:
             -p "" \
             "$KEYCHAIN_PATH"
 
+          # Import the P12.
+          #
+          # IMPORTANT:
+          # Do NOT use "-t cert" here.
+          # A P12 contains both the certificate and private key.
           security import "$CERTIFICATE_PATH" \
             -P "$APPLE_CERTIFICATE_PASSWORD" \
             -A \
-            -t cert \
             -f pkcs12 \
             "$KEYCHAIN_PATH"
 
+          # Make the temporary keychain available to security/codesign.
           security list-keychains \
             -d user \
-            -s "$KEYCHAIN_PATH"
+            -s "$KEYCHAIN_PATH" login.keychain-db
 
           security default-keychain \
             -s "$KEYCHAIN_PATH"
 
+          security unlock-keychain \
+            -p "" \
+            "$KEYCHAIN_PATH"
+
+          # Allow codesign/Xcode to access the private key.
+          security set-key-partition-list \
+            -S apple-tool:,apple:,codesign: \
+            -s \
+            -k "" \
+            "$KEYCHAIN_PATH"
+
+          echo ""
           echo "=== Signing identities ==="
 
           security find-identity \
             -v \
             -p codesigning \
             "$KEYCHAIN_PATH"
+
+          echo ""
+          echo "=== Certificate details ==="
+
+          security find-certificate \
+            -a \
+            -c "Apple Distribution" \
+            "$KEYCHAIN_PATH" \
+            || true
 
       # ------------------------------------------------------------
       # Provisioning profile
@@ -177,6 +207,12 @@ jobs:
           PROFILE_TEAM_ID=$(
             /usr/libexec/PlistBuddy \
               -c "Print :TeamIdentifier:0" \
+              "$RUNNER_TEMP/profile.plist"
+          )
+
+          PROFILE_BUNDLE_ID=$(
+            /usr/libexec/PlistBuddy \
+              -c "Print :Entitlements:com.apple.developer.team-identifier" \
               "$RUNNER_TEMP/profile.plist"
           )
 
@@ -225,97 +261,45 @@ jobs:
           echo "iOS build: $CURRENT_VERSION -> $NEXT_VERSION"
 
       # ------------------------------------------------------------
-      # Configure Xcode signing
-      #
-      # IMPORTANT:
-      # Only the App target should receive the manual provisioning
-      # profile. Swift Package Manager dependency targets must remain
-      # automatic because they do not support provisioning profiles.
+      # Verify signing configuration
       # ------------------------------------------------------------
 
-      - name: Configure Xcode manual signing
-        working-directory: pulse.client
+      - name: Verify Apple signing configuration
         env:
           APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+          IOS_BUNDLE_IDENTIFIER: ${{ vars.IOS_BUNDLE_IDENTIFIER }}
         run: |
-          PROJECT="ios/App/App.xcodeproj/project.pbxproj"
+          echo "============================================================"
+          echo "APPLE SIGNING CONFIGURATION"
+          echo "============================================================"
+          echo ""
+          echo "Team:"
+          echo "$APPLE_TEAM_ID"
+          echo ""
+          echo "Bundle ID:"
+          echo "$IOS_BUNDLE_IDENTIFIER"
+          echo ""
+          echo "Provisioning profile:"
+          echo "$IOS_PROVISIONING_PROFILE_NAME_ACTUAL"
+          echo ""
+          echo "Provisioning UUID:"
+          echo "$IOS_PROVISIONING_PROFILE_UUID"
+          echo ""
 
-          echo "=== Existing signing settings ==="
+          echo "=== Installed provisioning profiles ==="
 
-          grep -n \
-            -E "CODE_SIGN_STYLE|PROVISIONING_PROFILE_SPECIFIER|DEVELOPMENT_TEAM|CODE_SIGN_IDENTITY" \
-            "$PROJECT" \
-            || true
+          ls -lah \
+            "$HOME/Library/MobileDevice/Provisioning Profiles/"
 
           echo ""
-          echo "=== Configuring App target signing ==="
+          echo "=== Code signing identities ==="
 
-          python3 <<'PY'
-          from pathlib import Path
-          import re
-
-          path = Path("ios/App/App.xcodeproj/project.pbxproj")
-          text = path.read_text()
-
-          # Only change CODE_SIGN_STYLE on the App project/target.
-          #
-          # Do NOT globally replace signing settings. Swift Package
-          # Manager targets such as GTMAppAuth, Alamofire, AppAuth,
-          # GoogleUtilities, and Facebook SDK must remain automatic.
-
-          sections = text.split("/* Begin XCBuildConfiguration section */", 1)
-
-          if len(sections) != 2:
-              raise SystemExit("Could not locate XCBuildConfiguration section")
-
-          before, rest = sections
-
-          configs = rest.split("/* End XCBuildConfiguration section */", 1)
-
-          if len(configs) != 2:
-              raise SystemExit("Could not locate build configuration section")
-
-          config_text, after = configs
-
-          # The App target's signing settings are supplied through
-          # xcodebuild command-line overrides below.
-          #
-          # Remove any existing manually specified provisioning profile
-          # from the project file so package targets cannot inherit it.
-          config_text = re.sub(
-              r'^\s*PROVISIONING_PROFILE_SPECIFIER = [^;]+;\s*$',
-              '',
-              config_text,
-              flags=re.MULTILINE,
-          )
-
-          # Keep the project itself automatic. The App target is switched
-          # to manual at archive time using xcodebuild command-line
-          # settings. This prevents those settings from propagating into
-          # Swift Package targets.
-          config_text = re.sub(
-              r'^\s*CODE_SIGN_STYLE = Manual;\s*$',
-              'CODE_SIGN_STYLE = Automatic;',
-              config_text,
-              flags=re.MULTILINE,
-          )
-
-          path.write_text(
-              before
-              + "/* Begin XCBuildConfiguration section */"
-              + config_text
-              + "/* End XCBuildConfiguration section */"
-              + after
-          )
-          PY
+          security find-identity \
+            -v \
+            -p codesigning
 
           echo ""
-          echo "=== Signing settings after cleanup ==="
-
-          grep -n \
-            -E "CODE_SIGN_STYLE|PROVISIONING_PROFILE_SPECIFIER|DEVELOPMENT_TEAM|CODE_SIGN_IDENTITY" \
-            "$PROJECT" \
-            || true
+          echo "============================================================"
 
       # ------------------------------------------------------------
       # Archive
@@ -327,12 +311,11 @@ jobs:
           IOS_BUILD_NUMBER: ${{ env.IOS_BUILD_NUMBER }}
           APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
           IOS_BUNDLE_IDENTIFIER: ${{ vars.IOS_BUNDLE_IDENTIFIER }}
-          IOS_PROVISIONING_PROFILE_NAME: ${{ env.IOS_PROVISIONING_PROFILE_NAME_ACTUAL }}
         run: |
           echo "=== Archive signing configuration ==="
           echo "Team: $APPLE_TEAM_ID"
           echo "Bundle ID: $IOS_BUNDLE_IDENTIFIER"
-          echo "Profile: $IOS_PROVISIONING_PROFILE_NAME"
+          echo "Profile: $IOS_PROVISIONING_PROFILE_NAME_ACTUAL"
           echo "Profile UUID: $IOS_PROVISIONING_PROFILE_UUID"
           echo ""
 
@@ -348,7 +331,7 @@ jobs:
             PRODUCT_BUNDLE_IDENTIFIER="$IOS_BUNDLE_IDENTIFIER" \
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Apple Distribution" \
-            PROVISIONING_PROFILE_SPECIFIER="$IOS_PROVISIONING_PROFILE_NAME" \
+            PROVISIONING_PROFILE_SPECIFIER="$IOS_PROVISIONING_PROFILE_NAME_ACTUAL" \
             archive
 
       # ------------------------------------------------------------
