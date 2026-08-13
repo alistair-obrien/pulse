@@ -614,14 +614,12 @@ h3 {
 
 .journey-context-popup {
     position: absolute;
-    top: 100%;
-    left: 0;
+    bottom: 6px;
+    left: 12px;
 
     display: flex;
     flex-direction: column;
     gap: 0.15rem;
-
-
 
     min-width: 8rem;
     padding: 0.4rem;

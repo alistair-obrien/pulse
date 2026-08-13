@@ -57,6 +57,7 @@ public class JourneyStepsController : PulseController
             var user = users[journeyStep.UserId];
 
             records.Add(new JourneyStepRecord(
+                id: journeyStep.Id,
                 userId: journeyStep.UserId,
                 published: true,
                 date: journeyStep.Date,
@@ -96,6 +97,7 @@ public class JourneyStepsController : PulseController
         return Ok(new
         {
             journeyStep = new JourneyStepRecord(
+                id: journeyStep.Id,
                 userId: journeyStep.UserId,
                 published: true,
                 date: journeyStep.Date,

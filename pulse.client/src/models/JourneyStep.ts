@@ -1,6 +1,7 @@
 import { metricsRegistry, type MetricTypeId, type MetricTypes } from "./MetricRegistry";
 
 export class JourneyStep {
+    id:number = -1;
     userId = "";
     published = false;
     date = ""; // 2026-07-12
@@ -19,6 +20,7 @@ export class JourneyStep {
     static fromJson(data: any): JourneyStep {
         const step = new JourneyStep();
 
+        step.id = data.id;
         step.userId = data.userId;
         step.published = data.published;
         step.date = data.date;

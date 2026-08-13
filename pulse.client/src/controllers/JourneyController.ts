@@ -162,7 +162,10 @@ export class JourneyController {
 
             journeyStepsCard.contextPopup = new JourneyContextPopupModel({
                 onEdit: () => this.openInMyDay(element),
-                onUnpublish: () => this.unpublish(element)
+                onUnpublish: async () => { 
+                    await this.unpublish(element);
+                    await this.refresh(); 
+                }
             })
 
             if (element.userId == this.userSession.userId) {
@@ -287,7 +290,7 @@ export class JourneyController {
 
     async likeJourneyStep(journeyStep: JourneyStep) : Promise<{ liked: boolean }> {
         // Need just the journey id maybe. Though date and user are consistent
-        return await this.api.likeJourneyStep(journeyStep.date, journeyStep.userId);
+        return await this.api.likeJourneyStep(journeyStep.id);
     }
 
     async unpublish(journeyStep: JourneyStep) {

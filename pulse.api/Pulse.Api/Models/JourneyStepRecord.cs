@@ -1,6 +1,7 @@
 ﻿namespace Pulse.Api.Models;
 
 public record JourneyStepRecord(
+    int id,
     string userId,
     bool published,
     DateOnly date,

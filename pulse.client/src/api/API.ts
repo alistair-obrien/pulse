@@ -94,8 +94,8 @@ export class API {
         return result;
     }
 
-    async likeJourneyStep(dateKey:DateKey, userId: string): Promise<{ liked: boolean }> {
-        return this.apiClient.put(`/api/journeysteps/${dateKey}/${userId}/like`); 
+    async likeJourneyStep(journeyStepId:number): Promise<{ liked: boolean }> {
+        return this.apiClient.put(`/api/journeysteps/${journeyStepId}/like`); 
     }
 
     async deleteJournalStep(dateKey: DateKey): Promise<boolean> {
