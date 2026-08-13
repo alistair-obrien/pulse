@@ -2,6 +2,7 @@ import type { Platform } from "../../AppConfig";
 import type { AuthProvider } from "../AuthService";
 
 import * as GoogleAndroidAuth from "./Google/GoogleAndroidAuthProvider"
+import * as GoogleiOSAuth from "./Google/GoogleiOSAuthProvider"
 import * as GoogleWebAuth from "./Google/GoogleWebAuthProvider"
 
 import type { GoogleCredential } from "./Google/GoogleAuthCredential";
@@ -33,6 +34,9 @@ export class GoogleAuthProvider implements AuthProvider {
         switch (this.userPlatform) {
             case "android":
                 googleCredential = await GoogleAndroidAuth.login(clientId);
+                break;
+            case "ios":
+                googleCredential = await GoogleiOSAuth.login(clientId);
                 break;
             case "web":
                 googleCredential = await GoogleWebAuth.login(clientId);

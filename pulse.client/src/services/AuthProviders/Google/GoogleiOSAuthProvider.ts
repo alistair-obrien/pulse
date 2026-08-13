@@ -2,13 +2,14 @@ import { SocialLogin } from "@capgo/capacitor-social-login";
 import type { GoogleCredential } from "./GoogleAuthCredential";
 
 let initialized = false;
-export async function login(googleWebClientId:string) : Promise<GoogleCredential> {
+export async function login(iOSClientId:string) : Promise<GoogleCredential> {
     // Capgo
     if (!initialized)
     {
         await SocialLogin.initialize({
             google: {
-                webClientId: googleWebClientId, 
+                iOSClientId: iOSClientId,
+                mode: "online"
             },
         });
         initialized = true;

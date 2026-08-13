@@ -271,6 +271,7 @@ jobs:
           IOS_BUILD_NUMBER: ${{ env.IOS_BUILD_NUMBER }}
           APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
           IOS_BUNDLE_IDENTIFIER: ${{ vars.IOS_BUNDLE_IDENTIFIER }}
+          IOS_GOOGLE_CLIENT_ID: ${{ vars.IOS_GOOGLE_CLIENT_ID }}
         run: |
           echo "=== Archive configuration ==="
           echo "Team: $APPLE_TEAM_ID"
@@ -288,6 +289,7 @@ jobs:
             CURRENT_PROJECT_VERSION="$IOS_BUILD_NUMBER" \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
             PRODUCT_BUNDLE_IDENTIFIER="$IOS_BUNDLE_IDENTIFIER" \
+            IOS_GOOGLE_CLIENT_ID="$IOS_GOOGLE_CLIENT_ID" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             archive
