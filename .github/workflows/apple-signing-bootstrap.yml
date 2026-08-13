@@ -257,14 +257,30 @@ jobs:
               json.dump(request, f)
           PY
 
-          curl --fail-with-body \
+          echo "=== Apple certificate request ==="
+          cat "$RUNNER_TEMP/certificate-request.json"
+
+          echo ""
+          echo "=== Apple response ==="
+
+          HTTP_STATUS=$(curl \
             -sS \
+            -o "$RUNNER_TEMP/certificate.json" \
+            -w "%{http_code}" \
             -X POST \
             -H "Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
             -d @"$RUNNER_TEMP/certificate-request.json" \
-            "https://api.appstoreconnect.apple.com/v1/certificates" \
-            > "$RUNNER_TEMP/certificate.json"
+            "https://api.appstoreconnect.apple.com/v1/certificates")
+
+          echo "HTTP status: $HTTP_STATUS"
+          echo ""
+
+          cat "$RUNNER_TEMP/certificate.json"
+
+          if [ "$HTTP_STATUS" -ge 400 ]; then
+            exit 1
+          fi
 
           python3 <<'PY'
           import json
