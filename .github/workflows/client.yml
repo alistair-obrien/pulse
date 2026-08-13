@@ -68,6 +68,10 @@ jobs:
           echo "=== index.html ==="
           cat dist/index.html
 
+      - name: Generate Android App Icons
+        working-directory: pulse.client
+        run: npx capacitor-assets generate --android
+
       - name: Sync Capacitor
         working-directory: pulse.client
         run: npx cap sync android
