@@ -14,7 +14,7 @@ export class JourneyStep {
     metrics: Partial<MetricTypes> = {};
 
     getMetric<K extends MetricTypeId>(id: K): MetricTypes[K] {
-        return this.metrics[id] ?? (metricsRegistry[id].defaultValue as MetricTypes[K]); //TOD: Make a helper later if we use it a lot
+        return this.metrics[id] ?? (metricsRegistry[id].defaultValue as MetricTypes[K]);
     }
 
     static fromJson(data: any): JourneyStep {
