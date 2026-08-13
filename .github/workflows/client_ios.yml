@@ -48,6 +48,10 @@ jobs:
           VITE_API_URL: ${{ vars.API_URL }}
           VITE_GOOGLE_LOGIN_WEBCLIENT_ID: ${{ secrets.GOOGLE_LOGIN_WEBCLIENT_ID }}
         run: |
+          echo "APP_SOURCE=$VITE_APP_SOURCE"
+          echo "ENVIRONMENT=$VITE_ENVIRONMENT"
+          echo "API_URL=$VITE_API_URL"
+
           npx vite build --mode ${{ github.ref_name }}
 
       - name: Generate iOS App Icons
@@ -58,26 +62,209 @@ jobs:
         working-directory: pulse.client
         run: npx cap sync ios
 
-      - name: Inspect iOS project
-        working-directory: pulse.client
-        run: |
-          echo "=== iOS project ==="
-          find ios -maxdepth 4 -type f | sort
+      # ------------------------------------------------------------
+      # Apple signing
+      # ------------------------------------------------------------
 
-      - name: Build iOS
+      - name: Install Apple certificate
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          CERTIFICATE_PATH="$RUNNER_TEMP/apple-distribution.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain-db"
+
+          echo "$APPLE_CERTIFICATE_BASE64" | base64 --decode > "$CERTIFICATE_PATH"
+
+          security create-keychain \
+            -p "" \
+            "$KEYCHAIN_PATH"
+
+          security set-keychain-settings \
+            -lut 21600 \
+            "$KEYCHAIN_PATH"
+
+          security unlock-keychain \
+            -p "" \
+            "$KEYCHAIN_PATH"
+
+          security import "$CERTIFICATE_PATH" \
+            -P "$APPLE_CERTIFICATE_PASSWORD" \
+            -A \
+            -t cert \
+            -f pkcs12 \
+            "$KEYCHAIN_PATH"
+
+          security list-keychains \
+            -d user \
+            -s "$KEYCHAIN_PATH"
+
+          security default-keychain \
+            -s "$KEYCHAIN_PATH"
+
+      - name: Install provisioning profile
+        env:
+          APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          PROFILE_PATH="$RUNNER_TEMP/App.mobileprovision"
+
+          echo "$APPLE_PROVISIONING_PROFILE_BASE64" | base64 --decode > "$PROFILE_PATH"
+
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+
+          cp "$PROFILE_PATH" \
+            "$HOME/Library/MobileDevice/Provisioning Profiles/"
+
+      # ------------------------------------------------------------
+      # Version
+      # ------------------------------------------------------------
+
+      - name: Get iOS version
+        env:
+          SERVER_HOST: ${{ vars.SERVER_HOST }}
+          SERVER_USER: ${{ vars.SERVER_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          ssh-keyscan "$SERVER_HOST" >> ~/.ssh/known_hosts
+
+          CURRENT_VERSION=$(ssh "$SERVER_USER@$SERVER_HOST" \
+            'cat /opt/pulse/versions/${{ github.ref_name }}-ios 2>/dev/null || echo 0')
+
+          NEXT_VERSION=$((CURRENT_VERSION + 1))
+
+          echo "IOS_BUILD_NUMBER=$NEXT_VERSION" >> "$GITHUB_ENV"
+
+          echo "iOS build: $CURRENT_VERSION -> $NEXT_VERSION"
+
+      # ------------------------------------------------------------
+      # Archive
+      # ------------------------------------------------------------
+
+      - name: Archive iOS
         working-directory: pulse.client
+        env:
+          IOS_BUILD_NUMBER: ${{ env.IOS_BUILD_NUMBER }}
         run: |
           xcodebuild \
             -project ios/App/App.xcodeproj \
             -scheme App \
             -configuration Release \
             -sdk iphoneos \
-            -derivedDataPath ios/build \
-            CODE_SIGNING_ALLOWED=NO \
-            build
+            -archivePath ios/build/App.xcarchive \
+            MARKETING_VERSION=1.0.0 \
+            CURRENT_PROJECT_VERSION="$IOS_BUILD_NUMBER" \
+            CODE_SIGN_STYLE=Manual \
+            archive
 
-      - name: Upload iOS build
+      # ------------------------------------------------------------
+      # Export IPA
+      # ------------------------------------------------------------
+
+      - name: Create ExportOptions.plist
+        working-directory: pulse.client
+        env:
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+          IOS_BUNDLE_IDENTIFIER: ${{ vars.IOS_BUNDLE_IDENTIFIER }}
+          IOS_PROVISIONING_PROFILE_NAME: ${{ vars.IOS_PROVISIONING_PROFILE_NAME }}
+        run: |
+          cat > ios/ExportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store</string>
+
+              <key>signingStyle</key>
+              <string>manual</string>
+
+              <key>teamID</key>
+              <string>$APPLE_TEAM_ID</string>
+
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>$IOS_BUNDLE_IDENTIFIER</key>
+                  <string>$IOS_PROVISIONING_PROFILE_NAME</string>
+              </dict>
+
+              <key>stripSwiftSymbols</key>
+              <true/>
+
+              <key>uploadSymbols</key>
+              <true/>
+          </dict>
+          </plist>
+          EOF
+
+      - name: Export iOS IPA
+        working-directory: pulse.client
+        run: |
+          xcodebuild \
+            -exportArchive \
+            -archivePath ios/build/App.xcarchive \
+            -exportPath ios/build/export \
+            -exportOptionsPlist ios/ExportOptions.plist
+
+      # ------------------------------------------------------------
+      # Inspect
+      # ------------------------------------------------------------
+
+      - name: Inspect IPA
+        working-directory: pulse.client
+        run: |
+          echo "=== IPA ==="
+          ls -lah ios/build/export/
+
+          echo "=== Archive ==="
+          ls -lah ios/build/App.xcarchive/
+
+      # ------------------------------------------------------------
+      # Upload to App Store Connect / TestFlight
+      # ------------------------------------------------------------
+
+      - name: Upload to TestFlight
+        working-directory: pulse.client
+        env:
+          APPLE_APP_STORE_CONNECT_KEY_ID: ${{ secrets.APPLE_APP_STORE_CONNECT_KEY_ID }}
+          APPLE_APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APPLE_APP_STORE_CONNECT_ISSUER_ID }}
+          APPLE_APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APPLE_APP_STORE_CONNECT_PRIVATE_KEY }}
+        run: |
+          PRIVATE_KEYS="$RUNNER_TEMP/private_keys"
+
+          mkdir -p "$PRIVATE_KEYS"
+
+          printf '%s' "$APPLE_APP_STORE_CONNECT_PRIVATE_KEY" \
+            > "$PRIVATE_KEYS/AuthKey_${APPLE_APP_STORE_CONNECT_KEY_ID}.p8"
+
+          xcrun iTMSTransporter \
+            -m upload \
+            -assetFile ios/build/export/*.ipa \
+            -apiKey "$APPLE_APP_STORE_CONNECT_KEY_ID" \
+            -apiIssuer "$APPLE_APP_STORE_CONNECT_ISSUER_ID"
+
+      # ------------------------------------------------------------
+      # Save version
+      # ------------------------------------------------------------
+
+      - name: Save iOS version
+        env:
+          SERVER_HOST: ${{ vars.SERVER_HOST }}
+          SERVER_USER: ${{ vars.SERVER_USER }}
+        run: |
+          ssh "$SERVER_USER@$SERVER_HOST" \
+            "echo '$IOS_BUILD_NUMBER' | sudo tee /opt/pulse/versions/${{ github.ref_name }}-ios > /dev/null"
+
+      # ------------------------------------------------------------
+      # GitHub artifact
+      # ------------------------------------------------------------
+
+      - name: Upload iOS IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: pulse-ios-app
-          path: pulse.client/ios/build/Build/Products/Release-iphoneos/App.app
+          name: pulse-ios-ipa
+          path: pulse.client/ios/build/export/*.ipa
