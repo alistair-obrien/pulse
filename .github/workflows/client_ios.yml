@@ -118,7 +118,7 @@ jobs:
             -A \
             -t cert \
             -f pkcs12 \
-            "$KEYCHAIN_PATH"
+            -k "$KEYCHAIN_PATH"
 
           security list-keychains \
             -d user \
@@ -127,11 +127,29 @@ jobs:
           security default-keychain \
             -s "$KEYCHAIN_PATH"
 
+          security unlock-keychain \
+            -p "" \
+            "$KEYCHAIN_PATH"
+
           echo "=== Signing identities ==="
 
           security find-identity \
             -v \
             -p codesigning \
+            "$KEYCHAIN_PATH"
+
+          echo ""
+          echo "=== Keychain identities ==="
+
+          security find-certificate \
+            -a \
+            -c "Apple Distribution" \
+            "$KEYCHAIN_PATH"
+
+          echo ""
+          echo "=== Private keys ==="
+
+          security find-key \
             "$KEYCHAIN_PATH"
 
       # ------------------------------------------------------------
@@ -291,7 +309,7 @@ jobs:
           <plist version="1.0">
           <dict>
               <key>method</key>
-              <string>app-store</string>
+              <string>app-store-connect</string>
 
               <key>signingStyle</key>
               <string>manual</string>
