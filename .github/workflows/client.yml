@@ -201,6 +201,7 @@ jobs:
             -scheme App \
             -configuration Release \
             -sdk iphoneos \
+            -derivedDataPath ios/build \
             CODE_SIGNING_ALLOWED=NO \
             build
 
@@ -208,4 +209,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: pulse-ios-app
-          path: pulse.client/ios/App/build/Release-iphoneos/App.app
+          path: pulse.client/ios/build/Build/Products/Release-iphoneos/App.app
