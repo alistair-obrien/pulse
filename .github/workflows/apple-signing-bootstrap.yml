@@ -1,13 +1,13 @@
 name: Bootstrap Apple Signing
 
 on:
-  push:
-    branches:
-      - production
-      - development
-    paths:
-      - 'pulse.client/**'
-      - '.github/workflows/apple-signing-bootstrap.yml'
+#   push:
+#     branches:
+#       - production
+#       - development
+#     paths:
+#       - 'pulse.client/**'
+#       - '.github/workflows/apple-signing-bootstrap.yml'
 
   workflow_dispatch:
 
