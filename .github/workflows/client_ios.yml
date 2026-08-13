@@ -9,6 +9,8 @@ on:
       - 'pulse.client/**'
       - '.github/workflows/client_ios.yml'
 
+  workflow_dispatch:
+
 permissions:
   contents: read
 
@@ -22,12 +24,24 @@ jobs:
     environment: ${{ github.ref_name }}
 
     steps:
+      # ------------------------------------------------------------
+      # Build metadata
+      # ------------------------------------------------------------
+
       - name: Set build metadata
         run: |
           echo "PULSE_BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> "$GITHUB_ENV"
 
+      # ------------------------------------------------------------
+      # Checkout
+      # ------------------------------------------------------------
+
       - name: Checkout
         uses: actions/checkout@v4
+
+      # ------------------------------------------------------------
+      # Node
+      # ------------------------------------------------------------
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -39,6 +53,10 @@ jobs:
       - name: Install dependencies
         working-directory: pulse.client
         run: npm ci
+
+      # ------------------------------------------------------------
+      # Build web client
+      # ------------------------------------------------------------
 
       - name: Build client
         working-directory: pulse.client
@@ -53,6 +71,10 @@ jobs:
           echo "API_URL=$VITE_API_URL"
 
           npx vite build --mode ${{ github.ref_name }}
+
+      # ------------------------------------------------------------
+      # Capacitor
+      # ------------------------------------------------------------
 
       - name: Generate iOS App Icons
         working-directory: pulse.client
@@ -74,7 +96,9 @@ jobs:
           CERTIFICATE_PATH="$RUNNER_TEMP/apple-distribution.p12"
           KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain-db"
 
-          echo "$APPLE_CERTIFICATE_BASE64" | base64 --decode > "$CERTIFICATE_PATH"
+          echo "$APPLE_CERTIFICATE_BASE64" \
+            | base64 --decode \
+            > "$CERTIFICATE_PATH"
 
           security create-keychain \
             -p "" \
@@ -102,47 +126,15 @@ jobs:
           security default-keychain \
             -s "$KEYCHAIN_PATH"
 
-      - name: Install provisioning profile
-        env:
-          APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
-        run: |
-          PROFILE_PATH="$RUNNER_TEMP/App.mobileprovision"
+          echo "=== Signing identities ==="
 
-          echo "$APPLE_PROVISIONING_PROFILE_BASE64" | base64 --decode > "$PROFILE_PATH"
-
-          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
-
-          cp "$PROFILE_PATH" \
-            "$HOME/Library/MobileDevice/Provisioning Profiles/"
+          security find-identity \
+            -v \
+            -p codesigning \
+            "$KEYCHAIN_PATH"
 
       # ------------------------------------------------------------
-      # Version
-      # ------------------------------------------------------------
-
-      - name: Get iOS version
-        env:
-          SERVER_HOST: ${{ vars.SERVER_HOST }}
-          SERVER_USER: ${{ vars.SERVER_USER }}
-          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-
-          ssh-keyscan "$SERVER_HOST" >> ~/.ssh/known_hosts
-
-          CURRENT_VERSION=$(ssh "$SERVER_USER@$SERVER_HOST" \
-            'cat /opt/pulse/versions/${{ github.ref_name }}-ios 2>/dev/null || echo 0')
-
-          NEXT_VERSION=$((CURRENT_VERSION + 1))
-
-          echo "IOS_BUILD_NUMBER=$NEXT_VERSION" >> "$GITHUB_ENV"
-
-          echo "iOS build: $CURRENT_VERSION -> $NEXT_VERSION"
-
-      # ------------------------------------------------------------
-      # Archive
+      # Provisioning profile
       # ------------------------------------------------------------
 
       - name: Install provisioning profile
@@ -155,13 +147,19 @@ jobs:
             | base64 --decode \
             > "$PROFILE_PATH"
 
-          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p \
+            "$HOME/Library/MobileDevice/Provisioning Profiles"
 
-          cp "$PROFILE_PATH" \
+          cp \
+            "$PROFILE_PATH" \
             "$HOME/Library/MobileDevice/Provisioning Profiles/"
 
           echo "=== Provisioning profile ==="
-          security cms -D -i "$PROFILE_PATH" > "$RUNNER_TEMP/profile.plist"
+
+          security cms \
+            -D \
+            -i "$PROFILE_PATH" \
+            > "$RUNNER_TEMP/profile.plist"
 
           PROFILE_UUID=$(
             /usr/libexec/PlistBuddy \
@@ -181,19 +179,235 @@ jobs:
               "$RUNNER_TEMP/profile.plist"
           )
 
+          PROFILE_TEAM_ID=$(
+            /usr/libexec/PlistBuddy \
+              -c "Print :TeamIdentifier:0" \
+              "$RUNNER_TEMP/profile.plist"
+          )
+
           echo "Profile name: $PROFILE_NAME"
           echo "Profile UUID: $PROFILE_UUID"
           echo "Application identifier: $PROFILE_APP_ID"
+          echo "Team ID: $PROFILE_TEAM_ID"
 
-          echo "IOS_PROVISIONING_PROFILE_UUID=$PROFILE_UUID" >> "$GITHUB_ENV"
-          echo "IOS_PROVISIONING_PROFILE_NAME_ACTUAL=$PROFILE_NAME" >> "$GITHUB_ENV"
+          echo "IOS_PROVISIONING_PROFILE_UUID=$PROFILE_UUID" \
+            >> "$GITHUB_ENV"
+
+          echo "IOS_PROVISIONING_PROFILE_NAME_ACTUAL=$PROFILE_NAME" \
+            >> "$GITHUB_ENV"
+
+      # ------------------------------------------------------------
+      # Version
+      # ------------------------------------------------------------
+
+      - name: Get iOS version
+        env:
+          SERVER_HOST: ${{ vars.SERVER_HOST }}
+          SERVER_USER: ${{ vars.SERVER_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+
+          echo "$SSH_PRIVATE_KEY" \
+            > ~/.ssh/id_ed25519
+
+          chmod 600 ~/.ssh/id_ed25519
+
+          ssh-keyscan "$SERVER_HOST" \
+            >> ~/.ssh/known_hosts
+
+          CURRENT_VERSION=$(ssh "$SERVER_USER@$SERVER_HOST" \
+            'cat /opt/pulse/versions/${{ github.ref_name }}-ios 2>/dev/null || echo 0')
+
+          NEXT_VERSION=$((CURRENT_VERSION + 1))
+
+          echo "IOS_BUILD_NUMBER=$NEXT_VERSION" \
+            >> "$GITHUB_ENV"
+
+          echo "iOS build: $CURRENT_VERSION -> $NEXT_VERSION"
+
+      # ------------------------------------------------------------
+      # Configure App target signing
+      # ------------------------------------------------------------
+
+      - name: Configure App signing
+        working-directory: pulse.client
+        env:
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+          IOS_BUNDLE_IDENTIFIER: ${{ vars.IOS_BUNDLE_IDENTIFIER }}
+          IOS_PROVISIONING_PROFILE_NAME: ${{ env.IOS_PROVISIONING_PROFILE_NAME_ACTUAL }}
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import os
+          import re
+
+          project_path = Path("ios/App/App.xcodeproj/project.pbxproj")
+
+          text = project_path.read_text()
+
+          team_id = os.environ["APPLE_TEAM_ID"]
+          bundle_id = os.environ["IOS_BUNDLE_IDENTIFIER"]
+          profile_name = os.environ["IOS_PROVISIONING_PROFILE_NAME"]
+
+          print("Configuring App target signing...")
+          print(f"Team ID: {team_id}")
+          print(f"Bundle ID: {bundle_id}")
+          print(f"Profile: {profile_name}")
+
+          # Find the App target's build configuration list.
+          target_match = re.search(
+              r'([A-F0-9]+) /\* App \*/ = \{.*?buildConfigurationList = ([A-F0-9]+)',
+              text,
+              re.DOTALL
+          )
+
+          if not target_match:
+              raise RuntimeError(
+                  "Could not find App target in project.pbxproj"
+              )
+
+          target_configuration_list = target_match.group(2)
+
+          print(
+              "App build configuration list:",
+              target_configuration_list
+          )
+
+          # Find the build configuration list and its Debug/Release configs.
+          config_list_pattern = (
+              rf'{re.escape(target_configuration_list)} /\* Build configuration list for PBXNativeTarget "App" \*/'
+              rf'.*?buildConfigurations = \((.*?)\)'
+          )
+
+          config_list_match = re.search(
+              config_list_pattern,
+              text,
+              re.DOTALL
+          )
+
+          if not config_list_match:
+              raise RuntimeError(
+                  "Could not find App build configuration list"
+              )
+
+          configuration_ids = re.findall(
+              r'([A-F0-9]+) /\* (?:Debug|Release) \*/',
+              config_list_match.group(1)
+          )
+
+          if not configuration_ids:
+              raise RuntimeError(
+                  "Could not find App Debug/Release configurations"
+              )
+
+          print("App configurations:", configuration_ids)
+
+          # Modify only the App target's configurations.
+          for config_id in configuration_ids:
+              pattern = (
+                  rf'({re.escape(config_id)} /\* (?:Debug|Release) \*/ = \{{'
+                  rf'.*?buildSettings = \{{)(.*?)(\n\s*\}};)'
+              )
+
+              match = re.search(
+                  pattern,
+                  text,
+                  re.DOTALL
+              )
+
+              if not match:
+                  raise RuntimeError(
+                      f"Could not find build settings for {config_id}"
+                  )
+
+              settings = match.group(2)
+
+              def set_setting(settings, key, value):
+                  pattern = rf'^\s*{re.escape(key)} = .*?;\s*$'
+
+                  replacement = f'\t\t\t\t{key} = {value};'
+
+                  if re.search(
+                      pattern,
+                      settings,
+                      re.MULTILINE
+                  ):
+                      return re.sub(
+                          pattern,
+                          replacement,
+                          settings,
+                          flags=re.MULTILINE
+                      )
+
+                  return settings + "\n" + replacement
+
+              settings = set_setting(
+                  settings,
+                  "CODE_SIGN_STYLE",
+                  "Manual"
+              )
+
+              settings = set_setting(
+                  settings,
+                  "DEVELOPMENT_TEAM",
+                  team_id
+              )
+
+              settings = set_setting(
+                  settings,
+                  "PRODUCT_BUNDLE_IDENTIFIER",
+                  bundle_id
+              )
+
+              settings = set_setting(
+                  settings,
+                  "CODE_SIGN_IDENTITY",
+                  '"Apple Distribution"'
+              )
+
+              settings = set_setting(
+                  settings,
+                  "PROVISIONING_PROFILE_SPECIFIER",
+                  f'"{profile_name}"'
+              )
+
+              text = (
+                  text[:match.start(2)]
+                  + settings
+                  + text[match.end(2):]
+              )
+
+          project_path.write_text(text)
+
+          print("App signing configured successfully.")
+          PY
+
+      # ------------------------------------------------------------
+      # Inspect signing configuration
+      # ------------------------------------------------------------
+
+      - name: Inspect Xcode signing configuration
+        working-directory: pulse.client
+        run: |
+          echo "=== App target signing settings ==="
+
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -target App \
+            -configuration Release \
+            -showBuildSettings \
+            | grep -E \
+              'CODE_SIGN|DEVELOPMENT_TEAM|PRODUCT_BUNDLE_IDENTIFIER|PROVISIONING_PROFILE'
+
+      # ------------------------------------------------------------
+      # Archive
+      # ------------------------------------------------------------
 
       - name: Archive iOS
         working-directory: pulse.client
         env:
           IOS_BUILD_NUMBER: ${{ env.IOS_BUILD_NUMBER }}
-          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
-          IOS_BUNDLE_IDENTIFIER: ${{ vars.IOS_BUNDLE_IDENTIFIER }}
         run: |
           xcodebuild \
             -project ios/App/App.xcodeproj \
@@ -203,11 +417,6 @@ jobs:
             -archivePath ios/build/App.xcarchive \
             MARKETING_VERSION=1.0.0 \
             CURRENT_PROJECT_VERSION="$IOS_BUILD_NUMBER" \
-            CODE_SIGN_STYLE=Manual \
-            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
-            PRODUCT_BUNDLE_IDENTIFIER="$IOS_BUNDLE_IDENTIFIER" \
-            PROVISIONING_PROFILE_SPECIFIER="$IOS_PROVISIONING_PROFILE_NAME_ACTUAL" \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
             archive
 
       # ------------------------------------------------------------
@@ -219,7 +428,7 @@ jobs:
         env:
           APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
           IOS_BUNDLE_IDENTIFIER: ${{ vars.IOS_BUNDLE_IDENTIFIER }}
-          IOS_PROVISIONING_PROFILE_NAME: ${{ vars.IOS_PROVISIONING_PROFILE_NAME }}
+          IOS_PROVISIONING_PROFILE_NAME: ${{ env.IOS_PROVISIONING_PROFILE_NAME_ACTUAL }}
         run: |
           cat > ios/ExportOptions.plist <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
@@ -249,6 +458,9 @@ jobs:
           </dict>
           </plist>
           EOF
+
+          echo "=== ExportOptions.plist ==="
+          cat ios/ExportOptions.plist
 
       - name: Export iOS IPA
         working-directory: pulse.client
@@ -288,6 +500,7 @@ jobs:
           mkdir -p "$PRIVATE_KEYS"
 
           printf '%s' "$APPLE_APP_STORE_CONNECT_PRIVATE_KEY" \
+            | sed 's/\\n/\n/g' \
             > "$PRIVATE_KEYS/AuthKey_${APPLE_APP_STORE_CONNECT_KEY_ID}.p8"
 
           xcrun iTMSTransporter \
@@ -296,7 +509,6 @@ jobs:
             -apiKey "$APPLE_APP_STORE_CONNECT_KEY_ID" \
             -apiIssuer "$APPLE_APP_STORE_CONNECT_ISSUER_ID"
 
-        
       # ------------------------------------------------------------
       # Save version
       # ------------------------------------------------------------
