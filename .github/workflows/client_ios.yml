@@ -434,6 +434,31 @@ jobs:
             echo "WARNING: No embedded.mobileprovision found."
           fi
 
+      - name: Verify IPA bundle identifier
+        working-directory: pulse.client
+        run: |
+          IPA_PATH="ios/build/export/App.ipa"
+
+          mkdir -p ios/build/verify
+
+          unzip -q "$IPA_PATH" \
+            -d ios/build/verify
+
+          APP_PATH=$(find ios/build/verify/Payload \
+            -maxdepth 1 \
+            -name "*.app" \
+            -type d \
+            | head -n 1)
+
+          echo "App: $APP_PATH"
+
+          codesign -dvv "$APP_PATH" 2>&1 | grep -E \
+            'Identifier=|TeamIdentifier='
+
+          /usr/libexec/PlistBuddy \
+            -c "Print :CFBundleIdentifier" \
+            "$APP_PATH/Info.plist"
+
       # ------------------------------------------------------------
       # Upload to TestFlight
       # ------------------------------------------------------------
