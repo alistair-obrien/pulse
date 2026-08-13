@@ -39,7 +39,7 @@
     "@capacitor/device": "^8.0.3",
     "@capacitor/ios": "^8.5.0",
     "@capacitor/toast": "^8.0.1",
-    "@capgo/capacitor-health": "file:../../capacitor-health",
+    "@capgo/capacitor-health": "https://github.com/alistair-obrien/capacitor-health#macros",
     "@capgo/capacitor-social-login": "^8.3.39",
     "@types/google.accounts": "^0.0.18",
     "remixicon": "^4.9.1"
