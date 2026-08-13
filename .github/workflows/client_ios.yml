@@ -87,7 +87,7 @@ jobs:
         working-directory: pulse.client
         run: npx cap sync ios
 
-      # ------------------------------------------------------------
+            # ------------------------------------------------------------
       # Apple certificate
       # ------------------------------------------------------------
 
@@ -134,12 +134,19 @@ jobs:
             "$KEYCHAIN_PATH"
 
           echo ""
-          echo "=== Importing Apple Distribution certificate ==="
+          echo "=== Importing Apple Distribution certificate + private key ==="
 
+          # IMPORTANT:
+          # Do NOT use "-t cert".
+          #
+          # The P12 contains BOTH:
+          #   - Apple Distribution certificate
+          #   - private key
+          #
+          # Importing without "-t cert" ensures both are imported.
           security import "$CERTIFICATE_PATH" \
             -P "$APPLE_CERTIFICATE_PASSWORD" \
             -A \
-            -t cert \
             -f pkcs12 \
             "$KEYCHAIN_PATH"
 
@@ -186,11 +193,23 @@ jobs:
           echo ""
           echo "=== Verifying certificate/private-key pairing ==="
 
-          security find-identity \
-            -v \
-            -p codesigning \
-            "$KEYCHAIN_PATH" \
-            | grep -E "Apple Distribution|iPhone Distribution"
+          IDENTITY_OUTPUT=$(
+            security find-identity \
+              -v \
+              -p codesigning \
+              "$KEYCHAIN_PATH"
+          )
+
+          echo "$IDENTITY_OUTPUT"
+
+          if ! echo "$IDENTITY_OUTPUT" | grep -q "Apple Distribution"; then
+            echo ""
+            echo "ERROR: Apple Distribution identity was not imported."
+            exit 1
+          fi
+
+          echo ""
+          echo "✓ Apple Distribution certificate and private key are available."
 
       # ------------------------------------------------------------
       # Provisioning profile
