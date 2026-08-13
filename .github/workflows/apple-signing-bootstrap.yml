@@ -191,6 +191,43 @@ jobs:
               f.write(f'APPLE_BUNDLE_ID_RESOURCE={bundle_id["id"]}\n')
           PY
 
+      - name: Check existing iOS distribution certificates
+        run: |
+          TOKEN=$(cat "$APPLE_API_TOKEN_PATH")
+
+          curl --fail-with-body \
+            -sS \
+            -G \
+            -H "Authorization: Bearer $TOKEN" \
+            --data-urlencode "filter[certificateType]=IOS_DISTRIBUTION" \
+            "https://api.appstoreconnect.apple.com/v1/certificates" \
+            > "$RUNNER_TEMP/certificates.json"
+
+          python3 <<'PY'
+          import json
+          import os
+
+          path = os.environ["RUNNER_TEMP"] + "/certificates.json"
+
+          with open(path) as f:
+              response = json.load(f)
+
+          certificates = response.get("data", [])
+
+          print(f"Found {len(certificates)} iOS distribution certificate(s):")
+
+          for certificate in certificates:
+              attrs = certificate["attributes"]
+
+              print()
+              print("ID:", certificate["id"])
+              print("Name:", attrs.get("name"))
+              print("Display name:", attrs.get("displayName"))
+              print("Serial:", attrs.get("serialNumber"))
+              print("Expiration:", attrs.get("expirationDate"))
+              print("Activated:", attrs.get("activated"))
+          PY
+
       # ------------------------------------------------------------
       # Create Apple Distribution certificate
       # ------------------------------------------------------------
