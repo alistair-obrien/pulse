@@ -1,8 +1,8 @@
 export type DateKey = string; // "2026-07-25"
 
 export interface UtcDateRange {
-    startUtc: string;
-    endUtc: string;
+    startUtc: Date;
+    endUtc: Date;
 }
 
 export function toDateKey(date: Date): DateKey {
@@ -28,8 +28,8 @@ export function getLocalDayUtcRange(date = new Date()): UtcDateRange {
     end.setHours(23, 59, 59, 999);
 
     return {
-        startUtc: start.toISOString(),
-        endUtc: end.toISOString(),
+        startUtc: start,
+        endUtc: end,
     };
 }
 

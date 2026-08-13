@@ -36,6 +36,7 @@ import { GoogleAuthProvider } from '../services/AuthProviders/GoogleAuthProvider
 import { API } from '../api/API';
 import { APIClient } from '../api/APIClient';
 import { fromDateKey } from '../utils/DateUtils';
+import { CapacitorHealthDeviceMetricsProvider } from '../services/DeviceMetricsProviders/CapacitorHealthDeviceMetricsProvider';
 
 export class PulseApp {
 
@@ -70,12 +71,14 @@ export class PulseApp {
         const cloudSyncService:CloudSyncService = new CloudSyncService(userSession, authService, api);
         let deviceMetricsSyncService:DeviceMetricsSyncService | undefined = undefined; // Can be undefined on web.
         
-        if (appConfig.platform == 'android') {
-            deviceMetricsSyncService = new HealthConnectSyncService(userSession);
-        }
-        else if (appConfig.platform == 'ios') {
-            deviceMetricsSyncService = new HealthKitSyncService(userSession);
-        }
+        deviceMetricsSyncService = new CapacitorHealthDeviceMetricsProvider(userSession);
+
+        // if (appConfig.platform == 'android') {
+        //     deviceMetricsSyncService = new HealthConnectSyncService(userSession);
+        // }
+        // else if (appConfig.platform == 'ios') {
+        //     deviceMetricsSyncService = new HealthKitSyncService(userSession);
+        // }
         deviceMetricsSyncService?.initialize()
 
         const extAPIMetricsSyncServices:ExternalAPIMetricsSyncService[] = [];

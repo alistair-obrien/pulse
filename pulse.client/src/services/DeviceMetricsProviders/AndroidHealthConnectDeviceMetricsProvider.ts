@@ -7,7 +7,6 @@ import { getLocalDayUtcRange, toDateKey } from "../../utils/DateUtils";
 import type { DeviceMetricsSyncService } from "../DeviceMetricsSyncService";
 
 // Controllers
-import type { MetricsRepository } from "../../repositories/MetricsRepository";
 import type { UserSession } from "../../UserSession";
 
 interface HealthConnectPlugin {
