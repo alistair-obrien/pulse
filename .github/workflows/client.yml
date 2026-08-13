@@ -203,3 +203,9 @@ jobs:
             -sdk iphoneos \
             CODE_SIGNING_ALLOWED=NO \
             build
+
+      - name: Upload iOS build
+        uses: actions/upload-artifact@v4
+        with:
+          name: pulse-ios-app
+          path: pulse.client/ios/App/build/Release-iphoneos/App.app
