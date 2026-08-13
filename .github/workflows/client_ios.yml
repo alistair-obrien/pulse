@@ -1,3 +1,6 @@
+# iOS Client GitHub Actions Workflow
+
+```yaml
 name: iOS Client
 
 on:
@@ -94,8 +97,11 @@ jobs:
           APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
         run: |
+          set -e
+
           CERTIFICATE_PATH="$RUNNER_TEMP/apple-distribution.p12"
           KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -hex 32)"
 
           echo "$APPLE_CERTIFICATE_BASE64" \
             | base64 --decode \
@@ -104,9 +110,20 @@ jobs:
           echo "=== Certificate file ==="
           ls -lh "$CERTIFICATE_PATH"
 
-          # Create temporary keychain
+          echo ""
+          echo "=== Inspecting P12 ==="
+
+          openssl pkcs12 \
+            -in "$CERTIFICATE_PATH" \
+            -passin "pass:$APPLE_CERTIFICATE_PASSWORD" \
+            -info \
+            -noout
+
+          echo ""
+          echo "=== Creating temporary keychain ==="
+
           security create-keychain \
-            -p "" \
+            -p "$KEYCHAIN_PASSWORD" \
             "$KEYCHAIN_PATH"
 
           security set-keychain-settings \
@@ -114,21 +131,22 @@ jobs:
             "$KEYCHAIN_PATH"
 
           security unlock-keychain \
-            -p "" \
+            -p "$KEYCHAIN_PASSWORD" \
             "$KEYCHAIN_PATH"
 
-          # Import the P12.
-          #
-          # IMPORTANT:
-          # Do NOT use "-t cert" here.
-          # A P12 contains both the certificate and private key.
+          echo ""
+          echo "=== Importing Apple Distribution certificate ==="
+
           security import "$CERTIFICATE_PATH" \
             -P "$APPLE_CERTIFICATE_PASSWORD" \
             -A \
+            -t cert \
             -f pkcs12 \
             "$KEYCHAIN_PATH"
 
-          # Make the temporary keychain available to security/codesign.
+          echo ""
+          echo "=== Configuring keychain search path ==="
+
           security list-keychains \
             -d user \
             -s "$KEYCHAIN_PATH" login.keychain-db
@@ -137,14 +155,16 @@ jobs:
             -s "$KEYCHAIN_PATH"
 
           security unlock-keychain \
-            -p "" \
+            -p "$KEYCHAIN_PASSWORD" \
             "$KEYCHAIN_PATH"
 
-          # Allow codesign/Xcode to access the private key.
+          echo ""
+          echo "=== Configuring private-key access ==="
+
           security set-key-partition-list \
             -S apple-tool:,apple:,codesign: \
             -s \
-            -k "" \
+            -k "$KEYCHAIN_PASSWORD" \
             "$KEYCHAIN_PATH"
 
           echo ""
@@ -156,13 +176,22 @@ jobs:
             "$KEYCHAIN_PATH"
 
           echo ""
-          echo "=== Certificate details ==="
+          echo "=== Apple Distribution certificates ==="
 
           security find-certificate \
             -a \
             -c "Apple Distribution" \
             "$KEYCHAIN_PATH" \
             || true
+
+          echo ""
+          echo "=== Verifying certificate/private-key pairing ==="
+
+          security find-identity \
+            -v \
+            -p codesigning \
+            "$KEYCHAIN_PATH" \
+            | grep -E "Apple Distribution|iPhone Distribution"
 
       # ------------------------------------------------------------
       # Provisioning profile
@@ -172,6 +201,8 @@ jobs:
         env:
           APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
         run: |
+          set -e
+
           PROFILE_PATH="$RUNNER_TEMP/App.mobileprovision"
           PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
 
@@ -180,6 +211,8 @@ jobs:
             > "$PROFILE_PATH"
 
           mkdir -p "$PROFILE_DIR"
+
+          echo "=== Reading provisioning profile ==="
 
           security cms \
             -D \
@@ -216,13 +249,19 @@ jobs:
               "$RUNNER_TEMP/profile.plist"
           )
 
-          echo "Profile name: $PROFILE_NAME"
-          echo "Profile UUID: $PROFILE_UUID"
-          echo "Application identifier: $PROFILE_APP_ID"
-          echo "Profile team: $PROFILE_TEAM_ID"
+          echo ""
+          echo "=== Provisioning profile ==="
+          echo "Name: $PROFILE_NAME"
+          echo "UUID: $PROFILE_UUID"
+          echo "Application ID: $PROFILE_APP_ID"
+          echo "Team ID: $PROFILE_TEAM_ID"
 
           cp "$PROFILE_PATH" \
             "$PROFILE_DIR/$PROFILE_UUID.mobileprovision"
+
+          echo ""
+          echo "Installed profile:"
+          ls -lh "$PROFILE_DIR/$PROFILE_UUID.mobileprovision"
 
           echo "IOS_PROVISIONING_PROFILE_UUID=$PROFILE_UUID" \
             >> "$GITHUB_ENV"
@@ -240,6 +279,8 @@ jobs:
           SERVER_USER: ${{ vars.SERVER_USER }}
           SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
         run: |
+          set -e
+
           mkdir -p ~/.ssh
 
           echo "$SSH_PRIVATE_KEY" \
@@ -303,20 +344,36 @@ jobs:
 
       # ------------------------------------------------------------
       # Archive
+      #
+      # IMPORTANT:
+      #
+      # Do NOT pass:
+      #
+      #   CODE_SIGN_STYLE
+      #   CODE_SIGN_IDENTITY
+      #   PROVISIONING_PROFILE_SPECIFIER
+      #
+      # here.
+      #
+      # xcodebuild applies command-line build settings to Swift
+      # Package targets too, which causes targets such as GoogleSignIn,
+      # AppAuth and Facebook to reject the provisioning profile.
+      #
+      # The archive is intentionally unsigned.
+      # Distribution signing happens during exportArchive.
       # ------------------------------------------------------------
 
       - name: Archive iOS
         working-directory: pulse.client
         env:
           IOS_BUILD_NUMBER: ${{ env.IOS_BUILD_NUMBER }}
-          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
           IOS_BUNDLE_IDENTIFIER: ${{ vars.IOS_BUNDLE_IDENTIFIER }}
         run: |
-          echo "=== Archive signing configuration ==="
-          echo "Team: $APPLE_TEAM_ID"
+          set -e
+
+          echo "=== Archive configuration ==="
           echo "Bundle ID: $IOS_BUNDLE_IDENTIFIER"
-          echo "Profile: $IOS_PROVISIONING_PROFILE_NAME_ACTUAL"
-          echo "Profile UUID: $IOS_PROVISIONING_PROFILE_UUID"
+          echo "Build: $IOS_BUILD_NUMBER"
           echo ""
 
           xcodebuild \
@@ -327,15 +384,13 @@ jobs:
             -archivePath ios/build/App.xcarchive \
             MARKETING_VERSION=1.0.0 \
             CURRENT_PROJECT_VERSION="$IOS_BUILD_NUMBER" \
-            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
             PRODUCT_BUNDLE_IDENTIFIER="$IOS_BUNDLE_IDENTIFIER" \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            PROVISIONING_PROFILE_SPECIFIER="$IOS_PROVISIONING_PROFILE_NAME_ACTUAL" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
             archive
 
       # ------------------------------------------------------------
-      # Export options
+      # Create ExportOptions.plist
       # ------------------------------------------------------------
 
       - name: Create ExportOptions.plist
@@ -345,6 +400,8 @@ jobs:
           IOS_BUNDLE_IDENTIFIER: ${{ vars.IOS_BUNDLE_IDENTIFIER }}
           IOS_PROVISIONING_PROFILE_NAME: ${{ env.IOS_PROVISIONING_PROFILE_NAME_ACTUAL }}
         run: |
+          set -e
+
           cat > ios/ExportOptions.plist <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -358,6 +415,9 @@ jobs:
 
               <key>teamID</key>
               <string>$APPLE_TEAM_ID</string>
+
+              <key>signingCertificate</key>
+              <string>Apple Distribution</string>
 
               <key>provisioningProfiles</key>
               <dict>
@@ -379,11 +439,15 @@ jobs:
 
       # ------------------------------------------------------------
       # Export IPA
+      #
+      # This is where the App Store signing happens.
       # ------------------------------------------------------------
 
       - name: Export iOS IPA
         working-directory: pulse.client
         run: |
+          set -e
+
           xcodebuild \
             -exportArchive \
             -archivePath ios/build/App.xcarchive \
@@ -396,13 +460,80 @@ jobs:
 
       - name: Inspect IPA
         working-directory: pulse.client
+        env:
+          IOS_BUNDLE_IDENTIFIER: ${{ vars.IOS_BUNDLE_IDENTIFIER }}
         run: |
+          set -e
+
           echo "=== IPA ==="
+
           ls -lah ios/build/export/
+
+          IPA_PATH=$(find ios/build/export -name "*.ipa" -type f | head -n 1)
+
+          if [ -z "$IPA_PATH" ]; then
+            echo "ERROR: No IPA was produced."
+            exit 1
+          fi
+
+          echo ""
+          echo "IPA:"
+          echo "$IPA_PATH"
 
           echo ""
           echo "=== Archive ==="
+
           ls -lah ios/build/App.xcarchive/
+
+          echo ""
+          echo "=== IPA signing inspection ==="
+
+          mkdir -p ios/build/ipa-inspect
+
+          unzip -q \
+            "$IPA_PATH" \
+            -d ios/build/ipa-inspect
+
+          APP_PATH=$(find ios/build/ipa-inspect/Payload \
+            -maxdepth 1 \
+            -name "*.app" \
+            -type d \
+            | head -n 1)
+
+          echo "App:"
+          echo "$APP_PATH"
+
+          echo ""
+          echo "=== Code signature ==="
+
+          codesign \
+            -dvv \
+            "$APP_PATH" \
+            2>&1 \
+            || true
+
+          echo ""
+          echo "=== Embedded provisioning profile ==="
+
+          if [ -f "$APP_PATH/embedded.mobileprovision" ]; then
+            security cms \
+              -D \
+              -i "$APP_PATH/embedded.mobileprovision" \
+              > ios/build/exported-profile.plist
+
+            echo "Embedded provisioning profile found."
+
+            /usr/libexec/PlistBuddy \
+              -c "Print :Name" \
+              ios/build/exported-profile.plist
+
+            /usr/libexec/PlistBuddy \
+              -c "Print :UUID" \
+              ios/build/exported-profile.plist
+
+          else
+            echo "WARNING: No embedded.mobileprovision found."
+          fi
 
       # ------------------------------------------------------------
       # Upload to TestFlight
@@ -415,6 +546,8 @@ jobs:
           APPLE_APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APPLE_APP_STORE_CONNECT_ISSUER_ID }}
           APPLE_APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APPLE_APP_STORE_CONNECT_PRIVATE_KEY }}
         run: |
+          set -e
+
           PRIVATE_KEYS="$RUNNER_TEMP/private_keys"
 
           mkdir -p "$PRIVATE_KEYS"
@@ -426,9 +559,22 @@ jobs:
           chmod 600 \
             "$PRIVATE_KEYS/AuthKey_${APPLE_APP_STORE_CONNECT_KEY_ID}.p8"
 
+          IPA_PATH=$(find ios/build/export \
+            -name "*.ipa" \
+            -type f \
+            | head -n 1)
+
+          if [ -z "$IPA_PATH" ]; then
+            echo "ERROR: IPA not found."
+            exit 1
+          fi
+
+          echo "Uploading:"
+          echo "$IPA_PATH"
+
           xcrun iTMSTransporter \
             -m upload \
-            -assetFile ios/build/export/*.ipa \
+            -assetFile "$IPA_PATH" \
             -apiKey "$APPLE_APP_STORE_CONNECT_KEY_ID" \
             -apiIssuer "$APPLE_APP_STORE_CONNECT_ISSUER_ID"
 
@@ -441,6 +587,8 @@ jobs:
           SERVER_HOST: ${{ vars.SERVER_HOST }}
           SERVER_USER: ${{ vars.SERVER_USER }}
         run: |
+          set -e
+
           ssh "$SERVER_USER@$SERVER_HOST" \
             "echo '$IOS_BUILD_NUMBER' | sudo tee /opt/pulse/versions/${{ github.ref_name }}-ios > /dev/null"
 
@@ -453,3 +601,4 @@ jobs:
         with:
           name: pulse-ios-ipa
           path: pulse.client/ios/build/export/*.ipa
+
