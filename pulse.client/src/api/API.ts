@@ -98,6 +98,10 @@ export class API {
         return this.apiClient.put(`/api/journeysteps/${dateKey}/${userId}/like`); 
     }
 
+    async deleteJournalStep(dateKey: DateKey): Promise<boolean> {
+        return this.apiClient.del(`/api/journeysteps/${dateKey}`)
+    }
+
     async putJournalStep(dateKey: DateKey): Promise<boolean> {
         return this.apiClient.put(`/api/journeysteps/${dateKey}`); 
     }

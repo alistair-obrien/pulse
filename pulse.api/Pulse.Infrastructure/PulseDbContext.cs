@@ -1,14 +1,13 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Pulse.Domain.Models;
-using System.Reflection.Emit;
+
 namespace Pulse.Infrastructure;
 
 public class PulseDbContext : IdentityDbContext<ApplicationUser>
 {
     public PulseDbContext(
-        DbContextOptions<PulseDbContext> options) : 
-        base(options)
+        DbContextOptions<PulseDbContext> options) : base(options)
     {
     }
 
@@ -24,37 +23,38 @@ public class PulseDbContext : IdentityDbContext<ApplicationUser>
     {
         base.OnModelCreating(builder);
 
-        // Links the User Id to the metric as we dont want to leak the Infrastructure user
         builder.Entity<Metric>()
             .HasOne<ApplicationUser>()
             .WithMany()
-            .HasForeignKey(m => m.UserId);
+            .HasForeignKey(x => x.UserId);
 
-        // Prevents Duplicates
         builder.Entity<Metric>()
-            .HasIndex(m => new
+            .HasIndex(x => new
             {
-                m.UserId,
-                m.Date,
-                m.MetricTypeId
+                x.UserId,
+                x.Date,
+                x.MetricTypeId
             })
             .IsUnique();
 
         builder.Entity<JourneyStep>()
             .HasOne<ApplicationUser>()
             .WithMany()
-            .HasForeignKey(m => m.UserId);
+            .HasForeignKey(x => x.UserId);
 
         builder.Entity<JourneyStep>()
-            .HasIndex(x => new { x.UserId, x.Date })
+            .HasIndex(x => new
+            {
+                x.UserId,
+                x.Date
+            })
             .IsUnique();
 
         builder.Entity<JourneyLike>()
-            .HasIndex(m => new
+            .HasIndex(x => new
             {
-                m.JourneyUserId,
-                m.JourneyDate,
-                m.LikedByUserId
+                x.JourneyStepId,
+                x.LikedByUserId
             })
             .IsUnique();
 
@@ -64,12 +64,7 @@ public class PulseDbContext : IdentityDbContext<ApplicationUser>
                 .IsUnique();
 
             entity.Property(x => x.Token)
-                .HasMaxLength(43); // Base64Url-encoded 32 random bytes
-
-            entity.HasOne(x => x.User)
-                .WithMany()
-                .HasForeignKey(x => x.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .HasMaxLength(43);
         });
     }
 }

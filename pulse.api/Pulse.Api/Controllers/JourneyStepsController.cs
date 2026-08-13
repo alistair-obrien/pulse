@@ -43,9 +43,7 @@ public class JourneyStepsController : PulseController
         foreach (var journeyStep in journeySteps)
         {
             var likes = await _db.JourneyLikes
-                .Where(x =>
-                    x.JourneyUserId == journeyStep.UserId &&
-                    x.JourneyDate == journeyStep.Date)
+                .Where(x => x.JourneyStepId == journeyStep.Id)
                 .ToListAsync();
 
             var liked = likes.Any(x => x.LikedByUserId == UserId);
@@ -145,8 +143,9 @@ public class JourneyStepsController : PulseController
         {
             journeyStep.Metrics.Add(new JourneyStepMetric
             {
+                JourneyStepId = journeyStep.Id,
                 MetricTypeId = metric.MetricTypeId,
-                JsonValue = metric.JsonValue
+                JsonValue = metric.JsonValue,
             });
         }
 
@@ -155,22 +154,16 @@ public class JourneyStepsController : PulseController
         return Ok(new PutJourneyStepResponse());
     }
 
-    [HttpPut("{date}/{userId}/like")]
-    public async Task<IActionResult> Put(DateOnly date, string userId)
+    [HttpPut("{journeyStepId:int}/like")]
+    public async Task<IActionResult> Put(int journeyStepId)
     {
-        var existingLike = await _db.JourneyLikes
-            .AnyAsync(
-                x => x.LikedByUserId == UserId &&
-                x.JourneyUserId == userId &&
-                x.JourneyDate == date);
+        var like = await _db.JourneyLikes
+            .SingleOrDefaultAsync(x =>
+                x.JourneyStepId == journeyStepId &&
+                x.LikedByUserId == UserId);
 
-        if (existingLike)
+        if (like != null)
         {
-            var like = await _db.JourneyLikes.SingleAsync(x =>
-                x.LikedByUserId == UserId &&
-                x.JourneyUserId == userId &&
-                x.JourneyDate == date);
-
             _db.JourneyLikes.Remove(like);
             await _db.SaveChangesAsync();
 
@@ -179,13 +172,30 @@ public class JourneyStepsController : PulseController
 
         _db.JourneyLikes.Add(new JourneyLike
         {
-            JourneyDate = date,
-            JourneyUserId = userId,
+            JourneyStepId = journeyStepId,
             LikedByUserId = UserId
         });
 
         await _db.SaveChangesAsync();
 
         return Ok(new { liked = true });
+    }
+
+    [HttpDelete("{date}")]
+    public async Task<IActionResult> Delete(DateOnly date)
+    {
+        var journeyStep = await _db.JourneySteps
+            .SingleOrDefaultAsync(x =>
+                x.UserId == UserId &&
+                x.Date == date);
+
+        if (journeyStep == null)
+            return NotFound();
+
+        _db.JourneySteps.Remove(journeyStep);
+
+        await _db.SaveChangesAsync();
+
+        return NoContent();
     }
 }
