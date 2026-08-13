@@ -47,8 +47,14 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install pyjwt cryptography requests
+          python3 -m venv "$RUNNER_TEMP/venv"
+
+          source "$RUNNER_TEMP/venv/bin/activate"
+
+          python -m pip install --upgrade pip
+          python -m pip install pyjwt cryptography requests
+
+          echo "$RUNNER_TEMP/venv/bin" >> "$GITHUB_PATH"
 
       # ------------------------------------------------------------
       # Generate private key + CSR
