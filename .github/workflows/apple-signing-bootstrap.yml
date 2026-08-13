@@ -17,6 +17,7 @@ permissions:
 jobs:
   bootstrap:
     runs-on: macos-latest
+    environment: ${{ github.ref_name }}
 
     steps:
 
@@ -60,7 +61,7 @@ jobs:
             exit 1
           fi
 
-          
+
       # ------------------------------------------------------------
       # Install Python dependencies
       # ------------------------------------------------------------
