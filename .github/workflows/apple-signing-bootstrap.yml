@@ -265,31 +265,62 @@ jobs:
       # Create Apple Distribution certificate
       # ------------------------------------------------------------
 
+      # ------------------------------------------------------------
+      # Create Apple Distribution certificate
+      # ------------------------------------------------------------
+
       - name: Create iOS Distribution certificate
         run: |
           TOKEN=$(cat "$APPLE_API_TOKEN_PATH")
 
-          CSR_BASE64=$(base64 \
-            < "$APPLE_CSR_PATH" \
-            | tr -d '\n')
-
-          python3 <<PY
+          python3 <<'PY'
           import json
+          import os
+
+          csr_path = os.environ["APPLE_CSR_PATH"]
+          request_path = os.environ["RUNNER_TEMP"] + "/certificate-request.json"
+
+          with open(csr_path, "r") as f:
+              csr_content = f.read()
 
           request = {
               "data": {
                   "type": "certificates",
                   "attributes": {
                       "certificateType": "IOS_DISTRIBUTION",
-                      "csrContent": "$CSR_BASE64"
+                      "csrContent": csr_content
                   }
               }
           }
 
-          with open("$RUNNER_TEMP/certificate-request.json", "w") as f:
+          with open(request_path, "w") as f:
               json.dump(request, f)
+
+          print("CSR format:")
+          print(csr_content.splitlines()[0])
+          print(csr_content.splitlines()[-1])
+          print("CSR request generated.")
           PY
 
+          echo "=== Apple certificate request ==="
+          python3 - <<'PY'
+          import json
+          import os
+
+          path = os.environ["RUNNER_TEMP"] + "/certificate-request.json"
+
+          with open(path) as f:
+              request = json.load(f)
+
+          csr = request["data"]["attributes"]["csrContent"]
+
+          print("Certificate type:", request["data"]["attributes"]["certificateType"])
+          print("CSR header:", csr.splitlines()[0])
+          print("CSR footer:", csr.splitlines()[-1])
+          print("CSR length:", len(csr))
+          PY
+
+          echo ""
           echo "=== Apple response ==="
 
           HTTP_STATUS=$(curl \
@@ -315,9 +346,7 @@ jobs:
           import json
           import os
 
-          with open(
-              os.environ["RUNNER_TEMP"] + "/certificate.json"
-          ) as f:
+          with open(os.environ["RUNNER_TEMP"] + "/certificate.json") as f:
               response = json.load(f)
 
           certificate = response["data"]
