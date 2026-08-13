@@ -439,41 +439,12 @@ jobs:
       # ------------------------------------------------------------
 
       - name: Upload to TestFlight
-        working-directory: pulse.client
-        env:
-          APPLE_APP_STORE_CONNECT_KEY_ID: ${{ secrets.APPLE_APP_STORE_CONNECT_KEY_ID }}
-          APPLE_APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APPLE_APP_STORE_CONNECT_ISSUER_ID }}
-          APPLE_APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APPLE_APP_STORE_CONNECT_PRIVATE_KEY }}
-        run: |
-          PRIVATE_KEYS="$RUNNER_TEMP/private_keys"
-
-          mkdir -p "$PRIVATE_KEYS"
-
-          printf '%s' "$APPLE_APP_STORE_CONNECT_PRIVATE_KEY" \
-            | sed 's/\\n/\n/g' \
-            > "$PRIVATE_KEYS/AuthKey_${APPLE_APP_STORE_CONNECT_KEY_ID}.p8"
-
-          chmod 600 \
-            "$PRIVATE_KEYS/AuthKey_${APPLE_APP_STORE_CONNECT_KEY_ID}.p8"
-
-          IPA_PATH=$(find ios/build/export \
-            -name "*.ipa" \
-            -type f \
-            | head -n 1)
-
-          if [ -z "$IPA_PATH" ]; then
-            echo "ERROR: IPA not found."
-            exit 1
-          fi
-
-          echo "Uploading:"
-          echo "$IPA_PATH"
-
-          xcrun iTMSTransporter \
-            -m upload \
-            -assetFile "$IPA_PATH" \
-            -apiKey "$APPLE_APP_STORE_CONNECT_KEY_ID" \
-            -apiIssuer "$APPLE_APP_STORE_CONNECT_ISSUER_ID"
+        uses: apple-actions/upload-testflight-build@v3
+        with:
+          app-path: pulse.client/ios/build/export/App.ipa
+          issuer-id: ${{ secrets.APPLE_APP_STORE_CONNECT_ISSUER_ID }}
+          api-key-id: ${{ secrets.APPLE_APP_STORE_CONNECT_KEY_ID }}
+          api-private-key: ${{ secrets.APPLE_APP_STORE_CONNECT_PRIVATE_KEY }}
 
       # ------------------------------------------------------------
       # Save version
