@@ -56,5 +56,7 @@ export const ICONS = {
     LikeFilled: "ri-heart-3-fill",
     Comment: "ri-chat-1-line",
     Edit: "ri-file-edit-line",
+    Options: "ri-more-fill",
+    Delete: "ri-delete-bin-2-fill"
     
 } as const;

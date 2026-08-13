@@ -11,6 +11,11 @@ export class UserSession {
     private userDataRepository!:UserDataRepository;
     private journeyStepRepository!:JourneyStepRepository;
 
+    private _userId:string | null = null;
+    get userId() :string | null {
+        return this._userId;
+    }
+
     private readonly appConfig:AppConfig;
 
     constructor(appConfig: AppConfig) {
@@ -53,6 +58,8 @@ export class UserSession {
         this.metricsRepository = new MetricsRepository(this.appConfig, prefix);
         this.userDataRepository = new UserDataRepository(this.appConfig, prefix);
         this.journeyStepRepository = new JourneyStepRepository(this.appConfig, prefix);
+
+        this._userId = userId
     }
 
     setUser(userId: string) {

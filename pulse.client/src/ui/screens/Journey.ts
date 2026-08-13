@@ -5,18 +5,18 @@ import { JourneyStepGroup, type JourneyStepGroupModel } from "../components/Jour
 export class JourneyScreen extends Component<JourneyScreenModel> {
 
     private readonly journeyStepGroups: JourneyStepGroup[] = [];
-    private readonly journeyStepsContainer:Div = new Div();
-
+    private readonly journeyStepsContainer: Div = new Div();
 
     constructor() {
         super();
 
         this.root.className = "screen-container";
 
-        // The content inside the screen
         this.journeyStepsContainer.className = "content";
 
-        this.root.append(this.journeyStepsContainer.root)
+        this.root.append(
+            this.journeyStepsContainer.root
+        );
     }
 
     protected render(): void {
@@ -31,7 +31,8 @@ export class JourneyScreen extends Component<JourneyScreenModel> {
         }
 
         this.journeyStepGroups.forEach((card, i) =>
-            card.update(this.model.journeyStepGroups[i]));
+            card.update(this.model.journeyStepGroups[i])
+        );
     }
 }
 

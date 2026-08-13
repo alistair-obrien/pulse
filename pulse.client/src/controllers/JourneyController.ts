@@ -16,6 +16,7 @@ import { JourneyStepGroupModel } from "../ui/components/JourneyStepGroup";
 import type { PulseApp } from "../ui/PulseApp";
 import { ReflectionTextModel } from "../ui/components/ReflectionText";
 import type { UserSession } from "../UserSession";
+import { JourneyContextPopupModel } from "../ui/components/JourneyContextPopup";
 
 const DEFAULT_JOURNEY_STEP_METRICS  = [
     MetricTypeIds.Reflection,
@@ -37,7 +38,6 @@ export class JourneyController {
     private readonly authService:AuthService;
     private readonly api:API;
     private readonly pulseApp:PulseApp;
-
 
     constructor(args: {
         userSession: UserSession,
@@ -158,14 +158,25 @@ export class JourneyController {
                 className: "row left-group"
             })
             actionRowModel.content.push(leftGroup);
-            const editActBtn = new ActionButtonModel({
-                iconClass: ICONS.Edit,
-                labelStr: "",
-                onClick: () => {
-                    this.pulseApp.openMyDayAtDate(element.date)
-                }
+
+
+            journeyStepsCard.contextPopup = new JourneyContextPopupModel({
+                onEdit: () => this.openInMyDay(element),
+                onUnpublish: () => this.unpublish(element)
             })
-            leftGroup.content.push(editActBtn);
+
+            if (element.userId == this.userSession.userId) {
+                const editActBtn = new ActionButtonModel({
+                    iconClass: ICONS.Options,
+                    labelStr: "",
+                    onClick: () => {
+                        journeyStepsCard.contextPopup.visible = !journeyStepsCard.contextPopup.visible;
+                        this.screen.update(this.model);
+                    }
+                })
+                leftGroup.content.push(editActBtn);
+            }
+
 
             const rightGroup = new DivModel({
                 className: "row right-group"
@@ -277,5 +288,17 @@ export class JourneyController {
     async likeJourneyStep(journeyStep: JourneyStep) : Promise<{ liked: boolean }> {
         // Need just the journey id maybe. Though date and user are consistent
         return await this.api.likeJourneyStep(journeyStep.date, journeyStep.userId);
+    }
+
+    async unpublish(journeyStep: JourneyStep) {
+        if (this.authService.isLoggedIn()) {
+            await this.api.deleteJournalStep(journeyStep.date);
+        } else {
+            // Mark local journey record as unpublished.
+            // ...
+        }
+    }
+    async openInMyDay(journeyStep: JourneyStep) {
+        this.pulseApp.openMyDayAtDate(journeyStep.date);   
     }
 }
