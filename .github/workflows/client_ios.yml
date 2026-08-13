@@ -1,6 +1,5 @@
 # iOS Client GitHub Actions Workflow
 
-```yaml
 name: iOS Client
 
 on:
@@ -601,4 +600,3 @@ jobs:
         with:
           name: pulse-ios-ipa
           path: pulse.client/ios/build/export/*.ipa
-
