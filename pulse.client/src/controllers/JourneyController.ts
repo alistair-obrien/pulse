@@ -186,12 +186,13 @@ export class JourneyController {
             })
             actionRowModel.content.push(rightGroup);
 
-            const commentActBtn = new ActionButtonModel({
-                iconClass: ICONS.Comment,
-                labelStr: element.comments.length.toLocaleString(),
-                onClick: () => console.log("Comment") // TODO
-            })
-            rightGroup.content.push(commentActBtn);
+            // TODO
+            // const commentActBtn = new ActionButtonModel({
+            //     iconClass: ICONS.Comment,
+            //     labelStr: element.comments.length.toLocaleString(),
+            //     onClick: () => console.log("Comment") // TODO
+            // })
+            // rightGroup.content.push(commentActBtn);
 
             const likeActBtn = new ActionButtonModel({
                 iconClass: element.liked ? ICONS.LikeFilled : ICONS.Like,
