@@ -107,7 +107,9 @@ export class MyDayController {
         const newDateKey = toDateKey(newDate);
 
         const today = new Date();
-        const minDate = new Date(today.getDate() - 3);
+        const minDate = new Date(today);
+        minDate.setDate(today.getDate() - 300);
+
         const maxDate = today;
 
         const image = this.imageService.getRandomImageUrl(newDate.getFullYear() + newDate.getMonth() + newDate.getDate());
@@ -131,7 +133,10 @@ export class MyDayController {
                 publishButtonModel: new PublishButtonModel( 
                     {
                         published: published,
-                        onClick: () => this.publishAction(published)
+                        onClick: async () => { 
+                            await this.publishAction(published); 
+                            await this.refresh(); 
+                        }
                     }
                 ), 
                 dateRowModel: new DateRowModel({
@@ -273,9 +278,9 @@ export class MyDayController {
         workouts.forEach(element => {
             activitiesRowModel.content.push(new MetricCardModel({ 
                 name: element.workoutType, 
-                iconClass: ICONS.Strength,
+                iconClass: ICONS.Activity,
                 metricValue: new TimeSpanModel({  
-                    time: element.workoutDuration
+                    time: element.workoutDuration / 60 //Workout duration comes out as minutes
                 }) 
             }));
         });
@@ -290,7 +295,9 @@ export class MyDayController {
             new ActionButtonModel({ 
                 iconClass: ICONS.CloudSync, 
                 labelStr: "Cloud Sync", 
-                onClick: () => this.syncFromCloud()
+                onClick: async () => { 
+                    await this.syncFromCloud(this.model.selectedDate); 
+                    await this.refresh(); }
             })
         );
 
@@ -299,7 +306,9 @@ export class MyDayController {
                 new ActionButtonModel({
                     iconClass: ICONS.DeviceSync,
                     labelStr: "Device Sync",
-                    onClick: () => this.syncFromDevice()
+                    onClick: async () => { 
+                        await this.syncFromDevice(this.model.selectedDate);
+                        await this.refresh(); }
                 })            
             );
         }
@@ -309,7 +318,9 @@ export class MyDayController {
             new ActionButtonModel({
                 iconClass: ICONS.ExtAPISync,
                 labelStr: "Ext API Sync",
-                onClick: () => this.syncFromExtAPI()
+                onClick: async () => { 
+                    await this.syncFromExtAPI(this.model.selectedDate); 
+                    await this.refresh(); }
             })
         );
         
@@ -323,14 +334,23 @@ export class MyDayController {
 
     }
 
-    async loadDate(date:Date) {
-        await Promise.allSettled([
-            this.syncFromCloud(),
-            this.syncFromDevice(),
-            this.syncFromExtAPI(),
-        ]);
-        await this.buildModel(date)
+    async loadDate(date: Date) {
+        // Build and display immediately using whatever data is currently available
+        await this.buildModel(date);
         await this.screen?.update(this.model);
+
+        // Sync in the background. Refresh when each one completes.
+        void this.syncFromCloud(date).then(() => this.refreshIfDate(date));
+        void this.syncFromDevice(date).then(() => this.refreshIfDate(date));
+        void this.syncFromExtAPI(date).then(() => this.refreshIfDate(date));
+    }
+
+    private async refreshIfDate(date: Date) {
+        // Don't let an old request overwrite a newer selected date
+        if (toDateKey(this.model.selectedDate) !== toDateKey(date))
+            return;
+
+        await this.refresh();
     }
 
     // let animating:boolean  = false
@@ -346,35 +366,32 @@ export class MyDayController {
         await this.screen?.update(this.model);
     }
 
-    async syncFromCloud() {
+    async syncFromCloud(date:Date) {
         if (this.cloudMetricsSyncService?.isAvailable()) { 
-            await this.cloudMetricsSyncService.sync(this.model!.selectedDate);
-            await this.refresh();
-            // await Toast.show({ text: "Synced with Cloud!", duration: "short", position: "bottom" });
+            await this.cloudMetricsSyncService.sync(date);
         }
     }
 
-    async syncFromDevice() {
+    async syncFromDevice(date:Date) {
         if (this.deviceMetricsSyncService?.isAvailable()) { 
-            await this.deviceMetricsSyncService.sync(this.model!.selectedDate);
-            await this.refresh();
-            // await Toast.show({ text: "Synced with Device!", duration: "short", position: "bottom" }); 
+            await this.deviceMetricsSyncService.sync(date);
         }
         
     }
 
-    async syncFromExtAPI() {
-        let syncedAPICount = 0; 
-        this.extAPIMetricsSyncServices.forEach(async element => {
-            if (element.isAvailable()) { 
-                await element.sync(this.model!.selectedDate); 
-                syncedAPICount++; 
-            }
-        });
-        if (syncedAPICount > 0) {
-            // await Toast.show({ text: "Synced with External APIs!", duration: "short", position: "bottom" });
-            await this.refresh();
-        }
+    async syncFromExtAPI(date:Date) {
+        let syncedAPICount = 0;
+
+        await Promise.all(
+            this.extAPIMetricsSyncServices.map(async element => {
+                if (element.isAvailable()) {
+                    await element.sync(date);
+                    syncedAPICount++;
+                }
+            })
+        );
+
+        return syncedAPICount;
     }
 
     async publishAction(published:boolean) {
