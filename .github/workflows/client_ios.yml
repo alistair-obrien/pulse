@@ -1,0 +1,83 @@
+name: iOS Client
+
+on:
+  push:
+    branches:
+      - production
+      - development
+    paths:
+      - 'pulse.client/**'
+      - '.github/workflows/client.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: client-deployment-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    environment: ${{ github.ref_name }}
+
+    steps:
+      - name: Set build metadata
+        run: |
+          echo "PULSE_BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> "$GITHUB_ENV"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: pulse.client/package-lock.json
+
+      - name: Install dependencies
+        working-directory: pulse.client
+        run: npm ci
+
+      - name: Build client
+        working-directory: pulse.client
+        env:
+          VITE_APP_SOURCE: ${{ github.ref_name }}_ios
+          VITE_ENVIRONMENT: ${{ github.ref_name }}
+          VITE_API_URL: ${{ vars.API_URL }}
+          VITE_GOOGLE_LOGIN_WEBCLIENT_ID: ${{ secrets.GOOGLE_LOGIN_WEBCLIENT_ID }}
+        run: |
+          npx vite build --mode ${{ github.ref_name }}
+
+      - name: Generate iOS App Icons
+        working-directory: pulse.client
+        run: npx capacitor-assets generate --ios
+
+      - name: Sync Capacitor
+        working-directory: pulse.client
+        run: npx cap sync ios
+
+      - name: Inspect iOS project
+        working-directory: pulse.client
+        run: |
+          echo "=== iOS project ==="
+          find ios -maxdepth 4 -type f | sort
+
+      - name: Build iOS
+        working-directory: pulse.client
+        run: |
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath ios/build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Upload iOS build
+        uses: actions/upload-artifact@v4
+        with:
+          name: pulse-ios-app
+          path: pulse.client/ios/build/Build/Products/Release-iphoneos/App.app
