@@ -1,0 +1,419 @@
+name: Bootstrap Apple Signing
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bootstrap:
+    runs-on: macos-latest
+
+    steps:
+
+      # ------------------------------------------------------------
+      # Configuration
+      # ------------------------------------------------------------
+
+      - name: Configure Apple credentials
+        env:
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_APP_STORE_CONNECT_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_APP_STORE_CONNECT_ISSUER_ID }}
+          APPLE_API_PRIVATE_KEY: ${{ secrets.APPLE_APP_STORE_CONNECT_PRIVATE_KEY }}
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+        run: |
+          echo "$APPLE_API_PRIVATE_KEY" \
+            > "$RUNNER_TEMP/AuthKey_${APPLE_API_KEY_ID}.p8"
+
+          echo "APPLE_API_KEY_ID=$APPLE_API_KEY_ID" >> "$GITHUB_ENV"
+          echo "APPLE_API_ISSUER_ID=$APPLE_API_ISSUER_ID" >> "$GITHUB_ENV"
+          echo "APPLE_TEAM_ID=$APPLE_TEAM_ID" >> "$GITHUB_ENV"
+
+          echo "APPLE_API_PRIVATE_KEY_PATH=$RUNNER_TEMP/AuthKey_${APPLE_API_KEY_ID}.p8" \
+            >> "$GITHUB_ENV"
+
+      # ------------------------------------------------------------
+      # Install Python dependencies
+      # ------------------------------------------------------------
+
+      - name: Install Python dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install pyjwt cryptography requests
+
+      # ------------------------------------------------------------
+      # Generate private key + CSR
+      # ------------------------------------------------------------
+
+      - name: Generate distribution private key
+        run: |
+          openssl genrsa \
+            -out "$RUNNER_TEMP/apple-distribution.key" \
+            2048
+
+          chmod 600 "$RUNNER_TEMP/apple-distribution.key"
+
+          echo "APPLE_PRIVATE_KEY_PATH=$RUNNER_TEMP/apple-distribution.key" \
+            >> "$GITHUB_ENV"
+
+      - name: Generate certificate signing request
+        run: |
+          openssl req \
+            -new \
+            -key "$APPLE_PRIVATE_KEY_PATH" \
+            -out "$RUNNER_TEMP/apple-distribution.csr" \
+            -subj "/CN=Pulse Distribution"
+
+          echo "APPLE_CSR_PATH=$RUNNER_TEMP/apple-distribution.csr" \
+            >> "$GITHUB_ENV"
+
+      # ------------------------------------------------------------
+      # Generate App Store Connect JWT
+      # ------------------------------------------------------------
+
+      - name: Generate App Store Connect JWT
+        run: |
+          python3 <<'PY'
+          import jwt
+          import time
+          import os
+
+          with open(os.environ["APPLE_API_PRIVATE_KEY_PATH"]) as f:
+              private_key = f.read()
+
+          now = int(time.time())
+
+          token = jwt.encode(
+              {
+                  "iss": os.environ["APPLE_API_ISSUER_ID"],
+                  "iat": now,
+                  "exp": now + 1200,
+                  "aud": "appstoreconnect-v1",
+              },
+              private_key,
+              algorithm="ES256",
+              headers={
+                  "kid": os.environ["APPLE_API_KEY_ID"],
+                  "typ": "JWT",
+              },
+          )
+
+          path = os.environ["RUNNER_TEMP"] + "/apple-api-token"
+
+          with open(path, "w") as f:
+              f.write(token)
+
+          PY
+
+          echo "APPLE_API_TOKEN_PATH=$RUNNER_TEMP/apple-api-token" \
+            >> "$GITHUB_ENV"
+
+      # ------------------------------------------------------------
+      # Find Bundle ID
+      # ------------------------------------------------------------
+
+      - name: Find Pulse Bundle ID
+        env:
+          BUNDLE_IDENTIFIER: ${{ vars.IOS_BUNDLE_IDENTIFIER }}
+        run: |
+          TOKEN=$(cat "$APPLE_API_TOKEN_PATH")
+
+          curl --fail-with-body \
+            -sS \
+            -G \
+            -H "Authorization: Bearer $TOKEN" \
+            --data-urlencode "filter[identifier]=$BUNDLE_IDENTIFIER" \
+            "https://api.appstoreconnect.apple.com/v1/bundleIds" \
+            > "$RUNNER_TEMP/bundle-id.json"
+
+          python3 <<'PY'
+          import json
+          import os
+
+          path = os.environ["RUNNER_TEMP"] + "/bundle-id.json"
+
+          with open(path) as f:
+              response = json.load(f)
+
+          items = response.get("data", [])
+
+          if not items:
+              raise SystemExit(
+                  "Bundle ID not found: " +
+                  os.environ["BUNDLE_IDENTIFIER"]
+              )
+
+          bundle_id = items[0]
+
+          print("Bundle ID:")
+          print(bundle_id["attributes"]["identifier"])
+
+          print("Apple Bundle ID resource:")
+          print(bundle_id["id"])
+
+          with open(os.environ["GITHUB_ENV"], "a") as f:
+              f.write(f'APPLE_BUNDLE_ID_RESOURCE={bundle_id["id"]}\n')
+          PY
+
+      # ------------------------------------------------------------
+      # Create Apple Distribution certificate
+      # ------------------------------------------------------------
+
+      - name: Create iOS Distribution certificate
+        run: |
+          TOKEN=$(cat "$APPLE_API_TOKEN_PATH")
+
+          CSR_BASE64=$(base64 \
+            < "$APPLE_CSR_PATH" \
+            | tr -d '\n')
+
+          python3 <<PY
+          import json
+
+          request = {
+              "data": {
+                  "type": "certificates",
+                  "attributes": {
+                      "certificateType": "IOS_DISTRIBUTION",
+                      "csrContent": "$CSR_BASE64"
+                  }
+              }
+          }
+
+          with open("$RUNNER_TEMP/certificate-request.json", "w") as f:
+              json.dump(request, f)
+          PY
+
+          curl --fail-with-body \
+            -sS \
+            -X POST \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d @"$RUNNER_TEMP/certificate-request.json" \
+            "https://api.appstoreconnect.apple.com/v1/certificates" \
+            > "$RUNNER_TEMP/certificate.json"
+
+          python3 <<'PY'
+          import json
+          import os
+
+          with open(os.environ["RUNNER_TEMP"] + "/certificate.json") as f:
+              response = json.load(f)
+
+          certificate = response["data"]
+
+          print("Certificate ID:")
+          print(certificate["id"])
+
+          print("Certificate type:")
+          print(certificate["attributes"]["certificateType"])
+
+          with open(os.environ["GITHUB_ENV"], "a") as f:
+              f.write(
+                  f'APPLE_CERTIFICATE_ID={certificate["id"]}\n'
+              )
+          PY
+
+      # ------------------------------------------------------------
+      # Download certificate
+      # ------------------------------------------------------------
+
+      - name: Download certificate
+        run: |
+          TOKEN=$(cat "$APPLE_API_TOKEN_PATH")
+
+          curl --fail-with-body \
+            -sS \
+            -H "Authorization: Bearer $TOKEN" \
+            "https://api.appstoreconnect.apple.com/v1/certificates/$APPLE_CERTIFICATE_ID" \
+            > "$RUNNER_TEMP/certificate-response.json"
+
+          python3 <<'PY'
+          import json
+          import base64
+          import os
+
+          path = os.environ["RUNNER_TEMP"] + "/certificate-response.json"
+
+          with open(path) as f:
+              response = json.load(f)
+
+          content = response["data"]["attributes"]["certificateContent"]
+
+          certificate_path = (
+              os.environ["RUNNER_TEMP"] +
+              "/apple-distribution.cer"
+          )
+
+          with open(certificate_path, "wb") as f:
+              f.write(base64.b64decode(content))
+
+          print("Certificate downloaded.")
+          PY
+
+      # ------------------------------------------------------------
+      # Create password-protected P12
+      # ------------------------------------------------------------
+
+      - name: Create P12
+        env:
+          P12_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          openssl pkcs12 \
+            -export \
+            -inkey "$APPLE_PRIVATE_KEY_PATH" \
+            -in "$RUNNER_TEMP/apple-distribution.cer" \
+            -out "$RUNNER_TEMP/apple-distribution.p12" \
+            -passout "pass:$P12_PASSWORD"
+
+          chmod 600 "$RUNNER_TEMP/apple-distribution.p12"
+
+          echo "P12 created."
+
+      # ------------------------------------------------------------
+      # Create App Store provisioning profile
+      # ------------------------------------------------------------
+
+      - name: Create App Store provisioning profile
+        env:
+          PROFILE_NAME: ${{ vars.IOS_PROVISIONING_PROFILE_NAME }}
+        run: |
+          TOKEN=$(cat "$APPLE_API_TOKEN_PATH")
+
+          python3 <<PY
+          import json
+
+          request = {
+              "data": {
+                  "type": "profiles",
+                  "attributes": {
+                      "name": "$PROFILE_NAME",
+                      "profileType": "IOS_APP_STORE"
+                  },
+                  "relationships": {
+                      "bundleId": {
+                          "data": {
+                              "type": "bundleIds",
+                              "id": "$APPLE_BUNDLE_ID_RESOURCE"
+                          }
+                      },
+                      "certificates": {
+                          "data": [
+                              {
+                                  "type": "certificates",
+                                  "id": "$APPLE_CERTIFICATE_ID"
+                              }
+                          ]
+                      }
+                  }
+              }
+          }
+
+          with open("$RUNNER_TEMP/profile-request.json", "w") as f:
+              json.dump(request, f)
+          PY
+
+          curl --fail-with-body \
+            -sS \
+            -X POST \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d @"$RUNNER_TEMP/profile-request.json" \
+            "https://api.appstoreconnect.apple.com/v1/profiles" \
+            > "$RUNNER_TEMP/profile.json"
+
+          python3 <<'PY'
+          import json
+          import base64
+          import os
+
+          path = os.environ["RUNNER_TEMP"] + "/profile.json"
+
+          with open(path) as f:
+              response = json.load(f)
+
+          profile = response["data"]
+
+          print("Provisioning profile:")
+          print(profile["attributes"]["name"])
+
+          print("Profile type:")
+          print(profile["attributes"]["profileType"])
+
+          content = profile["attributes"]["profileContent"]
+
+          output = (
+              os.environ["RUNNER_TEMP"] +
+              "/App.mobileprovision"
+          )
+
+          with open(output, "wb") as f:
+              f.write(base64.b64decode(content))
+
+          PY
+
+      # ------------------------------------------------------------
+      # Package signing assets
+      # ------------------------------------------------------------
+
+      - name: Package signing assets
+        run: |
+          mkdir -p "$RUNNER_TEMP/apple-signing"
+
+          cp "$RUNNER_TEMP/apple-distribution.p12" \
+            "$RUNNER_TEMP/apple-signing/apple-distribution.p12"
+
+          cp "$RUNNER_TEMP/App.mobileprovision" \
+            "$RUNNER_TEMP/apple-signing/App.mobileprovision"
+
+          echo "=== Signing assets ==="
+
+          ls -lah "$RUNNER_TEMP/apple-signing"
+
+      # ------------------------------------------------------------
+      # Upload temporary artifact
+      # ------------------------------------------------------------
+
+      - name: Upload signing assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: apple-signing-assets
+          path: ${{ runner.temp }}/apple-signing/
+          retention-days: 1
+
+      # ------------------------------------------------------------
+      # Print configuration
+      # ------------------------------------------------------------
+
+      - name: Print configuration
+        env:
+          BUNDLE_IDENTIFIER: ${{ vars.IOS_BUNDLE_IDENTIFIER }}
+          PROFILE_NAME: ${{ vars.IOS_PROVISIONING_PROFILE_NAME }}
+        run: |
+          echo ""
+          echo "============================================================"
+          echo "APPLE SIGNING BOOTSTRAP COMPLETE"
+          echo "============================================================"
+          echo ""
+          echo "Bundle ID:"
+          echo "$BUNDLE_IDENTIFIER"
+          echo ""
+          echo "Provisioning Profile:"
+          echo "$PROFILE_NAME"
+          echo ""
+          echo "GitHub Variables:"
+          echo ""
+          echo "APPLE_TEAM_ID"
+          echo "IOS_BUNDLE_IDENTIFIER"
+          echo "IOS_PROVISIONING_PROFILE_NAME"
+          echo ""
+          echo "GitHub Secrets:"
+          echo ""
+          echo "APPLE_CERTIFICATE_BASE64"
+          echo "APPLE_CERTIFICATE_PASSWORD"
+          echo "APPLE_PROVISIONING_PROFILE_BASE64"
+          echo ""
+          echo "Download the 'apple-signing-assets' artifact."
+          echo ""
+          echo "============================================================"
