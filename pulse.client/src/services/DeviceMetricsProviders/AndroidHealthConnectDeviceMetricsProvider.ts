@@ -8,31 +8,28 @@ import type { DeviceMetricsSyncService } from "../DeviceMetricsSyncService";
 
 // Controllers
 import type { UserSession } from "../../UserSession";
+import type { ActivityLogData } from "../../models/ActivityLogData";
 
 interface HealthConnectPlugin {
-    isAvailable() : Promise<AvailabilityResult>;
+    isAvailable(): Promise<AvailabilityResult>;
 
-    hasHealthConnectPermissions() : Promise<HasHealthConnectPermissionsResult>;
-    
-    requestHealthConnectPermissions() : Promise<{}>;
+    hasHealthConnectPermissions(): Promise<HasHealthConnectPermissionsResult>;
 
-    openHealthConnectSettings() : Promise<void>;
+    requestHealthConnectPermissions(): Promise<{}>;
 
-    readSteps(options:ReadStepsOptions) : Promise<ReadStepsResult>;
+    openHealthConnectSettings(): Promise<void>;
 
-    readSleep(options:ReadSleepOptions) : Promise<ReadSleepResult>;
+    readSteps(options: ReadStepsOptions): Promise<ReadStepsResult>;
 
-    readNutrition(options:ReadNutritionOptions) : Promise<ReadNutritionResult>;
+    readSleep(options: ReadSleepOptions): Promise<ReadSleepResult>;
 
-    readRestingHeartRate(options:ReadRestingHeartRateOptions) : Promise<ReadRestingHeartRateResult>;
+    readNutrition(options: ReadNutritionOptions): Promise<ReadNutritionResult>;
 
-    // readHeartRate(start:Date, end:Date) : Promise<{}>;
+    readRestingHeartRate(
+        options: ReadRestingHeartRateOptions
+    ): Promise<ReadRestingHeartRateResult>;
 
-    // readSleep(start:Date, end:Date) : Promise<{}>;
-
-    // writeWeight(weight:number) : Promise<{}>;
-
-    // writeExercise(exercise:number) : Promise<{}>;
+    readActivities(options: ReadActivityOptions): Promise<ReadActivityResult>;
 }
 
 interface AvailabilityResult {
@@ -46,39 +43,41 @@ interface HasHealthConnectPermissionsResult {
 }
 
 // >>> Steps <<<
+
 interface ReadStepsOptions {
-    startUtc: string;
-    endUtc: string;
+    startUtc: Date;
+    endUtc: Date;
 }
 
 interface ReadStepsResult {
-    totalSteps: number
-    // samples: StepSample[];
+    totalSteps: number;
 }
 
 // >>> Sleep <<<
+
 interface ReadSleepOptions {
-    startUtc: string;
-    endUtc: string;
+    startUtc: Date;
+    endUtc: Date;
 }
 
 interface ReadSleepResult {
-    sessions: SleepSession[]
+    sessions: SleepSession[];
 }
 
 interface SleepSession {
-    startTime:string; 
-    endTime:string;
-    title:string;
-    notes:string;
+    startTime: string;
+    endTime: string;
+    title: string;
+    notes: string;
     startZoneOffset: string;
     endZoneOffset: string;
 }
 
 // >>> Nutrition <<<
+
 interface ReadNutritionOptions {
-    startUtc: string;
-    endUtc: string;
+    startUtc: Date;
+    endUtc: Date;
 }
 
 interface ReadNutritionResult {
@@ -90,23 +89,39 @@ interface ReadNutritionResult {
 }
 
 // >>> Resting Heart Rate <<<
+
 interface ReadRestingHeartRateOptions {
-    startUtc: string;
-    endUtc: string;
+    startUtc: Date;
+    endUtc: Date;
 }
 
 interface ReadRestingHeartRateResult {
     averageRestingHeartRate: number;
 }
 
+// >>> Activity <<<
+
+interface ReadActivityOptions {
+    startUtc: Date;
+    endUtc: Date;
+}
+
+interface ReadActivityResult {
+    activities: ActivityLogData[];
+}
+
 // Java Plugin HealthConnectPlugin.java
-export const HealthConnect = registerPlugin<HealthConnectPlugin>("HealthConnect");
+export const HealthConnect =
+    registerPlugin<HealthConnectPlugin>("HealthConnect");
 
 type HealthConnectData = {
     steps: Awaited<ReturnType<typeof HealthConnect.readSteps>>;
-    restingHeartRate: Awaited<ReturnType<typeof HealthConnect.readRestingHeartRate>>;
+    restingHeartRate: Awaited<
+        ReturnType<typeof HealthConnect.readRestingHeartRate>
+    >;
     sleep: Awaited<ReturnType<typeof HealthConnect.readSleep>>;
     nutrition: Awaited<ReturnType<typeof HealthConnect.readNutrition>>;
+    activities: ActivityLogData[];
 };
 
 const IMPORTERS = [
@@ -116,7 +131,8 @@ const IMPORTERS = [
     },
     {
         metric: MetricTypeIds.RestingHeartRate,
-        value: (hc: HealthConnectData) => hc.restingHeartRate.averageRestingHeartRate
+        value: (hc: HealthConnectData) =>
+            hc.restingHeartRate.averageRestingHeartRate
     },
     {
         metric: MetricTypeIds.Sleep,
@@ -124,7 +140,7 @@ const IMPORTERS = [
             hc.sleep.sessions.map(session => ({
                 sleepHours:
                     (new Date(session.endTime).getTime() -
-                     new Date(session.startTime).getTime()) /
+                        new Date(session.startTime).getTime()) /
                     (1000 * 60 * 60),
                 sleepNotes: session.notes ?? ""
             }))
@@ -139,21 +155,28 @@ const IMPORTERS = [
     },
     {
         metric: MetricTypeIds.Nutrition_Carbs,
-        value: (hc: HealthConnectData) => hc.nutrition.totalCarbohydrates
+        value: (hc: HealthConnectData) =>
+            hc.nutrition.totalCarbohydrates
     },
     {
         metric: MetricTypeIds.Nutrition_Fat,
         value: (hc: HealthConnectData) => hc.nutrition.totalFats
+    },
+    // TODO: Aggregate them. ie all walking should be under one activity
+    {
+        metric: MetricTypeIds.Activities,
+        value: (hc: HealthConnectData) => hc.activities
     }
 ] as const;
 
-export class HealthConnectSyncService implements DeviceMetricsSyncService {
-    
-    private initialized:boolean = false;
-    private _isAvailable:boolean = false;
+export class HealthConnectSyncService
+    implements DeviceMetricsSyncService {
+
+    private initialized: boolean = false;
+    private _isAvailable: boolean = false;
     private syncing = false;
-    
-    private readonly userSession:UserSession;
+
+    private readonly userSession: UserSession;
 
     constructor(userSession: UserSession) {
         this.userSession = userSession;
@@ -163,10 +186,12 @@ export class HealthConnectSyncService implements DeviceMetricsSyncService {
         if (this.initialized)
             return;
 
-        const response = await HealthConnect.isAvailable()
-        
+        const response = await HealthConnect.isAvailable();
+
         if (response.available) {
-            const hasPerms = await HealthConnect.hasHealthConnectPermissions();
+            const hasPerms =
+                await HealthConnect.hasHealthConnectPermissions();
+
             console.log(JSON.stringify(hasPerms));
 
             if (!hasPerms.has_permissions) {
@@ -178,33 +203,33 @@ export class HealthConnectSyncService implements DeviceMetricsSyncService {
 
         this.initialized = true;
     }
-    
+
     private async openPermissions() {
         console.log("Requesting permissions...");
 
-        const result = await HealthConnect.requestHealthConnectPermissions();
+        const result =
+            await HealthConnect.requestHealthConnectPermissions();
 
         console.log(JSON.stringify(result));
 
-        const after = await HealthConnect.hasHealthConnectPermissions();
+        const after =
+            await HealthConnect.hasHealthConnectPermissions();
 
         console.log(JSON.stringify(after));
     }
 
     async isAvailable(): Promise<boolean> {
-
         await this.ensureInitialized();
         return this._isAvailable;
     }
-    
+
     async configure(): Promise<void> {
         await HealthConnect.openHealthConnectSettings();
-        // await this.openPermissions();
     }
 
     async ensureInitialized() {
         if (!this.initialized) {
-            await this.initialize();            
+            await this.initialize();
         }
     }
 
@@ -222,31 +247,40 @@ export class HealthConnectSyncService implements DeviceMetricsSyncService {
 
         try {
             this.syncing = true;
+
             const dateRange = getLocalDayUtcRange(date);
             const dateKey = toDateKey(date);
 
-
             console.log("SYNC DATE", date.toString());
-            console.log("START UTC", JSON.stringify(dateRange.startUtc));
-            console.log("END UTC", JSON.stringify(dateRange.endUtc));
+            console.log(
+                "START UTC",
+                JSON.stringify(dateRange.startUtc)
+            );
+            console.log(
+                "END UTC",
+                JSON.stringify(dateRange.endUtc)
+            );
 
             const [
                 steps,
                 restingHeartRate,
                 sleep,
-                nutrition
+                nutrition,
+                activities
             ] = await Promise.all([
                 HealthConnect.readSteps(dateRange),
                 HealthConnect.readRestingHeartRate(dateRange),
                 HealthConnect.readSleep(dateRange),
-                HealthConnect.readNutrition(dateRange)
+                HealthConnect.readNutrition(dateRange),
+                HealthConnect.readActivities(dateRange)
             ]);
 
             const healthData: HealthConnectData = {
                 steps,
                 restingHeartRate,
                 sleep,
-                nutrition
+                nutrition,
+                activities: this.aggregateActivities(activities.activities)
             };
 
             console.log(JSON.stringify(healthData));
@@ -259,11 +293,34 @@ export class HealthConnectSyncService implements DeviceMetricsSyncService {
                 );
             }
         }
-        catch(e) {
+        catch (e) {
             console.error("Device sync failed", e);
         }
         finally {
             this.syncing = false;
         }
+    }
+
+
+    // TODO: Parse HEVY format to deduce actual activities
+    private aggregateActivities(
+        activities: ActivityLogData[]
+    ): ActivityLogData[] {
+
+        const aggregated = new Map<string, ActivityLogData>();
+
+        for (const activity of activities) {
+            const existing = aggregated.get(activity.type);
+
+            if (existing) {
+                existing.duration += activity.duration;
+            } else {
+                aggregated.set(activity.type, {
+                    ...activity
+                });
+            }
+        }
+
+        return Array.from(aggregated.values());
     }
 }

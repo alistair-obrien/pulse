@@ -1,4 +1,4 @@
-import type { AppConfig } from "../../AppConfig";
+import type { PulseAppConfig } from "../../PulseAppConfig";
 import "../styles/version-tag.css";
 
 // App Source
@@ -52,7 +52,7 @@ export class VersionTag {
 
     readonly root: HTMLElement;
 
-    constructor(versionData: AppConfig) {
+    constructor(versionData: PulseAppConfig) {
         this.root = document.createElement("div");
         this.root.id = "version-tag";
         this.root.className = "version-annotation";

@@ -1,4 +1,4 @@
-package com.pixeldust.pulse.health_connect
+package com.pixeldust.pulse.health
 
 import android.content.Intent
 import com.getcapacitor.JSObject
@@ -28,6 +28,8 @@ import androidx.health.connect.client.records.NutritionRecord
 import androidx.health.connect.client.records.RestingHeartRateRecord
 import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.WeightRecord
+import androidx.health.connect.client.aggregate.AggregateMetric
+import androidx.health.connect.client.request.AggregateRequest
 import com.getcapacitor.JSArray
 import androidx.health.connect.client.records.Record
 import kotlin.reflect.KClass
@@ -138,6 +140,21 @@ class HealthConnectPlugin : Plugin() {
         ).records
     }
 
+//    private suspend fun aggregate(
+//        metrics: Set<AggregateMetric<*>>,
+//        start: Instant,
+//        end: Instant
+//    ): Map<AggregateMetric<*>, Any?> {
+//        val client = HealthConnectClient.getOrCreate(context)
+//
+//        return client.aggregate(
+//            AggregateRequest(
+//                metrics = metrics,
+//                timeRangeFilter = TimeRangeFilter.between(start, end)
+//            )
+//        )
+//    }
+
     private fun launchPluginCall(
         call: PluginCall,
         block: suspend () -> JSObject
@@ -233,6 +250,56 @@ class HealthConnectPlugin : Plugin() {
     }
 
     @PluginMethod
+    fun readActivities(call: PluginCall) = launchPluginCall(call) {
+
+        val (start, end) = call.getTimeRange()
+
+        val records = readRecords(
+            ExerciseSessionRecord::class,
+            start,
+            end
+        )
+
+        val activities = JSArray()
+
+        for (record in records) {
+            val activity = JSObject()
+
+            val durationMinutes =
+                java.time.Duration.between(
+                    record.startTime,
+                    record.endTime
+                ).toMinutes()
+
+            activity.put(
+                "type",
+                getActivityType(record.exerciseType)
+            )
+
+            activity.put(
+                "title",
+                record.title ?: ""
+            )
+
+            activity.put(
+                "duration",
+                durationMinutes
+            )
+
+            activity.put(
+                "notes",
+                record.notes ?: ""
+            )
+
+            activities.put(activity)
+        }
+
+        JSObject().apply {
+            put("activities", activities)
+        }
+    }
+
+    @PluginMethod
     fun readNutrition(call: PluginCall) = launchPluginCall(call) {
 
         val (start, end) = call.getTimeRange()
@@ -253,12 +320,31 @@ class HealthConnectPlugin : Plugin() {
 
     @PluginMethod
     fun readRestingHeartRate(call: PluginCall) = launchPluginCall(call) {
+
         val (start, end) = call.getTimeRange()
+
+        android.util.Log.d(
+            "HealthConnect",
+            "RHR READ: start=$start end=$end"
+        )
+
         val records = readRecords(
             RestingHeartRateRecord::class,
             start,
             end
         )
+
+        android.util.Log.d(
+            "HealthConnect",
+            "RHR RECORD COUNT: ${records.size}"
+        )
+
+        for (record in records) {
+            android.util.Log.d(
+                "HealthConnect",
+                "RHR RECORD: ${record.beatsPerMinute} bpm @ ${record.time}"
+            )
+        }
 
         val restingHeartRateAverage =
             if (records.isEmpty()) {
@@ -266,8 +352,82 @@ class HealthConnectPlugin : Plugin() {
             } else {
                 records.sumOf { it.beatsPerMinute.toDouble() } / records.size
             }
+
+        android.util.Log.d(
+            "HealthConnect",
+            "RHR AVERAGE: $restingHeartRateAverage"
+        )
+
         JSObject().apply {
             put("averageRestingHeartRate", restingHeartRateAverage)
         }
     }
+
+    private fun getActivityType(type: Int): String =
+        when (type) {
+            ExerciseSessionRecord.EXERCISE_TYPE_BADMINTON -> "badminton"
+            ExerciseSessionRecord.EXERCISE_TYPE_BASEBALL -> "baseball"
+            ExerciseSessionRecord.EXERCISE_TYPE_BASKETBALL -> "basketball"
+            ExerciseSessionRecord.EXERCISE_TYPE_BIKING -> "cycling"
+            ExerciseSessionRecord.EXERCISE_TYPE_BIKING_STATIONARY -> "bikingStationary"
+            ExerciseSessionRecord.EXERCISE_TYPE_BOOT_CAMP -> "bootCamp"
+            ExerciseSessionRecord.EXERCISE_TYPE_BOXING -> "boxing"
+            ExerciseSessionRecord.EXERCISE_TYPE_CALISTHENICS -> "calisthenics"
+            ExerciseSessionRecord.EXERCISE_TYPE_CRICKET -> "cricket"
+            ExerciseSessionRecord.EXERCISE_TYPE_DANCING -> "dancing"
+            ExerciseSessionRecord.EXERCISE_TYPE_ELLIPTICAL -> "elliptical"
+            ExerciseSessionRecord.EXERCISE_TYPE_EXERCISE_CLASS -> "exerciseClass"
+            ExerciseSessionRecord.EXERCISE_TYPE_FENCING -> "fencing"
+            ExerciseSessionRecord.EXERCISE_TYPE_FOOTBALL_AMERICAN -> "americanFootball"
+            ExerciseSessionRecord.EXERCISE_TYPE_FOOTBALL_AUSTRALIAN -> "australianFootball"
+            ExerciseSessionRecord.EXERCISE_TYPE_FRISBEE_DISC -> "frisbeedisc"
+            ExerciseSessionRecord.EXERCISE_TYPE_GOLF -> "golf"
+            ExerciseSessionRecord.EXERCISE_TYPE_GYMNASTICS -> "gymnastics"
+            ExerciseSessionRecord.EXERCISE_TYPE_HANDBALL -> "handball"
+            ExerciseSessionRecord.EXERCISE_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING ->
+                "highIntensityIntervalTraining"
+            ExerciseSessionRecord.EXERCISE_TYPE_HIKING -> "hiking"
+            ExerciseSessionRecord.EXERCISE_TYPE_ICE_HOCKEY -> "iceHockey"
+            ExerciseSessionRecord.EXERCISE_TYPE_ICE_SKATING -> "iceSkating"
+            ExerciseSessionRecord.EXERCISE_TYPE_MARTIAL_ARTS -> "martialArts"
+            ExerciseSessionRecord.EXERCISE_TYPE_PADDLING -> "paddling"
+            ExerciseSessionRecord.EXERCISE_TYPE_PARAGLIDING -> "paraGliding"
+            ExerciseSessionRecord.EXERCISE_TYPE_PILATES -> "pilates"
+            ExerciseSessionRecord.EXERCISE_TYPE_RACQUETBALL -> "racquetball"
+            ExerciseSessionRecord.EXERCISE_TYPE_ROCK_CLIMBING -> "rockClimbing"
+            ExerciseSessionRecord.EXERCISE_TYPE_ROLLER_HOCKEY -> "rollerHockey"
+            ExerciseSessionRecord.EXERCISE_TYPE_ROWING -> "rowing"
+            ExerciseSessionRecord.EXERCISE_TYPE_ROWING_MACHINE -> "rowingMachine"
+            ExerciseSessionRecord.EXERCISE_TYPE_RUGBY -> "rugby"
+            ExerciseSessionRecord.EXERCISE_TYPE_RUNNING -> "running"
+            ExerciseSessionRecord.EXERCISE_TYPE_RUNNING_TREADMILL -> "runningTreadmill"
+            ExerciseSessionRecord.EXERCISE_TYPE_SAILING -> "sailing"
+            ExerciseSessionRecord.EXERCISE_TYPE_SCUBA_DIVING -> "scubaDiving"
+            ExerciseSessionRecord.EXERCISE_TYPE_SKATING -> "skating"
+            ExerciseSessionRecord.EXERCISE_TYPE_SKIING -> "skiing"
+            ExerciseSessionRecord.EXERCISE_TYPE_SNOWBOARDING -> "snowboarding"
+            ExerciseSessionRecord.EXERCISE_TYPE_SNOWSHOEING -> "snowshoeing"
+            ExerciseSessionRecord.EXERCISE_TYPE_SOCCER -> "soccer"
+            ExerciseSessionRecord.EXERCISE_TYPE_SOFTBALL -> "softball"
+            ExerciseSessionRecord.EXERCISE_TYPE_SQUASH -> "squash"
+            ExerciseSessionRecord.EXERCISE_TYPE_STAIR_CLIMBING -> "stairClimbing"
+            ExerciseSessionRecord.EXERCISE_TYPE_STAIR_CLIMBING_MACHINE ->
+                "stairClimbingMachine"
+            ExerciseSessionRecord.EXERCISE_TYPE_STRENGTH_TRAINING ->
+                "strengthTraining"
+            ExerciseSessionRecord.EXERCISE_TYPE_STRETCHING -> "stretching"
+            ExerciseSessionRecord.EXERCISE_TYPE_SURFING -> "surfing"
+            ExerciseSessionRecord.EXERCISE_TYPE_SWIMMING_OPEN_WATER ->
+                "swimmingOpenWater"
+            ExerciseSessionRecord.EXERCISE_TYPE_SWIMMING_POOL -> "swimmingPool"
+            ExerciseSessionRecord.EXERCISE_TYPE_TABLE_TENNIS -> "tableTennis"
+            ExerciseSessionRecord.EXERCISE_TYPE_TENNIS -> "tennis"
+            ExerciseSessionRecord.EXERCISE_TYPE_VOLLEYBALL -> "volleyball"
+            ExerciseSessionRecord.EXERCISE_TYPE_WALKING -> "walking"
+            ExerciseSessionRecord.EXERCISE_TYPE_WATER_POLO -> "waterPolo"
+            ExerciseSessionRecord.EXERCISE_TYPE_WEIGHTLIFTING -> "weightlifting"
+            ExerciseSessionRecord.EXERCISE_TYPE_WHEELCHAIR -> "wheelchair"
+            ExerciseSessionRecord.EXERCISE_TYPE_YOGA -> "yoga"
+            else -> "other"
+        }
 }

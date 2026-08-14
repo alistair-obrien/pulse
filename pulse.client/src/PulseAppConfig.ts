@@ -4,7 +4,7 @@ export type Platform =
 | "android"
 | "web" 
 
-export interface AppConfig {
+export interface PulseAppConfig {
     readonly appSource: string;
     readonly platform: Platform;
     readonly environment: string;

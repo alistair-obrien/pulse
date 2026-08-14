@@ -1,4 +1,4 @@
-import type { AppConfig } from "./AppConfig";
+import type { PulseAppConfig } from "./PulseAppConfig";
 import { JourneyStepRepository as JourneyStepRepository } from "./repositories/JourneyStepRepository";
 import { MetricsRepository } from "./repositories/MetricsRepository";
 import { UserDataRepository } from "./repositories/UserDataRepository";
@@ -16,9 +16,9 @@ export class UserSession {
         return this._userId;
     }
 
-    private readonly appConfig:AppConfig;
+    private readonly appConfig:PulseAppConfig;
 
-    constructor(appConfig: AppConfig) {
+    constructor(appConfig: PulseAppConfig) {
         this.appConfig = appConfig;
 
         const lastUserId = localStorage.getItem(

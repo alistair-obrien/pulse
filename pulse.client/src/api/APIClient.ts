@@ -17,11 +17,11 @@ export class APIClient {
         body?: unknown
     ): Promise<TResponse> {
         const fullUrl = new URL(url, this.apiBase).toString();
-        console.log(JSON.stringify(fullUrl));
+        // console.log(JSON.stringify(fullUrl));
 
-        if (body) {
-            console.log(JSON.stringify(body));
-        }
+        // if (body) {
+        //     console.log(JSON.stringify(body));
+        // }
 
         if (authenticated && !this.authService.isLoggedIn()) {
             throw new Error("Authentication required.");

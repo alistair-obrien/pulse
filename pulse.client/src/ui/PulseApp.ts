@@ -2,7 +2,7 @@
 import './styles/colors.css';
 import './styles/main.css'
 
-import type { AppConfig } from "../AppConfig";
+import type { PulseAppConfig } from "../PulseAppConfig";
 
 // Screens
 import * as Splash from "./screens/Splash"
@@ -36,7 +36,6 @@ import { GoogleAuthProvider } from '../services/AuthProviders/GoogleAuthProvider
 import { API } from '../api/API';
 import { APIClient } from '../api/APIClient';
 import { fromDateKey } from '../utils/DateUtils';
-import { CapacitorHealthDeviceMetricsProvider } from '../services/DeviceMetricsProviders/CapacitorHealthDeviceMetricsProvider';
 
 export class PulseApp {
 
@@ -51,7 +50,7 @@ export class PulseApp {
     private readonly journeyController: JourneyController;
     private readonly meController: MeController;
 
-    constructor(appConfig:AppConfig) {
+    constructor(appConfig:PulseAppConfig) {
         this.splashEnabled = appConfig.splashEnabled;
         this.showDebugVersionAnnotation = appConfig.showDebugVersionAnnotation;
             
@@ -71,18 +70,18 @@ export class PulseApp {
         const cloudSyncService:CloudSyncService = new CloudSyncService(userSession, authService, api);
         let deviceMetricsSyncService:DeviceMetricsSyncService | undefined = undefined; // Can be undefined on web.
         
-        deviceMetricsSyncService = new CapacitorHealthDeviceMetricsProvider(userSession);
+        // deviceMetricsSyncService = new CapacitorHealthDeviceMetricsProvider(userSession); // TODO: Maybe a generic wrapper
 
-        // if (appConfig.platform == 'android') {
-        //     deviceMetricsSyncService = new HealthConnectSyncService(userSession);
-        // }
-        // else if (appConfig.platform == 'ios') {
-        //     deviceMetricsSyncService = new HealthKitSyncService(userSession);
-        // }
+        if (appConfig.platform == 'android') {
+            deviceMetricsSyncService = new HealthConnectSyncService(userSession);
+        }
+        else if (appConfig.platform == 'ios') {
+            deviceMetricsSyncService = new HealthKitSyncService(userSession);
+        }
         deviceMetricsSyncService?.initialize()
 
         const extAPIMetricsSyncServices:ExternalAPIMetricsSyncService[] = [];
-        extAPIMetricsSyncServices.push(new HEVYAPIMetricsSyncService(userSession));
+        // extAPIMetricsSyncServices.push(new HEVYAPIMetricsSyncService(userSession));
 
         // >>> Other Services <<<
         const imageService:ImageService = new ImageService();

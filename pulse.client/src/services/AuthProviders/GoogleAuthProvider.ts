@@ -1,4 +1,4 @@
-import type { Platform } from "../../AppConfig";
+import type { Platform } from "../../PulseAppConfig";
 import type { AuthProvider } from "../AuthService";
 
 import * as GoogleAndroidAuth from "./Google/GoogleAndroidAuthProvider"

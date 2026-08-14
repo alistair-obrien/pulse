@@ -80,7 +80,6 @@ export class CloudSyncService {
 
     private async downloadUserData() {
         const userData = await this.api.getUserData();
-        console.log(JSON.stringify(userData));
         if (userData) {
             this.userSession.userData.setUserData(userData);
         }

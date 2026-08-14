@@ -4,7 +4,7 @@ import './ui/styles/main.css'
 import { Device } from "@capacitor/device";
 import { App } from "@capacitor/app"
 import { PulseApp } from "./ui/PulseApp";
-import type { AppConfig } from "./AppConfig";
+import type { PulseAppConfig } from "./PulseAppConfig";
 
 // Anything that needs to be initialized before first UI render
 const platform = (await Device.getInfo()).platform;
@@ -43,7 +43,7 @@ if (platform !== "web" && apiUrl.hostname === "api.localhost") {
 }
 
 declare const __APP_SOURCE__: string;
-const appConfig:AppConfig = {
+const appConfig:PulseAppConfig = {
     appSource: __APP_SOURCE__,
     platform: platform,
     environment: import.meta.env.VITE_ENVIRONMENT,

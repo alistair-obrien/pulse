@@ -1,5 +1,5 @@
 import type { API, LoginResponse } from "../api/API";
-import type { AppConfig } from "../AppConfig";
+import type { PulseAppConfig } from "../PulseAppConfig";
 import type { UserSession } from "../UserSession";
 
 // TODO
@@ -29,7 +29,7 @@ export class AuthService {
     // >>> REFRESH TOKEN <<<
     refreshPromise: Promise<void> | null = null;
 
-    constructor(appConfig:AppConfig, api:API, userSession:UserSession) {
+    constructor(appConfig:PulseAppConfig, api:API, userSession:UserSession) {
         this.userSession = userSession;
         this.storageKey = `${appConfig.environment}:auth`;
         this.loadSession();

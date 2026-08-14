@@ -5,6 +5,7 @@ param(
     [ValidateSet("web", "android", "ios")]
     [string]$Platform
 )
+
 $ErrorActionPreference = "Stop"
 
 . "$PSScriptRoot/../common/lib/console-logger.ps1"
@@ -25,41 +26,70 @@ Write-Host "BUILT"
 
 Push-Location $ProjectRoot
 
-LogHeader -Title "Starting Vite Server" -Environment $Environment -Platform $Platform
-Start-Process npx.cmd -ArgumentList "vite", "--host", "--mode", $Environment, "--open"
-if ($Platform -eq "web")
-{    
-    Pop-Location
-    return
-}
+$ViteProcess = $null
 
-Remove-Item Env:VITE_APP_SOURCE -ErrorAction Ignore
+try {
+    LogHeader -Title "Starting Vite Server" -Environment $Environment -Platform $Platform
 
-$CapPort="5173" # Same as Vite
-$CapHost = (
-    Get-NetRoute -DestinationPrefix "0.0.0.0/0" |
-    Sort-Object RouteMetric |
-    Select-Object -First 1 |
-    ForEach-Object {
-        Get-NetIPAddress -InterfaceIndex $_.InterfaceIndex -AddressFamily IPv4
+    $ViteProcess = Start-Process npx.cmd `
+        -ArgumentList "vite", "--host", "--mode", $Environment, "--open" `
+        -PassThru
+
+    if ($Platform -eq "web") {
+        Wait-Process -Id $ViteProcess.Id
+        return
     }
-).IPAddress
-do
-{
-    Start-Sleep -Milliseconds 250
+
+    Remove-Item Env:VITE_APP_SOURCE -ErrorAction Ignore
+
+    $CapPort = "5173" # Same as Vite
+
+    $CapHost = (
+        Get-NetRoute -DestinationPrefix "0.0.0.0/0" |
+        Sort-Object RouteMetric |
+        Select-Object -First 1 |
+        ForEach-Object {
+            Get-NetIPAddress `
+                -InterfaceIndex $_.InterfaceIndex `
+                -AddressFamily IPv4
+        }
+    ).IPAddress
+
+    do {
+        Start-Sleep -Milliseconds 250
+    }
+    until (Test-NetConnection $CapHost -Port $CapPort -InformationLevel Quiet)
+
+    LogFooter -Title "Vite Server Started"
+
+    $BuiltPath = (Resolve-Path $BuiltPath).Path
+
+    LogHeader -Title "Running Capacitor Run" -Environment $Environment -Platform $Platform
+
+    $env:PULSE_WEB_DIR = $BuiltPath
+
+    npx cap copy $Platform
+    npx cap run $Platform --live-reload --host $CapHost --port $CapPort --flavor livereload
+
+    Remove-Item Env:PULSE_WEB_DIR -ErrorAction Ignore
+
+    LogFooter -Title "Capacitor Run Ran"
 }
-until (Test-NetConnection $CapHost -Port $CapPort -InformationLevel Quiet)
-LogFooter -Title "Vite Server Started"
+finally {
+    # Clean up environment variables
+    Remove-Item Env:VITE_APP_SOURCE -ErrorAction Ignore
+    Remove-Item Env:PULSE_WEB_DIR -ErrorAction Ignore
 
-$BuiltPath = (Resolve-Path $BuiltPath).Path
+    # Kill Vite and its entire process tree
+    if ($ViteProcess -and -not $ViteProcess.HasExited) {
+        LogHeader -Title "Stopping Vite Server"
 
-LogHeader -Title "Running Capacitor Run" -Environment $Environment -Platform $Platform
-$env:PULSE_WEB_DIR = $BuiltPath
-npx cap copy $Platform
-npx cap run $Platform --live-reload --host $CapHost --port $CapPort --flavor livereload
-Remove-Item Env:PULSE_WEB_DIR
+        taskkill /PID $ViteProcess.Id /T /F | Out-Null
 
-LogFooter -Title "Capacitor Run Ran"
+        LogFooter -Title "Vite Server Stopped"
+    }
 
-Pop-Location
+    Pop-Location
+}
+
 LogPipelineFooter -Title "Live Session Started"

@@ -1,4 +1,4 @@
-import type { AppConfig } from "../AppConfig";
+import type { PulseAppConfig } from "../PulseAppConfig";
 import type { UserData } from "./UserDataRepository/UserData";
 import { UserDataStore } from "./UserDataRepository/UserDataStore";
 
@@ -7,7 +7,7 @@ export class UserDataRepository {
     private readonly localStore: UserDataStore;
     private readonly cloudStore: UserDataStore;
 
-    constructor(appConfig: AppConfig, prefix:string) {
+    constructor(appConfig: PulseAppConfig, prefix:string) {
         const storagePrefix = `pulse_${appConfig.environment}:${prefix}`;
 
         this.localStore = new UserDataStore(`${storagePrefix}:local`);

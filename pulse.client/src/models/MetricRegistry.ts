@@ -1,5 +1,5 @@
 import type { SleepLogData } from "./SleepLogData";
-import type { WorkoutLogData } from "./WorkoutLogData";
+import type { ActivityLogData } from "./ActivityLogData";
 
 export const metricsRegistry = {
     // Recovery
@@ -41,8 +41,8 @@ export const metricsRegistry = {
     },
 
     // Activity
-    "Workouts": {
-        defaultValue: [] as WorkoutLogData[],
+    "Activities": {
+        defaultValue: [] as ActivityLogData[],
     },
 } as const;
 

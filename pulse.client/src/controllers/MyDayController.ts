@@ -46,6 +46,7 @@ import { getHoursAndMinutesStrFromTime, toDateKey } from "../utils/DateUtils";
 import { MetricTextInputFieldModel } from "../ui/components/MetricTextInputField";
 import { DateRowModel } from "../ui/components/DateRow";
 import { PublishButtonModel } from "../ui/components/PublishButton";
+import { ActivityCardModel } from "../ui/components/ActivityCardModel";
 
 export class MyDayController {
     model:MyDayScreenModel;
@@ -117,8 +118,8 @@ export class MyDayController {
         const journeyStep = await this.journeyController.getJourneyStep(newDate);
 
         const published = journeyStep?.published ?? false;
-        console.log(JSON.stringify(journeyStep));
-        console.log(published);
+        // console.log(JSON.stringify(journeyStep));
+        // console.log(published);
 
         this.model = new MyDayScreenModel({
             heroAreaVisibleHeight: HERO_AREA_VISIBLE_HEIGHT,
@@ -273,19 +274,15 @@ export class MyDayController {
         const activitiesRowModel = new DivModel({ className: "row" });
         activityCardModel.content.push(activitiesRowModel);
 
-        const workouts = this.userSession.metrics.resolveMetric(this.model.selectedDateKey, MetricTypeIds.Workouts);
+        const activities = this.userSession.metrics.resolveMetric(this.model.selectedDateKey, MetricTypeIds.Activities);
 
-        workouts.forEach(element => {
-            activitiesRowModel.content.push(new MetricCardModel({ 
-                name: element.workoutType, 
-                iconClass: ICONS.Activity,
-                metricValue: new TimeSpanModel({  
-                    time: element.workoutDuration / 60 //Workout duration comes out as minutes
-                }) 
+        activities.forEach(element => {
+            activitiesRowModel.content.push(new ActivityCardModel({ 
+                activityType: element.type,
+                name: element.type,
+                duration: new TimeSpanModel({ time: element.duration / 60 }) // Kind hacky tbh
             }));
         });
-
-
 
         // >>> Actions <<<
         const actionsRowModel = new DivModel({ className: "row" });

@@ -1,5 +1,5 @@
 import { isSameDay, toDateKey } from "../../utils/DateUtils";
-import type { WorkoutLogData, WorkoutType } from "../../models/WorkoutLogData";
+import type { ActivityLogData, ActivityType } from "../../models/ActivityLogData";
 import { MetricTypeIds } from "../../models/MetricRegistry";
 import type { ExternalAPIMetricsSyncService } from "../ExternalAPIMetricsSyncService";
 import type { UserSession } from "../../UserSession";
@@ -33,7 +33,7 @@ export class HEVYAPIMetricsSyncService implements ExternalAPIMetricsSyncService 
         const since = date.toISOString();
 
         let page = 1;
-        const workoutLogs: WorkoutLogData[] = [];
+        const workoutLogs: ActivityLogData[] = [];
 
         while (true) {
 
@@ -84,7 +84,7 @@ export class HEVYAPIMetricsSyncService implements ExternalAPIMetricsSyncService 
     }
 }
 
-function convertWorkout(workout: HevyWorkout): WorkoutLogData[] {
+function convertWorkout(workout: HevyWorkout): ActivityLogData[] {
 
     const totalMinutes =
         (new Date(workout.end_time).getTime() -
@@ -93,7 +93,7 @@ function convertWorkout(workout: HevyWorkout): WorkoutLogData[] {
     let explicitMinutes = 0;
     let untimedExerciseCount = 0;
 
-    const minutesByType = new Map<WorkoutType, number>();
+    const minutesByType = new Map<ActivityType, number>();
 
     for (const exercise of workout.exercises) {
 
@@ -151,7 +151,7 @@ function convertWorkout(workout: HevyWorkout): WorkoutLogData[] {
     }));
 }
 
-function getWorkoutType(exercise: HevyExercise): WorkoutType {
+function getWorkoutType(exercise: HevyExercise): ActivityType {
 
     const title = exercise.title.toLowerCase();
 

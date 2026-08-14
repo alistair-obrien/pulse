@@ -5,7 +5,7 @@ import {
     type MetricTypes
 } from "../models/MetricRegistry";
 import type { DateKey } from "../utils/DateUtils";
-import type { AppConfig } from "../AppConfig";
+import type { PulseAppConfig } from "../PulseAppConfig";
 
 export class MetricsRepository {
 
@@ -15,7 +15,7 @@ export class MetricsRepository {
     private readonly deviceCacheStore:MetricRecordStore;
     private readonly cloudCacheStore:MetricRecordStore;
 
-    constructor(appConfig:AppConfig, prefix:string) {
+    constructor(appConfig:PulseAppConfig, prefix:string) {
         this.storagePrefix = `pulse_${appConfig.environment}:${prefix}`
 
         const today = new Date();

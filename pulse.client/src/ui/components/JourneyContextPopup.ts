@@ -27,7 +27,6 @@ export class JourneyContextPopup extends Component<JourneyContextPopupModel> {
     }
 
     show() {
-        console.log("Hi");
         this.root.classList.add("visible");
     }
 

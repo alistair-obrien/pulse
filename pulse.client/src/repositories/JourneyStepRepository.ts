@@ -1,4 +1,4 @@
-import type { AppConfig } from "../AppConfig";
+import type { PulseAppConfig } from "../PulseAppConfig";
 import { toDateKey } from "../utils/DateUtils";
 import type { JourneyStepRecord } from "./JourneyRepository/JourneyStepRecord";
 import { JourneyStepRecordStore } from "./JourneyRepository/JourneyStepRecordStore";
@@ -9,7 +9,7 @@ export class JourneyStepRepository {
     private readonly cloudStore: JourneyStepRecordStore;
 
     constructor(
-        appConfig: AppConfig,
+        appConfig: PulseAppConfig,
         prefix: string
     ) {
         const storagePrefix =
