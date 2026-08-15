@@ -1,13 +1,14 @@
 name: iOS Client
 
 on:
-  push:
-    branches:
-      - production
-      - development
-    paths:
-      - 'pulse.client/**'
-      - '.github/workflows/client_ios.yml'
+  # Saving Actions Quota
+  # push:
+  #   branches:
+  #     - production
+  #     - development
+  #   paths:
+  #     - 'pulse.client/**'
+  #     - '.github/workflows/client_ios.yml'
 
   workflow_dispatch:
 
