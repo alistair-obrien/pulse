@@ -3,6 +3,11 @@ import type {
     ActivityType
 } from "../../../models/ActivityLogData";
 
+interface HEVYActivityInfo {
+    type: ActivityType;
+    standalone: boolean;
+}
+
 export function transformHEVYActivity(
     activity: ActivityLogData
 ): ActivityLogData[] {
@@ -13,6 +18,7 @@ export function transformHEVYActivity(
 
     let currentTitle: string | null = null;
     let currentType: ActivityType | null = null;
+    let currentStandalone = false;
 
     let timedDuration = 0;
     let hasStrengthTraining = false;
@@ -37,7 +43,12 @@ export function transformHEVYActivity(
         // Exercise/activity title
         if (!trimmed.startsWith("Set ")) {
             currentTitle = trimmed;
-            currentType = getActivityType(trimmed);
+
+            const info = getActivityInfo(trimmed);
+
+            currentType = info.type;
+            currentStandalone = info.standalone;
+
             continue;
         }
 
@@ -62,7 +73,11 @@ export function transformHEVYActivity(
                     });
                 }
 
-                timedDuration += duration;
+                if (currentStandalone) {
+                    timedDuration += duration;
+                } else {
+                    hasStrengthTraining = true;
+                }
             }
 
             continue;
@@ -98,7 +113,11 @@ function parseDuration(line: string): number | null {
     const minutes = line.match(/(\d+)min/)?.[1];
     const seconds = line.match(/(\d+)s/)?.[1];
 
-    if (hours === undefined && minutes === undefined && seconds === undefined) {
+    if (
+        hours === undefined &&
+        minutes === undefined &&
+        seconds === undefined
+    ) {
         return null;
     }
 
@@ -116,15 +135,23 @@ function isHEVYDateLine(line: string): boolean {
     );
 }
 
-function getActivityType(title: string): ActivityType {
-    switch (title.toLowerCase()) {
-        case "walking":
-            return "walking";
+const cardio: ActivityType[] = [
+    "walking",
+    "hiking",
+];
 
-        case "hiking":
-            return "hiking";
+function getActivityInfo(title: string): HEVYActivityInfo {
+    const normalizedTitle = title.toLowerCase();
 
-        default:
-            return "strengthTraining";
+    if (cardio.includes(normalizedTitle as ActivityType)) {
+        return {
+            type: normalizedTitle as ActivityType,
+            standalone: true
+        };
     }
+
+    return {
+        type: "strengthTraining",
+        standalone: false
+    };
 }

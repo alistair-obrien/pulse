@@ -3,11 +3,11 @@ export const ActivityTypes = {
     Walking: "walking",
     Hiking: "hiking",
     
-    // Old below
-    Cardio: "Cardio",
-    HIIT: "HIIT",
-    Sports: "Sports",
-    FlexibilityMobility: "Flexibility/Mobility",
+    // // Old below
+    // Cardio: "Cardio",
+    // HIIT: "HIIT",
+    // Sports: "Sports",
+    // FlexibilityMobility: "Flexibility/Mobility",
 } as const;
 
 export type ActivityType =
