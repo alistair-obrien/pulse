@@ -40,8 +40,8 @@ export class ActivityCard extends Component<ActivityCardModel> {
         this.duration = new TimeSpan();
 
         this.root.append(
-            this.name,
             this.image,
+            this.name,
             this.duration.root
         );
     }
@@ -65,6 +65,9 @@ export class ActivityCard extends Component<ActivityCardModel> {
     }
 
     private getActivityHumanName(activityType: string): string {
+
+        if (activityType === "strengthTraining") { activityType = "strength" }
+
         return activityType
             .replace(/([a-z])([A-Z])/g, "$1 $2")
             .replace(/^./, char => char.toUpperCase());

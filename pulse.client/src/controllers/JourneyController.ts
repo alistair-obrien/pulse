@@ -19,6 +19,7 @@ import type { UserSession } from "../UserSession";
 import { JourneyContextPopupModel } from "../ui/components/JourneyContextPopup";
 import { ActivityCardModel } from "../ui/components/ActivityCardModel";
 import { TimeSpanModel } from "../ui/components/TimeSpan";
+import { InlineMetricModel } from "../ui/components/InlineMetric";
 
 const DEFAULT_JOURNEY_STEP_METRICS  = [
     MetricTypeIds.Reflection,
@@ -81,6 +82,7 @@ export class JourneyController {
 
         journeySteps.forEach(element => {
 
+
             if (element.date !== currentDate) {
                 currentDate = element.date;
 
@@ -106,6 +108,20 @@ export class JourneyController {
             const reflectionTextModel = new ReflectionTextModel({text: reflections})
             journeyStepsCard.card.content.push(reflectionTextModel);
 
+            // >>> Activities <<<
+            const activitiesRowModel = new DivModel({ className: "activity-card-container" });
+            journeyStepsCard.card.content.push(activitiesRowModel);
+    
+            const activities = element.getMetric("Activities")
+    
+            activities.forEach(element => {
+                activitiesRowModel.content.push(new ActivityCardModel({ 
+                    activityType: element.type,
+                    name: element.type,
+                    duration: new TimeSpanModel({ time: element.duration / 60 }) // Kind hacky tbh
+                }));
+            });
+
             // >>> Recovery <<<
             const recoveryRowModel = new DivModel({ className: "row" });
             journeyStepsCard.card.content.push(recoveryRowModel);
@@ -113,15 +129,15 @@ export class JourneyController {
             // Sleep
             const sleepRecords = element.getMetric(MetricTypeIds.Sleep);
             const totalSleepHours = sleepRecords.reduce( (total, sleep) => total + sleep.sleepHours, 0);
-            recoveryRowModel.content.push(new MetricCardModel({ name: "Total Sleep", iconClass: ICONS.Sleep, metricValue: new TimeSpanModel({ time: totalSleepHours }) }));
+            recoveryRowModel.content.push(new InlineMetricModel({ name: "Total Sleep", iconClass: ICONS.Sleep, metricValue: new TimeSpanModel({ time: totalSleepHours }) }));
             
             // Steps
             const steps = element.getMetric(MetricTypeIds.Steps);
-            recoveryRowModel.content.push(new MetricCardModel({ name: "Total Steps", iconClass: ICONS.Steps, metricValue: new MetricTextModel({ value: steps.toLocaleString() }) }));
+            recoveryRowModel.content.push(new InlineMetricModel({ name: "Total Steps", iconClass: ICONS.Steps, metricValue: new MetricTextModel({ value: steps.toLocaleString() }) }));
             
             // RHR
             const rhr = element.getMetric(MetricTypeIds.RestingHeartRate);
-            recoveryRowModel.content.push(new MetricCardModel({ name: "Resting HR", iconClass: ICONS.RestingHeartRate, metricValue: new MetricTextModel({ value: rhr.toLocaleString(), unit: "bpm" }) }));
+            recoveryRowModel.content.push(new InlineMetricModel({ name: "Resting HR", iconClass: ICONS.RestingHeartRate, metricValue: new MetricTextModel({ value: rhr.toLocaleString(), unit: "bpm" }) }));
 
             // >>> Nutrition <<<
             const nutritionRowModel = new DivModel({ className: "row" });
@@ -170,20 +186,6 @@ export class JourneyController {
                     unit: "g" 
                 }) 
             }));
-
-            // >>> Activities <<<
-            const activitiesRowModel = new DivModel({ className: "activity-card-container" });
-            journeyStepsCard.card.content.push(activitiesRowModel);
-    
-            const activities = element.getMetric("Activities")
-    
-            activities.forEach(element => {
-                activitiesRowModel.content.push(new ActivityCardModel({ 
-                    activityType: element.type,
-                    name: element.type,
-                    duration: new TimeSpanModel({ time: element.duration / 60 }) // Kind hacky tbh
-                }));
-            });
 
             // >>> FOOTER <<<
             const actionRowModel = new DivModel({ className: "footer-action-buttons-row" });

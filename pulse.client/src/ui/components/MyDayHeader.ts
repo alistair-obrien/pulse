@@ -40,11 +40,11 @@ export class MyDayHeader extends Component<MyDayHeaderModel> {
         super();
         this.root.className = "header";
 
-        this.dateRow = new DateRow();
-        this.root.append(this.dateRow.root);
-
         this.publishButton = new PublishButton();
         this.root.append(this.publishButton.root);
+
+        this.dateRow = new DateRow();
+        this.root.append(this.dateRow.root);
     }
 
     // HACKS
