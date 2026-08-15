@@ -32,6 +32,7 @@ import androidx.health.connect.client.aggregate.AggregateMetric
 import androidx.health.connect.client.request.AggregateRequest
 import com.getcapacitor.JSArray
 import androidx.health.connect.client.records.Record
+import java.time.temporal.ChronoUnit
 import kotlin.reflect.KClass
 
 @CapacitorPlugin(name = "HealthConnect")
@@ -224,14 +225,22 @@ class HealthConnectPlugin : Plugin() {
 
         val (start, end) = call.getTimeRange()
 
+        // Include sessions that started before `start` but ended during
+        // the requested range.
+        val queryStart = start.minus(1, ChronoUnit.DAYS)
+
         val records = readRecords(
             SleepSessionRecord::class,
-            start,
+            queryStart,
             end
         )
 
         val sessions = JSArray()
+
         for (record in records) {
+            if (record.endTime < start || record.endTime >= end)
+                continue
+
             val session = JSObject()
 
             session.put("startTime", record.startTime.toString())
@@ -308,18 +317,48 @@ class HealthConnectPlugin : Plugin() {
     fun readNutrition(call: PluginCall) = launchPluginCall(call) {
 
         val (start, end) = call.getTimeRange()
+
+        val queryStart = start.minus(1, ChronoUnit.DAYS)
+
         val records = readRecords(
             NutritionRecord::class,
-            start,
+            queryStart,
             end
-        )
+        ).filter {
+            it.startTime >= start && it.startTime < end
+        }
 
         JSObject().apply {
-            put("totalCalories", records.sumOf { (it.energy?.inCalories ?: 0.0) / 1000.0 })
-            put("totalProtein", records.sumOf { it.protein?.inGrams ?: 0.0 })
-            put("totalCarbohydrates", records.sumOf { it.totalCarbohydrate?.inGrams ?: 0.0 })
-            put("totalFats", records.sumOf { it.totalFat?.inGrams ?: 0.0 })
-            put("totalFiber", records.sumOf { it.dietaryFiber?.inGrams ?: 0.0 })
+            put(
+                "totalCalories",
+                records.sumOf {
+                    (it.energy?.inCalories ?: 0.0) / 1000.0
+                }
+            )
+            put(
+                "totalProtein",
+                records.sumOf {
+                    it.protein?.inGrams ?: 0.0
+                }
+            )
+            put(
+                "totalCarbohydrates",
+                records.sumOf {
+                    it.totalCarbohydrate?.inGrams ?: 0.0
+                }
+            )
+            put(
+                "totalFats",
+                records.sumOf {
+                    it.totalFat?.inGrams ?: 0.0
+                }
+            )
+            put(
+                "totalFiber",
+                records.sumOf {
+                    it.dietaryFiber?.inGrams ?: 0.0
+                }
+            )
         }
     }
 
