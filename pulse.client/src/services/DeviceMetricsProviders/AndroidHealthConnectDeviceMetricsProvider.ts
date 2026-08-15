@@ -9,6 +9,7 @@ import type { DeviceMetricsSyncService } from "../DeviceMetricsSyncService";
 // Controllers
 import type { UserSession } from "../../UserSession";
 import type { ActivityLogData } from "../../models/ActivityLogData";
+import { transformHEVYActivity } from "./ActivityTransformers.ts/HEVYActivityTransformer";
 
 interface HealthConnectPlugin {
     isAvailable(): Promise<AvailabilityResult>;
@@ -302,7 +303,6 @@ export class HealthConnectSyncService
     }
 
 
-    // TODO: Parse HEVY format to deduce actual activities
     private aggregateActivities(
         activities: ActivityLogData[]
     ): ActivityLogData[] {
@@ -310,14 +310,22 @@ export class HealthConnectSyncService
         const aggregated = new Map<string, ActivityLogData>();
 
         for (const activity of activities) {
-            const existing = aggregated.get(activity.type);
 
-            if (existing) {
-                existing.duration += activity.duration;
-            } else {
-                aggregated.set(activity.type, {
-                    ...activity
-                });
+            let transformed:ActivityLogData[] = [activity]
+
+            if (activity.source == "com.hevy")
+                transformed = transformHEVYActivity(activity);
+
+            for (const result of transformed) {
+                const existing = aggregated.get(result.type);
+
+                if (existing) {
+                    existing.duration += result.duration;
+                } else {
+                    aggregated.set(result.type, {
+                        ...result
+                    });
+                }
             }
         }
 

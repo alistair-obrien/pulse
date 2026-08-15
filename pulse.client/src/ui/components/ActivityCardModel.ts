@@ -51,7 +51,7 @@ export class ActivityCard extends Component<ActivityCardModel> {
 
         this.image.onerror = () => {
             this.image.onerror = null;
-            this.image.src = "/images/activity icons/other.png";
+            this.image.src = "/activity icons/other.png";
         };
 
         this.image.src = this.getActivityImage(this.model.activityType);
@@ -61,7 +61,7 @@ export class ActivityCard extends Component<ActivityCardModel> {
     }
 
     private getActivityImage(activityType: string): string {
-        return `/images/activity icons/${activityType}.png`;
+        return `/activity icons/${activityType}.png`;
     }
 
     private getActivityHumanName(activityType: string): string {

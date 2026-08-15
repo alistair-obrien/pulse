@@ -1,5 +1,9 @@
 export const ActivityTypes = {
-    Strength: "Strength Training",
+    Strength: "strengthTraining",
+    Walking: "walking",
+    Hiking: "hiking",
+    
+    // Old below
     Cardio: "Cardio",
     HIIT: "HIIT",
     Sports: "Sports",
@@ -14,6 +18,7 @@ export interface ActivityLogData {
     type: ActivityType;
     duration: number;
     notes: string;
+    source: string;
 }
 
 // export type WorkoutType =

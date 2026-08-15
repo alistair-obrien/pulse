@@ -291,6 +291,11 @@ class HealthConnectPlugin : Plugin() {
                 record.notes ?: ""
             )
 
+            activity.put(
+                "source",
+                record.metadata.dataOrigin.packageName
+            )
+
             activities.put(activity)
         }
 

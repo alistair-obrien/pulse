@@ -271,7 +271,7 @@ export class MyDayController {
         activityCardModel.content.push(new CardHeaderModel({ title: "Activity", iconClass: ICONS.Activity }));
         this.model.metricSectionCardModels.push(activityCardModel);
         
-        const activitiesRowModel = new DivModel({ className: "row" });
+        const activitiesRowModel = new DivModel({ className: "activity-card-container" });
         activityCardModel.content.push(activitiesRowModel);
 
         const activities = this.userSession.metrics.resolveMetric(this.model.selectedDateKey, MetricTypeIds.Activities);
@@ -282,6 +282,7 @@ export class MyDayController {
                 name: element.type,
                 duration: new TimeSpanModel({ time: element.duration / 60 }) // Kind hacky tbh
             }));
+
         });
 
         // >>> Actions <<<
