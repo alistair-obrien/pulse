@@ -233,14 +233,14 @@ export class JourneyController {
 
             const likeActBtn = new ActionButtonModel({
                 iconClass: element.liked ? ICONS.LikeFilled : ICONS.Like,
-                labelStr: element.likesCount.toLocaleString(),
+                labelStr: "", //element.likesCount.toLocaleString(),
                 
                 onClick: async () => {
                     // Optimistic
                     element.liked = !element.liked;
                     element.likesCount += !element.liked ? -1 : 1;
                     likeActBtn.iconClass = element.liked ? ICONS.LikeFilled : ICONS.Like;
-                    likeActBtn.labelStr = element.likesCount.toLocaleString();
+                    likeActBtn.labelStr = "";//element.likesCount.toLocaleString();
                     this.screen.update(this.model);
                     
                     // Authorative

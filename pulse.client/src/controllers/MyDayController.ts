@@ -4,9 +4,9 @@ const HERO_AREA_TOTAL_HEIGHT = 400;
 const HERO_AREA_VISIBLE_HEIGHT = 280;
 
 // At what scroll distance the date should start fading out
-const DATE_FADE_THRESHOLD = 180;
+const DATE_FADE_THRESHOLD = 160;
 // How much distance the fade takes to finish
-const DATE_FADE_DIST = 20;
+const DATE_FADE_DIST = 10;
 
 // // At what scroll distance the header should start fading out
 // const HEADER_FADE_THRESHOLD = 50;

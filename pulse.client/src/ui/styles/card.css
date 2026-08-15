@@ -7,7 +7,7 @@
 
     background: var(--surface-gradient);
 
-    gap: 10px; /* Determines main Breathing Space */
+    gap: 12px; /* Determines main Breathing Space */
 
     border-radius: 8px;
     border: 1px solid var(--border);
@@ -29,4 +29,8 @@
 
 .card-header i {
     font-size: 18px;
+}
+
+.card-header.id-header {
+    color: var(--primary-text);
 }

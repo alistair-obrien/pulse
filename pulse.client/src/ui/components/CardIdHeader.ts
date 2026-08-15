@@ -12,6 +12,7 @@ export class CardIdHeader extends Component<CardIdHeaderModel> {
 
         const row = document.createElement("span");
         row.className = "card-header";
+        row.classList.add("id-header");
 
         this.userImage = new ProfileThumbnail();
         row.append(this.userImage.root);
