@@ -101,10 +101,29 @@ export class JourneyController {
             });
             journeyStepsCard.card.content.push(idHeader);
 
+            // >>> Reflection <<<
             const reflections = element.getMetric(MetricTypeIds.Reflection);
             const reflectionTextModel = new ReflectionTextModel({text: reflections})
             journeyStepsCard.card.content.push(reflectionTextModel);
 
+            // >>> Recovery <<<
+            const recoveryRowModel = new DivModel({ className: "row" });
+            journeyStepsCard.card.content.push(recoveryRowModel);
+
+            // Sleep
+            const sleepRecords = element.getMetric(MetricTypeIds.Sleep);
+            const totalSleepHours = sleepRecords.reduce( (total, sleep) => total + sleep.sleepHours, 0);
+            recoveryRowModel.content.push(new MetricCardModel({ name: "Total Sleep", iconClass: ICONS.Sleep, metricValue: new TimeSpanModel({ time: totalSleepHours }) }));
+            
+            // Steps
+            const steps = element.getMetric(MetricTypeIds.Steps);
+            recoveryRowModel.content.push(new MetricCardModel({ name: "Total Steps", iconClass: ICONS.Steps, metricValue: new MetricTextModel({ value: steps.toLocaleString() }) }));
+            
+            // RHR
+            const rhr = element.getMetric(MetricTypeIds.RestingHeartRate);
+            recoveryRowModel.content.push(new MetricCardModel({ name: "Resting HR", iconClass: ICONS.RestingHeartRate, metricValue: new MetricTextModel({ value: rhr.toLocaleString(), unit: "bpm" }) }));
+
+            // >>> Nutrition <<<
             const nutritionRowModel = new DivModel({ className: "row" });
             journeyStepsCard.card.content.push(nutritionRowModel);
 
