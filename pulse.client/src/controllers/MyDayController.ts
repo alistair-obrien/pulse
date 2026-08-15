@@ -282,7 +282,6 @@ export class MyDayController {
                 name: element.type,
                 duration: new TimeSpanModel({ time: element.duration / 60 }) // Kind hacky tbh
             }));
-
         });
 
         // >>> Actions <<<
@@ -312,15 +311,15 @@ export class MyDayController {
         }
 
 
-        actionsRowModel.content.push(
-            new ActionButtonModel({
-                iconClass: ICONS.ExtAPISync,
-                labelStr: "Ext API Sync",
-                onClick: async () => { 
-                    await this.syncFromExtAPI(this.model.selectedDate); 
-                    await this.refresh(); }
-            })
-        );
+        // actionsRowModel.content.push(
+        //     new ActionButtonModel({
+        //         iconClass: ICONS.ExtAPISync,
+        //         labelStr: "Ext API Sync",
+        //         onClick: async () => { 
+        //             await this.syncFromExtAPI(this.model.selectedDate); 
+        //             await this.refresh(); }
+        //     })
+        // );
         
         actionsRowModel.content.push(
             new ActionButtonModel({
