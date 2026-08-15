@@ -11,8 +11,6 @@ body {
 
     font-family: "Manrope", "Fluent Emoji Color";
     
-    /* font-family: "Josefin Sans"; */
-    /* letter-spacing: 0.1px; */
     font-size: small;
 
     color: var(--secondary-muted-text);
