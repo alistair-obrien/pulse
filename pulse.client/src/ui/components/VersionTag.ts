@@ -1,16 +1,17 @@
 import type { PulseAppConfig } from "../../PulseAppConfig";
 import "../styles/version-tag.css";
+import { ICONS } from "./ICONS";
 
 // App Source
 const AppSourceIcons: Record<string, string> = {
-    LocalDeploy: "ri-u-disk-fill",
-    LiveReload: "ri-terminal-box-line",
-    development_android: "ri-google-play-line",
-    production_android: "ri-google-play-line",
-    development_ios: "ri-app-store-fill",
-    production_ios: "ri-app-store-fill",
-    development_web: "ri-server-fill",
-    production_web: "ri-server-fill"
+    LocalDeploy: ICONS.LocalDeploy,
+    LiveReload: ICONS.LiveReload,
+    development_android: ICONS.GooglePlayStore,
+    production_android: ICONS.GooglePlayStore,
+    development_ios: ICONS.AppleAppStore,
+    production_ios: ICONS.AppleAppStore,
+    development_web: ICONS.Server,
+    production_web: ICONS.Server
 }
 
 const AppSourceNames: Record<string, string> = {
@@ -31,9 +32,9 @@ const PlatformNames: Record<string, string> = {
     ios: "iOS",
 };
 const PlatformIcons: Record<string, string> = {
-    web: "ri-global-line",
-    android: "ri-android-fill",
-    ios: "ri-apple-fill",
+    web: ICONS.Web,
+    android: ICONS.Android,
+    ios: ICONS.iOS,
 };
 
 // Env

@@ -128,7 +128,7 @@ export class MeController {
 
         profileCard.content.push(
             new ActionButtonModel({
-                iconClass: ICONS.None,
+                iconClass: ICONS.ChooseImage,
                 labelStr: "Change Profile Image",
                 onClick: async () => {
                     const image = await this.selectProfileImage();
@@ -145,7 +145,7 @@ export class MeController {
         profileCard.content.push(
             new ActionButtonModel({
                 iconClass: ICONS.CloudSync,
-                labelStr: "save",
+                labelStr: "Save to Cloud",
                 onClick: () => this.cloudSyncService.sync(new Date())
             })
         );
@@ -157,8 +157,12 @@ export class MeController {
 
         deviceSyncCard.content.push(new CardHeaderModel({ title: "Device Sync", iconClass: ICONS.DeviceSync }))
 
-        deviceSyncCard.content.push(new ActionButtonModel({ iconClass: "", labelStr: "Configure", onClick: () => this.configureDeviceSync() }))
-                // TODO: Add a button to configure permissions
+        deviceSyncCard.content.push(new ActionButtonModel({ iconClass: ICONS.Configure, labelStr: "Configure", onClick: () => this.configureDeviceSync() }))
+
+        const appUpdateCard = new CardModel({ content: [] });
+        this.model.cards.push(appUpdateCard);
+        appUpdateCard.content.push(new CardHeaderModel({ title: "App", iconClass: ICONS.Android }))
+        appUpdateCard.content.push(new ActionButtonModel({ iconClass: ICONS.GooglePlayStore, labelStr: "Open Playstore for Updating", onClick: () => this.openPlaystorePage() }))
     }
 
     async refresh() {
@@ -275,8 +279,11 @@ export class MeController {
     }
 
     
-    configureDeviceSync(): any {
+    configureDeviceSync(): void {
         this.deviceMetricsSyncService?.configure();
     }
-}
 
+    async openPlaystorePage(): Promise<void> {
+        window.location.href = "market://details?id=com.pixeldust.pulse"; // TODO: Dont hardcode
+    }
+}

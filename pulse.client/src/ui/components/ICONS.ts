@@ -3,6 +3,7 @@ export const ICONS = {
 
     AppLogo: "ri-seedling-fill",
 
+    // Auth
     LoggedIn: "",
     LoggedOut: "",
     LogOut: "",
@@ -15,6 +16,22 @@ export const ICONS = {
     None: "",
 
     ListItem: "solid-circle",
+
+    // System
+    Update: "ri-mobile-download-fill",
+    Configure: "ri-settings-4-fill",
+
+    // Platforms
+    Android: "ri-android-fill",
+    Web: "ri-global-line",
+    iOS: "ri-apple-fill",
+
+    // App Source
+    GooglePlayStore: "ri-google-play-line",
+    AppleAppStore: "ri-app-store-fill",
+    Server: "ri-server-fill",
+    LocalDeploy: "ri-u-disk-fill",
+    LiveReload: "ri-terminal-box-line",
 
     // Action Buttons
     CloudSync: "ri-cloud-fill",
