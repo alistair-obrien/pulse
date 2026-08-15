@@ -17,6 +17,8 @@ import type { PulseApp } from "../ui/PulseApp";
 import { ReflectionTextModel } from "../ui/components/ReflectionText";
 import type { UserSession } from "../UserSession";
 import { JourneyContextPopupModel } from "../ui/components/JourneyContextPopup";
+import { ActivityCardModel } from "../ui/components/ActivityCardModel";
+import { TimeSpanModel } from "../ui/components/TimeSpan";
 
 const DEFAULT_JOURNEY_STEP_METRICS  = [
     MetricTypeIds.Reflection,
@@ -26,7 +28,7 @@ const DEFAULT_JOURNEY_STEP_METRICS  = [
     MetricTypeIds.Nutrition_Protein,
     MetricTypeIds.Nutrition_Carbs,
     MetricTypeIds.Nutrition_Fat,
-    MetricTypeIds.Workouts
+    MetricTypeIds.Activities
 ] as const;
 
 export class JourneyController {
@@ -149,6 +151,20 @@ export class JourneyController {
                     unit: "g" 
                 }) 
             }));
+
+            // >>> Activities <<<
+            const activitiesRowModel = new DivModel({ className: "activity-card-container" });
+            journeyStepsCard.card.content.push(activitiesRowModel);
+    
+            const activities = element.getMetric("Activities")
+    
+            activities.forEach(element => {
+                activitiesRowModel.content.push(new ActivityCardModel({ 
+                    activityType: element.type,
+                    name: element.type,
+                    duration: new TimeSpanModel({ time: element.duration / 60 }) // Kind hacky tbh
+                }));
+            });
 
             // >>> FOOTER <<<
             const actionRowModel = new DivModel({ className: "footer-action-buttons-row" });
