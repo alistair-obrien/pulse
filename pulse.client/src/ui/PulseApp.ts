@@ -3,6 +3,7 @@ import './styles/colors.css';
 import './styles/main.css'
 
 import type { PulseAppConfig } from "../PulseAppConfig";
+import { Keyboard } from '@capacitor/keyboard';
 
 // Screens
 import * as Splash from "./screens/Splash"
@@ -20,7 +21,6 @@ import { UserSession } from '../UserSession';
 import { CloudSyncService } from '../services/CloudSyncService';
 import { type DeviceMetricsSyncService } from '../services/DeviceMetricsSyncService';
 import { type ExternalAPIMetricsSyncService } from '../services/ExternalAPIMetricsSyncService';
-import { HEVYAPIMetricsSyncService } from '../services/ExternalAPIMetricsProviders/HEVYAPIMetricsProvider';
 import { ImageService } from '../services/ImageService';
 import { HealthConnectSyncService } from '../services/DeviceMetricsProviders/AndroidHealthConnectDeviceMetricsProvider';
 import { HealthKitSyncService } from '../services/DeviceMetricsProviders/AppleHealthKitDeviceMetricsProvider';
@@ -165,6 +165,15 @@ export class PulseApp {
         this.version_tag = new VersionTag(appConfig);
         app.append(this.version_tag.root);
         this.setVersionVisibility(this.showDebugVersionAnnotation);
+
+        // >>> For Detetcing Keyboard State in CSS <<<
+        Keyboard.addListener('keyboardWillShow', () => {
+            document.body.classList.add('keyboard-open');
+        });
+
+        Keyboard.addListener('keyboardWillHide', () => {
+            document.body.classList.remove('keyboard-open');
+        });
     }
 
     async start() {
