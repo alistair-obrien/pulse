@@ -123,7 +123,13 @@ export class MyDayController {
 
         const maxDate = today;
 
-        const snapshots = this.userSession.metrics.resolveMetric(newDateKey, "Snapshots");
+        const snapshots = [
+            ...this.userSession.metrics.resolveMetric(
+                this.model.selectedDateKey,
+                MetricTypeIds.Snapshots
+            )
+        ];
+
         let image = this.imageService.getRandomImageUrl(newDate.getFullYear() + newDate.getMonth() + newDate.getDate());
         if (snapshots.length > 0) {
             image = snapshots[0].imageUrl;
