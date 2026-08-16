@@ -123,12 +123,11 @@ export class MyDayController {
 
         const maxDate = today;
 
-        const existingSnapshots = this.userSession.metrics.resolveMetric(newDateKey, "Snapshots");
+        const snapshots = this.userSession.metrics.resolveMetric(newDateKey, "Snapshots");
         let image = this.imageService.getRandomImageUrl(newDate.getFullYear() + newDate.getMonth() + newDate.getDate());
-        if (existingSnapshots.length > 0) {
-            image = existingSnapshots[0].imageUrl;
+        if (snapshots.length > 0) {
+            image = snapshots[0].imageUrl;
         }
-        
 
         const journeyStep = await this.journeyController.getJourneyStep(newDate);
 
@@ -309,11 +308,6 @@ export class MyDayController {
         snapshotsCardModel.content.push(new CardHeaderModel({ title: "Snapshots", iconClass: ICONS.Snapshots }));
         this.model.metricSectionCardModels.push(snapshotsCardModel);
         
-        const snapshots = this.userSession.metrics.resolveMetric(
-            this.model.selectedDateKey,
-            MetricTypeIds.Snapshots
-        );
-
         if (snapshots.length > 0) {
 
             const snapshotModels = snapshots.map(
@@ -331,14 +325,14 @@ export class MyDayController {
                                         onClick: async () => {
                                             const snapshots =
                                                 this.userSession.metrics.resolveMetric(
-                                                    this.model.selectedDateKey,
+                                                    newDateKey,
                                                     MetricTypeIds.Snapshots
                                                 );
 
                                             snapshots.splice(index, 1);
 
                                             this.userSession.metrics.setDeviceMetric(
-                                                this.model.selectedDateKey,
+                                                newDateKey,
                                                 MetricTypeIds.Snapshots,
                                                 snapshots
                                             );
@@ -352,7 +346,7 @@ export class MyDayController {
                                         onClick: async () => {
                                             const snapshots =
                                                 this.userSession.metrics.resolveMetric(
-                                                    this.model.selectedDateKey,
+                                                    newDateKey,
                                                     MetricTypeIds.Snapshots
                                                 );
 
@@ -360,7 +354,7 @@ export class MyDayController {
                                             snapshots.unshift(snapshot);
 
                                             this.userSession.metrics.setDeviceMetric(
-                                                this.model.selectedDateKey,
+                                                newDateKey,
                                                 MetricTypeIds.Snapshots,
                                                 snapshots
                                             );
