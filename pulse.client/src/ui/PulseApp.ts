@@ -192,7 +192,7 @@ export class PulseApp {
         //     document.body.append(splash);
         // }
     
-        await this.myDayController.loadToday();
+        this.myDayController.loadToday();
         this.changeScreen(this.myDayController.screen);
         
         // if (this.splashEnabled) {
