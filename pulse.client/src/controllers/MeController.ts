@@ -10,6 +10,7 @@ import { ProfileThumbnailModel } from "../ui/components/ProfileThumbnail";
 import type { UserSession } from "../UserSession";
 import type { CloudSyncService } from "../services/CloudSyncService";
 import type { DeviceMetricsSyncService } from "../services/DeviceMetricsSyncService";
+import type { ImageService } from "../services/ImageService";
 
 const loginProvidernNames: Record<string, string> = {
     google: "Google",
@@ -29,6 +30,7 @@ export class MeController {
     private readonly externalAPIServices:ExternalAPIMetricsSyncService[];
     private readonly cloudSyncService: CloudSyncService;
     private readonly deviceMetricsSyncService: DeviceMetricsSyncService | undefined;
+    private readonly imageService: ImageService;
 
     constructor(
         args: {
@@ -36,7 +38,8 @@ export class MeController {
             authService:AuthService,
             externalAPIServices: ExternalAPIMetricsSyncService[],
             cloudSyncService: CloudSyncService,
-            deviceMetricsSyncService?: DeviceMetricsSyncService
+            deviceMetricsSyncService?: DeviceMetricsSyncService,
+            imageService: ImageService
         }
     ) {
         this.screen = new MeScreen();
@@ -46,6 +49,7 @@ export class MeController {
         this.externalAPIServices = args.externalAPIServices;
         this.cloudSyncService = args.cloudSyncService;
         this.deviceMetricsSyncService = args.deviceMetricsSyncService;
+        this.imageService = args.imageService;
 
         this.model = new MeScreenModel({ cards: [] });
 
@@ -131,7 +135,7 @@ export class MeController {
                 iconClass: ICONS.ChooseImage,
                 labelStr: "Change Profile Image",
                 onClick: async () => {
-                    const image = await this.selectProfileImage();
+                    const image = await this.imageService.selectImage();
 
                     if (!image)
                         return;
@@ -208,76 +212,6 @@ export class MeController {
             console.error(e);
         }
     }
-
-    private async selectProfileImage(): Promise<string | null> {
-        return new Promise(resolve => {
-            const input = document.createElement("input");
-
-            input.type = "file";
-            input.accept = "image/*";
-
-            input.onchange = async () => {
-                const file = input.files?.[0];
-
-                if (!file) {
-                    resolve(null);
-                    return;
-                }
-
-                try {
-                    const image = await this.loadImage(file);
-
-                    const size = 512;
-                    const scale = Math.min(
-                        size / image.width,
-                        size / image.height,
-                        1
-                    );
-
-                    const canvas = document.createElement("canvas");
-
-                    canvas.width = image.width * scale;
-                    canvas.height = image.height * scale;
-
-                    const context = canvas.getContext("2d");
-
-                    if (!context) {
-                        resolve(null);
-                        return;
-                    }
-
-                    context.drawImage(
-                        image,
-                        0,
-                        0,
-                        canvas.width,
-                        canvas.height
-                    );
-
-                    resolve(
-                        canvas.toDataURL("image/jpeg", 0.85)
-                    );
-                }
-                catch {
-                    resolve(null);
-                }
-            };
-
-            input.click();
-        });
-    }
-
-    private loadImage(file: File): Promise<HTMLImageElement> {
-        return new Promise((resolve, reject) => {
-            const image = new Image();
-
-            image.onload = () => resolve(image);
-            image.onerror = reject;
-
-            image.src = URL.createObjectURL(file);
-        });
-    }
-
     
     configureDeviceSync(): void {
         this.deviceMetricsSyncService?.configure();

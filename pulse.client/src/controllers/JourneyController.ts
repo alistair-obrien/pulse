@@ -16,10 +16,10 @@ import { JourneyStepGroupModel } from "../ui/components/JourneyStepGroup";
 import type { PulseApp } from "../ui/PulseApp";
 import { ReflectionTextModel } from "../ui/components/ReflectionText";
 import type { UserSession } from "../UserSession";
-import { JourneyContextPopupModel } from "../ui/components/JourneyContextPopup";
 import { ActivityCardModel } from "../ui/components/ActivityCardModel";
 import { TimeSpanModel } from "../ui/components/TimeSpan";
 import { InlineMetricModel } from "../ui/components/InlineMetric";
+import { ContextMenuModel } from "../ui/components/ContextMenu";
 
 const DEFAULT_JOURNEY_STEP_METRICS  = [
     MetricTypeIds.Reflection,
@@ -196,21 +196,28 @@ export class JourneyController {
             })
             actionRowModel.content.push(leftGroup);
 
-
-            journeyStepsCard.contextPopup = new JourneyContextPopupModel({
-                onEdit: () => this.openInMyDay(element),
-                onUnpublish: async () => { 
-                    await this.unpublish(element);
-                    await this.refresh(); 
-                }
-            })
-
             if (element.userId == this.userSession.userId) {
                 const editActBtn = new ActionButtonModel({
                     iconClass: ICONS.Options,
                     labelStr: "",
                     onClick: () => {
-                        journeyStepsCard.contextPopup.visible = !journeyStepsCard.contextPopup.visible;
+                        this.pulseApp.openContextMenu(new ContextMenuModel({
+                            isOpen: true,
+                            items: [
+                                {
+                                    label: "Unpublish Journey Step",
+                                    iconClass: ICONS.Delete,
+                                    onClick: async () => { 
+                                        await this.unpublish(element); 
+                                        this.refresh(); }
+                                },
+                                {
+                                    label: "Edit in My Day",
+                                    iconClass: ICONS.Edit,
+                                    onClick: async () => await this.pulseApp.openMyDayAtDate(element.date) 
+                                }
+                            ]
+                        }))
                         this.screen.update(this.model);
                     }
                 })

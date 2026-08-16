@@ -1,0 +1,87 @@
+.snapshot {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    overflow: hidden;
+    cursor: pointer;
+    background: none;
+}
+
+.snapshot img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+
+/* >>> IN PROGRESS <<< */
+
+.image-slide-gallery {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+}
+
+.image-slide-gallery-track {
+    display: flex;
+
+    transition: transform 250ms ease;
+    will-change: transform;
+
+    touch-action: pan-y;
+}
+
+.image-slide {
+    flex: 0 0 100%;
+    width: 100%;
+}
+
+/* Make the SnapshotImage itself fill the slide */
+
+.image-slide .snapshot {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+}
+
+.image-slide .snapshot img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Indicators */
+
+.image-slide-gallery-indicators {
+    position: absolute;
+
+    bottom: 10px;
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    display: flex;
+    gap: 18px;
+
+    /* z-index: 2; */
+}
+
+.gallery-indicator {
+    width: 8px;
+    height: 8px;
+
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+
+    background: var(--secondary-muted-text);
+
+    cursor: pointer;
+}
+
+.gallery-indicator.active {
+    background: var(--primary-text-light);
+}

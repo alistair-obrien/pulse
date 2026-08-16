@@ -36,12 +36,15 @@ import { GoogleAuthProvider } from '../services/AuthProviders/GoogleAuthProvider
 import { API } from '../api/API';
 import { APIClient } from '../api/APIClient';
 import { fromDateKey } from '../utils/DateUtils';
+import { ContextMenu, ContextMenuModel } from './components/ContextMenu';
 
 export class PulseApp {
 
     private readonly version_tag:VersionTag;
     
     private readonly screenContainer:HTMLElement;
+
+    private readonly contextMenu : ContextMenu;
 
     private splashEnabled: boolean;
     private showDebugVersionAnnotation: boolean;
@@ -97,6 +100,8 @@ export class PulseApp {
         this.myDayController = new MyDayController({
             userSession: userSession,
 
+            pulseApp: this,
+
             journeyController: this.journeyController,
 
             cloudMetricsSyncService: cloudSyncService,
@@ -107,6 +112,7 @@ export class PulseApp {
         });
         this.meController = new MeController({ 
             userSession: userSession,
+            imageService: imageService,
             authService: authService, 
             externalAPIServices: extAPIMetricsSyncServices,
             cloudSyncService: cloudSyncService,
@@ -166,6 +172,10 @@ export class PulseApp {
         app.append(this.version_tag.root);
         this.setVersionVisibility(this.showDebugVersionAnnotation);
 
+        // >>> Generic Context Menu <<<
+        this.contextMenu = new ContextMenu();
+        document.body.append(this.contextMenu.root)
+
         // >>> For Detetcing Keyboard State in CSS <<<
         Keyboard.addListener('keyboardWillShow', () => {
             document.body.classList.add('keyboard-open');
@@ -207,5 +217,10 @@ export class PulseApp {
     setVersionVisibility(value:boolean) {
         this.showDebugVersionAnnotation = value;
         // TODO: actually disable it
+    }
+
+    openContextMenu(model: ContextMenuModel) {
+
+        this.contextMenu.update(model);
     }
 }

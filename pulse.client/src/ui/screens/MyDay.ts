@@ -11,10 +11,12 @@ import { HeroArea, HeroAreaModel } from "../components/HeroArea";
 
 // Utils
 import * as DateUtils from "../../utils/DateUtils";
+import { ContextMenu, type ContextMenuModel } from "../components/ContextMenu";
 
 export class MyDayScreenModel extends ComponentModel<MyDayScreen> {
     readonly component = MyDayScreen;
 
+    contextMenu: ContextMenuModel;
     heroAreaVisibleHeight:number;
     heroAreaTotalHeight:number;
     selectedDate:Date; // TODO: Lets make this obsolete and stick to date keys?
@@ -25,6 +27,7 @@ export class MyDayScreenModel extends ComponentModel<MyDayScreen> {
     myDayActionsModel:CardModel;
 
     constructor(args: {
+        contextMenu: ContextMenuModel;
         heroAreaVisibleHeight:number;
         heroAreaTotalHeight:number;
         selectedDate:Date;
@@ -36,6 +39,7 @@ export class MyDayScreenModel extends ComponentModel<MyDayScreen> {
     }) {
         super();
 
+        this.contextMenu = args.contextMenu;
         this.heroAreaVisibleHeight = args.heroAreaVisibleHeight;
         this.heroAreaTotalHeight = args.heroAreaTotalHeight;
         this.selectedDate = args.selectedDate;
@@ -60,6 +64,8 @@ export class MyDayScreen extends Component<MyDayScreenModel> {
     private readonly metricSectionCards:Card[];
 
     private readonly myDayActionsCard: Card;
+
+    readonly contextMenu: ContextMenu; 
 
     constructor() {
         super();
@@ -101,6 +107,9 @@ export class MyDayScreen extends Component<MyDayScreenModel> {
             this.content.root,
         );
 
+        this.contextMenu = new ContextMenu();
+        this.root.append(this.contextMenu.root)
+
         // enableDaySwipe(container);
         // startAutoSync();
     }
@@ -132,5 +141,7 @@ export class MyDayScreen extends Component<MyDayScreenModel> {
         });
 
         this.myDayActionsCard.update(this.model.myDayActionsModel);
+        
+        this.contextMenu.update(this.model.contextMenu);
     }
 }

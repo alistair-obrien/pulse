@@ -47,6 +47,10 @@ import { MetricTextInputFieldModel } from "../ui/components/MetricTextInputField
 import { DateRowModel } from "../ui/components/DateRow";
 import { PublishButtonModel } from "../ui/components/PublishButton";
 import { ActivityCardModel } from "../ui/components/ActivityCardModel";
+import { SnapshotImageModel } from "../ui/components/SnapshotImage";
+import { ImageSlideGalleryModel } from "../ui/components/SnapshotImageGallery";
+import { ContextMenuModel } from "../ui/components/ContextMenu";
+import type { PulseApp } from "../ui/PulseApp";
 
 export class MyDayController {
     model:MyDayScreenModel;
@@ -55,6 +59,7 @@ export class MyDayController {
     private readonly userSession:UserSession;
 
     // Controllers
+    private readonly pulseApp: PulseApp;
     private readonly journeyController: JourneyController;
 
     // Services
@@ -67,6 +72,8 @@ export class MyDayController {
         args: {
             userSession: UserSession,
             
+            pulseApp: PulseApp,
+
             journeyController: JourneyController,
             
             cloudMetricsSyncService?: CloudSyncService,
@@ -77,6 +84,9 @@ export class MyDayController {
         }
     ) {
         this.userSession = args.userSession;
+
+        this.pulseApp = args.pulseApp;
+
         this.journeyController = args.journeyController;
 
         this.cloudMetricsSyncService = args.cloudMetricsSyncService;
@@ -113,7 +123,12 @@ export class MyDayController {
 
         const maxDate = today;
 
-        const image = this.imageService.getRandomImageUrl(newDate.getFullYear() + newDate.getMonth() + newDate.getDate());
+        const existingSnapshots = this.userSession.metrics.resolveMetric(newDateKey, "Snapshots");
+        let image = this.imageService.getRandomImageUrl(newDate.getFullYear() + newDate.getMonth() + newDate.getDate());
+        if (existingSnapshots.length > 0) {
+            image = existingSnapshots[0].imageUrl;
+        }
+        
 
         const journeyStep = await this.journeyController.getJourneyStep(newDate);
 
@@ -122,6 +137,7 @@ export class MyDayController {
         // console.log(published);
 
         this.model = new MyDayScreenModel({
+            contextMenu: new ContextMenuModel({ isOpen: false, items: []}),
             heroAreaVisibleHeight: HERO_AREA_VISIBLE_HEIGHT,
             heroAreaTotalHeight: HERO_AREA_TOTAL_HEIGHT,
             selectedDate: newDate,
@@ -270,19 +286,118 @@ export class MyDayController {
         });
         activityCardModel.content.push(new CardHeaderModel({ title: "Activity", iconClass: ICONS.Activity }));
         this.model.metricSectionCardModels.push(activityCardModel);
-        
-        const activitiesRowModel = new DivModel({ className: "activity-card-container" });
-        activityCardModel.content.push(activitiesRowModel);
-
+    
         const activities = this.userSession.metrics.resolveMetric(this.model.selectedDateKey, MetricTypeIds.Activities);
 
-        activities.forEach(element => {
-            activitiesRowModel.content.push(new ActivityCardModel({ 
-                activityType: element.type,
-                name: element.type,
-                duration: new TimeSpanModel({ time: element.duration / 60 }) // Kind hacky tbh
-            }));
+        if (activities.length > 0) {
+            const activitiesRowModel = new DivModel({ className: "activity-card-container" });
+            activityCardModel.content.push(activitiesRowModel);
+
+            activities.forEach(element => {
+                activitiesRowModel.content.push(new ActivityCardModel({ 
+                    activityType: element.type,
+                    name: element.type,
+                    duration: new TimeSpanModel({ time: element.duration / 60 }) // Kind hacky tbh
+                }));
+            });
+        }
+
+        // >>> Snapshot Gallery <<<
+        const snapshotsCardModel = new CardModel({
+            content: []
         });
+        snapshotsCardModel.content.push(new CardHeaderModel({ title: "Snapshots", iconClass: ICONS.Snapshots }));
+        this.model.metricSectionCardModels.push(snapshotsCardModel);
+        
+        const snapshots = this.userSession.metrics.resolveMetric(
+            this.model.selectedDateKey,
+            MetricTypeIds.Snapshots
+        );
+
+        if (snapshots.length > 0) {
+
+            const snapshotModels = snapshots.map(
+                (snapshot, index) => new SnapshotImageModel({
+                    imageUrl: snapshot.imageUrl,
+
+                    onContextMenuRequest: () => {
+                        this.pulseApp.openContextMenu(
+                            new ContextMenuModel({
+                                isOpen: true,
+                                items: [
+                                    {
+                                        label: "Delete Image",
+                                        iconClass: ICONS.Delete,
+                                        onClick: async () => {
+                                            const snapshots =
+                                                this.userSession.metrics.resolveMetric(
+                                                    this.model.selectedDateKey,
+                                                    MetricTypeIds.Snapshots
+                                                );
+
+                                            snapshots.splice(index, 1);
+
+                                            this.userSession.metrics.setDeviceMetric(
+                                                this.model.selectedDateKey,
+                                                MetricTypeIds.Snapshots,
+                                                snapshots
+                                            );
+
+                                            await this.refresh();
+                                        }
+                                    },
+                                    {
+                                        label: "Set as Main",
+                                        iconClass: ICONS.LikeFilled,
+                                        onClick: async () => {
+                                            const snapshots =
+                                                this.userSession.metrics.resolveMetric(
+                                                    this.model.selectedDateKey,
+                                                    MetricTypeIds.Snapshots
+                                                );
+
+                                            const [snapshot] = snapshots.splice(index, 1);
+                                            snapshots.unshift(snapshot);
+
+                                            this.userSession.metrics.setDeviceMetric(
+                                                this.model.selectedDateKey,
+                                                MetricTypeIds.Snapshots,
+                                                snapshots
+                                            );
+
+                                            await this.refresh();
+                                        }
+                                    },
+                                    
+                                ],
+                            })
+                        );
+                    }
+                })
+            );
+
+            const snapshotsContainer = new ImageSlideGalleryModel({
+                snapshotModels
+            });
+
+            snapshotsCardModel.content.push(snapshotsContainer);
+        }
+
+        snapshotsCardModel.content.push(new ActionButtonModel({
+            labelStr: "Add",
+            iconClass: ICONS.ChooseImage,
+            onClick: async () => {  
+                const image = await this.imageService.selectImage();
+
+                if (!image)
+                    return;
+
+                let snapshots = this.userSession.metrics.resolveMetric(this.model.selectedDateKey, "Snapshots");
+                snapshots.push({ imageUrl: image });
+                this.userSession.metrics.setDeviceMetric(this.model.selectedDateKey, "Snapshots", snapshots);
+                await this.refresh();
+            }
+        }));
 
         // >>> Actions <<<
         const actionsRowModel = new DivModel({ className: "row" });
@@ -445,6 +560,8 @@ export class MyDayController {
         const newDateKey = toDateKey(newDate);
 
         return new MyDayScreenModel({
+
+            contextMenu: new ContextMenuModel({ isOpen: true, items: []}),
             heroAreaVisibleHeight: HERO_AREA_VISIBLE_HEIGHT,
             heroAreaTotalHeight: HERO_AREA_TOTAL_HEIGHT,
             selectedDate: newDate,

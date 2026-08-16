@@ -1,5 +1,6 @@
 import type { SleepLogData } from "./SleepLogData";
 import type { ActivityLogData } from "./ActivityLogData";
+import type { SnapshotData } from "./SnapshotData";
 
 export const metricsRegistry = {
     // Recovery
@@ -44,6 +45,11 @@ export const metricsRegistry = {
     "Activities": {
         defaultValue: [] as ActivityLogData[],
     },
+
+    // Snapshots
+    "Snapshots": {
+        defaultValue: [] as SnapshotData[]
+    }
 } as const;
 
 export type MetricTypes = {

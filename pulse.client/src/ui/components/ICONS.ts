@@ -46,11 +46,13 @@ export const ICONS = {
     Recovery: "ri-seedling-fill",
     Nutrition: "ri-restaurant-fill",
     Activity: "ri-heart-pulse-fill",
+    Snapshots: "ri-image-fill",
 
     // Recovery
     Sleep: "ri-moon-clear-fill",
     RestingHeartRate: "ri-hearts-fill",
     Steps: "ri-footprint-fill",
+
 
     EditTextField: "ri-edit-2-fill",
 
