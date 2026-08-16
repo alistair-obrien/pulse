@@ -34,7 +34,7 @@ export class ImageService {
         return `https://picsum.photos/id/${imageId}/400/400.webp`
     }
 
-    async selectImage(): Promise<string | null> {
+    async selectImage(sizeLimit:number = 512): Promise<string | null> {
         return new Promise(resolve => {
             const input = document.createElement("input");
 
@@ -52,7 +52,7 @@ export class ImageService {
                 try {
                     const image = await this.loadImage(file);
 
-                    const size = 512;
+                    const size = sizeLimit;
                     const scale = Math.min(
                         size / image.width,
                         size / image.height,
@@ -80,7 +80,7 @@ export class ImageService {
                     );
 
                     resolve(
-                        canvas.toDataURL("image/jpeg", 0.85)
+                        canvas.toDataURL("image/jpeg", 1)
                     );
                 }
                 catch {

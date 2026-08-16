@@ -387,7 +387,7 @@ export class MyDayController {
             labelStr: "Add",
             iconClass: ICONS.ChooseImage,
             onClick: async () => {  
-                const image = await this.imageService.selectImage();
+                const image = await this.imageService.selectImage(1024);
 
                 if (!image)
                     return;
